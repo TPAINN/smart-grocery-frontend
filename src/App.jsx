@@ -5,6 +5,7 @@ import AuthModal from './AuthModal';
 import SavedListsModal from './SavedListsModal';
 
 const normalizeText = (text) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const greeklishToGreek = (text) => {
   let el = text.toLowerCase();
@@ -214,14 +215,39 @@ export default function App() {
         const res = await fetch(`${API_BASE}/api/prices/search?q=${encodeURIComponent(searchGreek)}&store=${encodeURIComponent(store)}`);
         if (res.ok) {
           const matches = await res.json();
+          
+          // 🟢 Ο ΕΞΥΠΝΟΣ ΑΛΓΟΡΙΘΜΟΣ ΤΑΞΙΝΟΜΗΣΗΣ (SCORING ALGORITHM)
           matches.sort((a, b) => {
-            const aExact = a.normalizedName.startsWith(searchGreek);
-            const bExact = b.normalizedName.startsWith(searchGreek);
-            if (aExact && !bExact) return -1;
-            if (!aExact && bExact) return 1;
-            return 0;
+            const nameA = a.normalizedName;
+            const nameB = b.normalizedName;
+            const q = searchGreek;
+
+            const getScore = (name) => {
+              if (name === q) return 100; // 1. Απόλυτη ταύτιση
+              if (name.startsWith(q + ' ')) return 90; // 2. Ξεκινάει με τη λέξη
+              
+              // 3. Περιέχει τη λέξη αυτούσια οπουδήποτε
+              const exactWordRegex = new RegExp(`\\b${escapeRegExp(q)}\\b`);
+              if (exactWordRegex.test(name)) return 80; 
+              
+              if (name.startsWith(q)) return 70; // 4. Ξεκινάει απλά με τα γράμματα
+              return 50; // 5. Είναι χωμένο μέσα σε άλλη λέξη (π.χ. Σοκοφρέτα)
+            };
+
+            const scoreA = getScore(nameA);
+            const scoreB = getScore(nameB);
+
+            // Πρωτεύουσα ταξινόμηση: Βάσει του Score (Μεγαλύτερο = Πιο ψηλά)
+            if (scoreA !== scoreB) {
+              return scoreB - scoreA;
+            }
+            
+            // Δευτερεύουσα ταξινόμηση: Αν έχουν ίδιο Score, δείξε το ΦΘΗΝΟΤΕΡΟ πρώτο!
+            return (a.price || 0) - (b.price || 0);
           });
-          setSuggestions(matches);
+
+          // Κρατάμε μόνο τα κορυφαία 30 αποτελέσματα για να μην κολλάει το UI του κινητού
+          setSuggestions(matches.slice(0, 30));
         }
       } catch (error) {}
     } else {

@@ -88,3 +88,31 @@
 @keyframes popInModal { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes slideDownForm { from { opacity: 0; transform: translateY(-15px); margin-bottom: -10px;} to { opacity: 1; transform: translateY(0); margin-bottom: 0;} }
+
+/* 🟢 NEW: LOADING SPINNER & BUTTON STATES */
+.submit-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 52px; /* Κρατάει το ύψος σταθερό για να μην χοροπηδάει όταν μπαίνει το spinner */
+}
+
+.submit-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.auth-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

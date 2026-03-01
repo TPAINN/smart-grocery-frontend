@@ -1,13 +1,16 @@
 // src/AuthModal.jsx
 import { useState } from 'react';
 import './AuthModal.css';
-// Δυναμικό API Base URL (Λειτουργεί αυτόματα σε Localhost, LAN & Production)
+
 const API_BASE = "https://my-smart-grocery-api.onrender.com";
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
+  
+  // 🟢 ΝΕΟ: State για το Loading Animation
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -16,6 +19,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true); // Ξεκινάει το φόρτωμα!
 
     const endpoint = isLogin ? '/login' : '/register';
     
@@ -27,45 +31,53 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
       });
       const data = await response.json();
 
-      if (!response.ok) { setError(data.message || 'Κάτι πήγε στραβά.'); return; }
+      if (!response.ok) { 
+        setError(data.message || 'Κάτι πήγε στραβά.'); 
+        setIsLoading(false); // Σταματάει το φόρτωμα αν έχει λάθος
+        return; 
+      }
 
       localStorage.setItem('smart_grocery_token', data.token);
       localStorage.setItem('smart_grocery_user', JSON.stringify(data.user));
       onLoginSuccess(data.user);
+      setIsLoading(false); // Σταματάει το φόρτωμα με επιτυχία
       onClose();
     } catch (err) {
       setError('Πρόβλημα σύνδεσης με τον Server.');
+      setIsLoading(false); // Σταματάει το φόρτωμα
     }
   };
 
   return (
-    <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !isLoading) onClose(); }}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <button className="close-btn" onClick={onClose}>✕</button>
+        <button className="close-btn" onClick={onClose} disabled={isLoading}>✕</button>
         
         <div className="modal-header staggered-1">
           <h2>{isLogin ? 'Καλώς ήρθες!' : 'Δημιουργία Λογαριασμού'}</h2>
-          <p>{isLogin ? 'Συνδέσου για να δεις τη λίστα σου.' : 'Γίνε μέλος του Smart Grocery.'}</p>
+          <p>{isLogin ? 'Συνδέσου για να δεις τη λίστα σου.' : 'Γίνε μέλος του Smart Hub.'}</p>
         </div>
 
         {error && <div className="error-message staggered-2">{error}</div>}
 
-        {/* ΚΑΘΑΡΗ ΦΟΡΜΑ EMAIL */}
         <form onSubmit={handleSubmit} className={`auth-form staggered-2 ${!isLogin ? 'expanded' : ''}`}>
           {!isLogin && (
-            <input type="text" name="name" placeholder="Το όνομά σου" value={formData.name} onChange={handleChange} required className="slide-down-input" />
+            <input type="text" name="name" placeholder="Το όνομά σου" value={formData.name} onChange={handleChange} required disabled={isLoading} className="slide-down-input" />
           )}
-          <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required />
-          <input type="password" name="password" placeholder="Κωδικός" value={formData.password} onChange={handleChange} required />
+          <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required disabled={isLoading} />
+          <input type="password" name="password" placeholder="Κωδικός" value={formData.password} onChange={handleChange} required disabled={isLoading} />
           
-          <button type="submit" className="submit-btn">
-            {isLogin ? 'Σύνδεση' : 'Εγγραφή'}
+          {/* 🟢 ΝΕΟ: Το κουμπί με το Spinner */}
+          <button type="submit" className="submit-btn" disabled={isLoading}>
+            {isLoading ? <span className="auth-spinner"></span> : (isLogin ? 'Σύνδεση' : 'Εγγραφή')}
           </button>
         </form>
 
         <p className="toggle-text staggered-3">
           {isLogin ? 'Δεν έχεις λογαριασμό; ' : 'Έχεις ήδη λογαριασμό; '}
-          <span onClick={() => { setIsLogin(!isLogin); setError(''); }}>{isLogin ? 'Κάνε εγγραφή' : 'Συνδέσου'}</span>
+          <span onClick={() => { if(!isLoading){ setIsLogin(!isLogin); setError(''); } }}>
+            {isLogin ? 'Κάνε εγγραφή' : 'Συνδέσου'}
+          </span>
         </p>
       </div>
     </div>
