@@ -32,11 +32,17 @@ const getBestMatch = (matches, query) => {
     const q = searchGreek;
 
     const getScore = (name) => {
-      if (name === q) return 100;
-      if (name.startsWith(q + ' ')) return 90;
-      if (new RegExp(`\\b${escapeRegExp(q)}\\b`).test(name)) return 80;
-      if (name.startsWith(q)) return 70;
-      return 50;
+      if (name === q) return 100; // 1. Απόλυτη ταύτιση
+      if (name.startsWith(q + ' ')) return 90; // 2. Είναι η πρώτη λέξη (π.χ. "γαλα αγελαδος")
+      
+      // 3. Είναι αυτόνομη λέξη κάπου στη μέση (Το Fix για τα Ελληνικά αντί του \b)
+      if (new RegExp(`(^|\\s)${escapeRegExp(q)}(\\s|$)`).test(name)) return 80;
+      
+      // 4. Ξεκινάει άλλη λέξη με αυτά τα γράμματα (π.χ. "γαλα-κτος", "σοκολατουχο γαλα-τα")
+      if (new RegExp(`(^|\\s)${escapeRegExp(q)}`).test(name)) return 60;
+      
+      // 5. Είναι χωμένο μέσα σε άλλη λέξη (π.χ. "με-γαλα"). Παίρνει τη χαμηλότερη βαθμολογία.
+      return 10;
     };
 
     const scoreA = getScore(nameA);
@@ -207,9 +213,9 @@ export default function App() {
             const getScore = (name) => {
               if (name === searchGreek) return 100;
               if (name.startsWith(searchGreek + ' ')) return 90;
-              if (new RegExp(`\\b${escapeRegExp(searchGreek)}\\b`).test(name)) return 80;
-              if (name.startsWith(searchGreek)) return 70;
-              return 50;
+              if (new RegExp(`(^|\\s)${escapeRegExp(searchGreek)}(\\s|$)`).test(name)) return 80;
+              if (new RegExp(`(^|\\s)${escapeRegExp(searchGreek)}`).test(name)) return 60;
+              return 10;
             };
             const scoreA = getScore(a.normalizedName);
             const scoreB = getScore(b.normalizedName);
@@ -304,9 +310,14 @@ export default function App() {
     
     // 2ο Φίλτρο: Τι έχει το ψυγείο σου; (Ψάχνει μέσα στα υλικά)
     if (fridgeQuery.trim() !== '') {
-      const searchTerms = fridgeQuery.toLowerCase().split(',').map(t => t.trim());
-      const ingredientsText = r.ingredients.join(' ').toLowerCase();
-      // Η συνταγή πρέπει να περιέχει ΤΟΥΛΑΧΙΣΤΟΝ ένα από τα υλικά του ψυγείου
+      // Μετατρέπουμε αυτό που έγραψε ο χρήστης σε πεζά, χωρίς τόνους, και greeklish σε ελληνικά
+      const normalizedQuery = greeklishToGreek(normalizeText(fridgeQuery));
+      const searchTerms = normalizedQuery.split(',').map(t => t.trim()).filter(Boolean);
+      
+      // Κάνουμε το ίδιο και για τα υλικά της συνταγής
+      const ingredientsText = greeklishToGreek(normalizeText(r.ingredients.join(' ')));
+      
+      // Ψάχνει αν το "κοτο" υπάρχει μέσα στο "κοτοπουλο"
       const hasMatch = searchTerms.some(term => ingredientsText.includes(term));
       if (!hasMatch) return false;
     }
