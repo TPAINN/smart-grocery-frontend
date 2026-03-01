@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* --- ΤΟ ΜΥΣΤΙΚΟ ΓΙΑ ΝΑ ΜΗΝ ΧΑΛΑΕΙ ΠΟΤΕ ΤΟ RATIO --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  min-height: 100vh;
+  
+  overflow-x: hidden; 
+  /* --- ΤΟ ΑΠΟΛΥΤΟ FIX ΓΙΑ ΤΟ JUMPING BUG --- */
+  /* Κρατάει μόνιμα δεσμευμένο τον χώρο για το scrollbar, 
+     έτσι ώστε όταν ανοίγει το dropdown να ΜΗΝ κουνιέται το site αριστερά-δεξιά! */
+  overflow-y: scroll; 
+  
+  color: #333;
+}

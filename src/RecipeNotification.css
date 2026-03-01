@@ -1,0 +1,73 @@
+/* Τοποθετεί το pop-up στο κέντρο πάνω (όπως στο iPhone) */
+.notification-container {
+  position: fixed;
+  top: 20px;
+  left: 0;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  z-index: 9999; /* Το κρατάει πάνω από ΟΛΑ τα άλλα στοιχεία */
+  pointer-events: none; /* Επιτρέπει να κάνεις κλικ "από πίσω" του */
+}
+
+/* Το κουτί της ειδοποίησης */
+.notification-box {
+  pointer-events: auto; /* Επαναφέρει το κλικ για το X */
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 14px 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #10b981; /* Πράσινη γραμμή επιτυχίας */
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 320px;
+  
+  /* Το animation που το κάνει να μπαίνει από πάνω */
+  animation: slideDownPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.notification-icon {
+  width: 24px;
+  height: 24px;
+  color: #10b981;
+}
+
+.notification-content h4 {
+  margin: 0 0 2px 0;
+  font-size: 15px;
+  color: #111827;
+}
+
+.notification-content p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.close-notify-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #9ca3af;
+  cursor: pointer;
+  margin-left: auto;
+  transition: 0.2s;
+}
+
+.close-notify-btn:hover {
+  color: #111827;
+}
+
+@keyframes slideDownPop {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

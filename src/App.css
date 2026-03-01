@@ -1,0 +1,728 @@
+/* =========================================
+   GREEK PREMIUM UI & RECIPE FEATURES
+   ========================================= */
+
+   .app-wrapper {
+    padding: 40px 20px;
+    width: 100%; /* FIX: 100% αντί για 100vw για να μην προεξέχει ποτέ! */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* FIX: Για να μην τεντώνει το container σε μεγάλες οθόνες */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+  }
+  
+  .container {
+    background: #ffffff;
+    padding: 35px;
+    border-radius: 24px;
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
+    width: 100%;
+    max-width: 500px;
+    animation: slideUpFade 0.6s ease forwards;
+  }
+  
+  .header-top { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px; }
+  .datetime-display { background: #f9fafb; padding: 10px 18px; border-radius: 14px; border: 1px solid #e5e7eb; text-align: left; }
+  .current-date { font-size: 14px; font-weight: 800; color: #111827; text-transform: uppercase; }
+  .current-time { font-size: 13px; color: #6b7280; margin-top: 4px; }
+  .logo-icon { display: flex; align-items: center; justify-content: center; width: 54px; height: 54px; background: #111827; color: white; border-radius: 16px; font-size: 24px; box-shadow: 0 8px 20px rgba(17,24,39,0.2); }
+  
+  .app-header h1 { text-align: center; font-size: 28px; font-weight: 800; color: #111827; margin: 0 0 6px 0; }
+  .app-header p { text-align: center; color: #6b7280; font-size: 15px; margin: 0 0 20px 0; }
+
+  /* --- GREEK CALENDAR BANNERS --- */
+  .seasonal-banner { 
+    border-radius: 16px; 
+    margin-bottom: 25px; 
+    padding: 18px 20px;
+    animation: slideDownPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  }
+  
+  .seasonal-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .seasonal-icon {
+    font-size: 32px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+
+  .seasonal-text h3 { margin: 0 0 4px 0; font-size: 16px; font-weight: 800; }
+  .seasonal-text p { margin: 0; font-size: 13px; line-height: 1.4; opacity: 0.9;}
+
+  /* Τα χρώματα για κάθε περίσταση */
+  .seasonal-banner.clean-monday { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe; color: #1e3a8a; }
+  .seasonal-banner.fasting { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; color: #166534; }
+  .seasonal-banner.weekend { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fecaca; color: #991b1b; }
+  .seasonal-banner.monday { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; color: #334155; }
+  .seasonal-banner.summer { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fde68a; color: #b45309; }
+  .seasonal-banner.christmas { background: linear-gradient(135deg, #fef2f2 0%, #fce7f3 100%); border: 1px solid #fbcfe8; color: #9d174d; }
+
+  /* --- TABS NAVIGATION --- */
+  .tabs-container { display: flex; background: #f3f4f6; padding: 6px; border-radius: 14px; margin-bottom: 25px; }
+  .tab-btn { flex: 1; padding: 12px 5px; border: none; background: transparent; color: #6b7280; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; font-size: 14px;}
+  .tab-btn.active { background: #ffffff; color: #111827; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+  /* --- BUDGET BANNER --- */
+  .budget-banner { background: linear-gradient(135deg, #111827 0%, #374151 100%); color: white; padding: 20px; border-radius: 16px; margin-bottom: 30px; }
+  .budget-info { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 12px; }
+  .budget-label { font-size: 15px; font-weight: 500; color: #d1d5db; }
+  .budget-amount { font-size: 24px; font-weight: 800; color: #10b981; }
+  .supermarket-suggestion { font-size: 14px; color: #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+  .cheapest-store-box { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 10px; }
+  .sm-logo { height: 20px; background: white; padding: 2px 6px; border-radius: 4px; object-fit: contain; }
+  
+  /* --- INPUTS --- */
+  .input-section { display: flex; gap: 10px; margin-bottom: 40px; }
+  .mic-btn { width: 56px; background: #f3f4f6; border: none; border-radius: 14px; font-size: 22px; cursor: pointer; transition: 0.3s; }
+  .mic-btn.listening { background: #ef4444; animation: pulseMic 1.5s infinite; }
+  input { flex: 1; padding: 15px 20px; border: 2px solid #e5e7eb; border-radius: 14px; font-size: 15px; outline: none; }
+  input:focus { border-color: #111827; }
+  .add-btn { width: 56px; background: #111827; color: white; border: none; border-radius: 14px; font-size: 24px; cursor: pointer; transition: 0.3s; }
+  .add-btn:hover { background: #374151; transform: translateY(-3px); }
+  
+  /* --- LIST ITEMS --- */
+  .categories-container { display: flex; flex-direction: column; gap: 30px; }
+  .category-title { font-size: 13px; font-weight: 800; color: #6b7280; text-transform: uppercase; margin-bottom: 12px; }
+  .grocery-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+  .item-card { display: flex; justify-content: space-between; padding: 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; transition: 0.3s; animation: slideInRight 0.3s forwards; }
+  .item-card:hover { border-color: #d1d5db; box-shadow: 0 6px 12px rgba(0,0,0,0.05); transform: translateX(4px); }
+  .item-header { display: flex; justify-content: space-between; align-items: center; flex: 1; margin-right: 15px;}
+  .item-text { font-size: 16px; font-weight: 600; color: #111827; }
+  .item-price { font-size: 14px; color: #6b7280; background: #f3f4f6; padding: 4px 8px; border-radius: 8px; font-weight: 600; }
+  .unknown-price { background: transparent; color: #ef4444; border: 1px dashed #fca5a5; }
+  .smart-swap { margin-top: 8px; font-size: 13px; color: #047857; background: #ecfdf5; padding: 8px; border-radius: 8px; }
+  .delete-btn { background: none; border: none; cursor: pointer; transition: 0.3s; filter: grayscale(1); }
+  .item-card:hover .delete-btn { filter: grayscale(0); transform: scale(1.1); }
+  
+  /* --- TAB 2: RECIPES (NEW) --- */
+    .recipes-tab { animation: slideInRight 0.4s ease forwards; }
+  
+  .recipe-subtabs { display: flex; gap: 10px; margin-bottom: 25px; }
+  .recipe-subtabs button { flex: 1; padding: 12px; border: 1px solid #e5e7eb; background: #fafafa; border-radius: 12px; font-weight: 600; cursor: pointer; color: #6b7280; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); font-size: 14px;}
+  .recipe-subtabs button:hover { background: #f3f4f6; color: #111827; }
+  .recipe-subtabs button.active { border-color: #111827; color: white; background: #111827; box-shadow: 0 4px 12px rgba(17, 24, 39, 0.15); }
+  
+  .pro-recipes-list { display: flex; flex-direction: column; gap: 16px; }
+  
+  /* H Κάρτα της Συνταγής */
+  .pro-recipe-card { 
+    background: white; 
+    border: 1px solid #e5e7eb; 
+    border-radius: 16px; 
+    overflow: hidden; 
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+  
+  .pro-recipe-card:hover { border-color: #d1d5db; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
+  .pro-recipe-card.expanded { border-color: #2563eb; box-shadow: 0 8px 25px rgba(37, 99, 235, 0.08); }
+
+  /* Κεφαλίδα (Clickable) */
+  .pro-recipe-header { 
+    padding: 18px 20px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    cursor: pointer; 
+    background: transparent;
+  }
+  
+  .pro-recipe-title-group h4 { margin: 0 0 6px 0; font-size: 17px; color: #111827; font-weight: 700; }
+  .pro-recipe-chef { font-size: 13px; color: #6b7280; }
+  .pro-recipe-chef strong { color: #374151; font-weight: 600; }
+
+  .pro-recipe-stats { display: flex; gap: 8px; }
+  .stat-badge { padding: 6px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; }
+  .stat-badge.protein { background: #eff6ff; color: #1d4ed8; }
+  .stat-badge.time { background: #f3f4f6; color: #4b5563; }
+
+  /* Σώμα (Expanded) - Εδώ μπαίνει το Animation! */
+  .pro-recipe-body { 
+    padding: 0 20px 25px 20px; 
+    border-top: 1px solid #f3f4f6; 
+    animation: expandBody 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .add-recipe-btn-pro {
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  }
+  
+  .add-recipe-btn-pro:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3); }
+
+  /* Staggered Roll Animation για τα Βήματα */
+  .pro-recipe-instructions { margin-top: 25px; }
+  .pro-recipe-instructions h5 { font-size: 14px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 15px 0; }
+  .pro-recipe-instructions ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 15px; }
+  
+  .pro-recipe-instructions li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    /* Η μαγεία: Ξεκινάει κρυμμένο και ρολάρει προς τα κάτω */
+    opacity: 0;
+    transform: translateY(-10px);
+    animation: rollDownStep 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #f3f4f6;
+    color: #4b5563;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .pro-recipe-instructions p { margin: 0; font-size: 14px; color: #374151; line-height: 1.5; padding-top: 2px;}
+
+  /* Air Fryer vs Oven UI */
+  .pro-recipe-methods {
+    margin-top: 25px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .cooking-method {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 15px;
+    border-radius: 12px;
+    opacity: 0;
+    animation: rollDownStep 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 0.3s; /* Καθυστερεί λίγο να εμφανιστεί */
+  }
+
+  .cooking-method.oven { background: #fff7ed; border: 1px solid #ffedd5; }
+  .cooking-method.air-fryer { background: #ecfeff; border: 1px solid #cffafe; }
+
+  .method-icon { font-size: 20px; }
+  .method-text h6 { margin: 0 0 4px 0; font-size: 13px; color: #111827; text-transform: uppercase;}
+  .method-text p { margin: 0; font-size: 13px; color: #4b5563; line-height: 1.4;}
+
+  @media (max-width: 480px) {
+    .pro-recipe-methods { grid-template-columns: 1fr; } /* Στα κινητά μπαίνουν το ένα κάτω από το άλλο */
+  }
+
+  /* --- ANIMATIONS ΓΙΑ ΤΙΣ ΣΥΝΤΑΓΕΣ --- */
+  @keyframes expandBody {
+    from { opacity: 0; padding-top: 0; }
+    to { opacity: 1; padding-top: 15px; }
+  }
+
+  @keyframes rollDownStep {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- TAB 3: ΠΡΟΣΦΟΡΕΣ (GROUPED) --- */
+.grouped-deals-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-top: 25px;
+}
+
+.store-deals-group {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+  border: 1px solid #e5e7eb;
+}
+
+.store-deals-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px dashed #f3f4f6;
+}
+
+.store-group-logo {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  background: white;
+  padding: 4px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.store-deals-header h4 {
+  margin: 0;
+  font-size: 18px;
+  color: #111827;
+}
+
+.db-deals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.db-deal-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s;
+}
+
+.db-deal-card:hover {
+  transform: translateX(4px);
+  border-color: #cbd5e1;
+}
+
+.db-deal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.db-deal-name {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.sale-badge {
+  display: inline-block;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.db-deal-price strong {
+  font-size: 18px;
+  color: #10b981;
+  background: #d1fae5;
+  padding: 6px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.2);
+}
+
+  /* --- ANIMATIONS --- */
+  @keyframes pulseMic { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); } }
+  @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideInRight { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+
+  /* --- AI LIVE DEALS FROM MONGODB --- */
+.live-ai-deals {
+  background: white;
+  border: 2px solid #3b82f6;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 25px;
+  text-align: left;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+  animation: popIn 0.5s ease;
+}
+
+.ai-badge {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  background: #3b82f6;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+}
+
+.live-ai-deals h4 {
+  color: #1d4ed8;
+  margin: 0 0 5px 0;
+  font-size: 18px;
+}
+
+.ai-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 15px;
+}
+
+.db-deals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.db-deal-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 12px 15px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.db-deal-name {
+  display: block;
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.db-deal-store {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.db-deal-price strong {
+  font-size: 16px;
+  color: #10b981;
+  background: #d1fae5;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+/* --- SMART SEARCH DROPDOWN --- */
+.smart-search-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 40px;
+}
+
+.suggestions-dropdown {
+  position: absolute;
+  height: fixed;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  border: 1px solid #e5e7eb;
+  z-index: 100;
+  
+  /* --- ΝΕΟ: SCROLL LOGIC --- */
+  max-height: 280px; /* Μέγιστο ύψος (περίπου 4-5 προϊόντα) */
+  overflow-y: auto; /* Ενεργοποιεί το κάθετο scroll */
+  overflow-x: hidden;
+  animation: slideDownPop 0.2s ease forwards;
+}
+
+/* Custom Mac-Style Scrollbar για το Dropdown */
+.suggestions-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.suggestions-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 10px 0;
+}
+.suggestions-dropdown::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 10px;
+}
+.suggestions-dropdown::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+.suggestions-header {
+  background: #f8fafc;
+  padding: 8px 15px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s;
+}
+
+.suggestion-item:hover {
+  background: #f0fdf4;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.sug-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.sug-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.sug-price {
+  color: #10b981;
+  font-size: 15px;
+}
+
+/* Tab buttons styling update to fit 4 tabs */
+.tabs-container {
+  display: flex;
+  gap: 5px;
+}
+.tab-btn {
+  font-size: 12px;
+  padding: 10px 4px;
+}
+/* --- ΟΜΟΙΟΜΟΡΦΑ ΛΟΓΟΤΥΠΑ (APP ICON STYLE) --- */
+.offer-logo { 
+  width: 60px; 
+  height: 60px; 
+  min-width: 60px; /* Για να μην τα "ζουλάει" το flexbox */
+  object-fit: contain; /* Κρατάει την αναλογία της εικόνας χωρίς να την παραμορφώνει */
+  background-color: #ffffff; /* Λευκό φόντο για να ταιριάζουν όλα */
+  padding: 8px; /* Δίνει "αέρα" γύρω από το λογότυπο */
+  border-radius: 14px; /* Στρογγυλεμένες γωνίες */
+  border: 1px solid #e2e8f0; /* Απαλό περίγραμμα */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); /* Ελαφριά σκιά για βάθος */
+}
+/* --- PROFILE DROPDOWN MENU --- */
+.dropdown-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99; }
+
+.profile-dropdown {
+  position: absolute; top: 60px; right: 0; background: white;
+  border: 1px solid #e5e7eb; border-radius: 16px; width: 220px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.05);
+  z-index: 100; overflow: hidden;
+  animation: dropDownPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  transform-origin: top right;
+}
+
+.dropdown-item {
+  padding: 14px 18px; font-size: 14px; font-weight: 600; color: #374151;
+  cursor: pointer; display: flex; align-items: center; gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover { background: #f9fafb; padding-left: 22px; } /* Κάνει ένα μικρό slide δεξιά! */
+.dropdown-item.logout { color: #ef4444; }
+.dropdown-item.logout:hover { background: #fef2f2; color: #dc2626; }
+.dropdown-divider { height: 1px; background: #f3f4f6; margin: 4px 0; }
+
+@keyframes dropDownPop {
+  from { opacity: 0; transform: scale(0.9) translateY(-10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+/* --- SMART SEARCH PREMIUM BADGES --- */
+.sug-name-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.sug-name { font-size: 14px; font-weight: 600; color: #1e293b; line-height: 1.2; }
+.sug-badge {
+  font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 6px; letter-spacing: 0.3px; display: inline-block;
+}
+.sug-badge.plusone { background: #ede9fe; color: #7c3aed; }
+.sug-badge.discount { background: #fee2e2; color: #ef4444; }
+.sug-badge.sale { background: #fef9c3; color: #a16207; }
+
+/* --- OFFERS TAB (GRID & DRILL-DOWN) --- */
+.offers-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
+.back-btn {
+  background: #f1f5f9; border: none; padding: 8px 14px; border-radius: 10px;
+  font-size: 13px; font-weight: 700; color: #475569; cursor: pointer;
+  transition: all 0.2s ease; display: flex; align-items: center; gap: 4px;
+}
+.back-btn:hover { background: #e2e8f0; color: #0f172a; transform: translateX(-3px); }
+
+/* Το Grid των Σούπερ Μάρκετ */
+.stores-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 στήλες δίπλα-δίπλα */
+  gap: 15px;
+  animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.store-card-btn {
+  background: white; border: 1px solid #e5e7eb; border-radius: 20px;
+  padding: 20px 10px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+.store-card-btn:hover {
+  transform: translateY(-5px); border-color: #cbd5e1;
+  box-shadow: 0 12px 25px rgba(0,0,0,0.08);
+}
+.store-card-logo { width: 55px; height: 55px; object-fit: contain; background: white; border-radius: 12px; padding: 5px; }
+.store-card-name { font-size: 14px; font-weight: 800; color: #111827; text-align: center; }
+.store-card-count { font-size: 12px; font-weight: 600; color: #64748b; background: #f8fafc; padding: 4px 10px; border-radius: 10px; }
+
+/* Η Λίστα μέσα στο Κατάστημα */
+.expanded-deals-list { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.expanded-store-title { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px dashed #e2e8f0;}
+.small-inline-logo { width: 30px; height: 30px; object-fit: contain; border-radius: 6px;}
+.expanded-store-title h4 { margin: 0; font-size: 18px; color: #0f172a; }
+
+.old-price-strike { text-decoration: line-through; color: #94a3b8; font-size: 12px; display: block; margin-bottom: 2px;}
+.empty-offers { text-align: center; color: #64748b; font-size: 14px; font-weight: 500; padding: 20px 0; }
+
+.fade-in-item { animation: fadeUp 0.3s ease forwards; opacity: 0;}
+/* Καθυστέρηση στα αντικείμενα για να μπαίνουν ένα-ένα ομαλά! */
+.db-deal-card:nth-child(1) { animation-delay: 0.05s; }
+.db-deal-card:nth-child(2) { animation-delay: 0.1s; }
+.db-deal-card:nth-child(3) { animation-delay: 0.15s; }
+.db-deal-card:nth-child(4) { animation-delay: 0.2s; }
+.db-deal-card:nth-child(5) { animation-delay: 0.25s; }
+
+/* --- PREMIUM BUDGET BANNER --- */
+.budget-banner { 
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+  color: white; padding: 22px 25px; border-radius: 20px; 
+  margin-bottom: 30px; 
+  box-shadow: 0 15px 30px rgba(15, 23, 42, 0.15);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.budget-info { display: flex; justify-content: space-between; align-items: center; }
+.budget-label { font-size: 14px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;}
+.budget-amount { font-size: 32px; font-weight: 900; color: #10b981; text-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);}
+
+/* --- NEW ICON: SAVED LISTS --- */
+.saved-lists-btn {
+  position: relative; cursor: pointer; display: flex; flex-direction: column; align-items: center;
+}
+.list-icon {
+  display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 20px;
+  transition: all 0.2s ease;
+}
+.saved-lists-btn:hover .list-icon { background: #f1f5f9; transform: scale(1.05); }
+.list-badge {
+  position: absolute; top: -6px; right: -6px; background: #94a3b8; color: white;
+  font-size: 11px; font-weight: 800; width: 18px; height: 18px; display: flex;
+  align-items: center; justify-content: center; border-radius: 50%; border: 2px solid white;
+}
+.list-badge.active { background: #ef4444; animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.list-badge.premium { background: #8b5cf6; } /* Μοβ για τους premium! */
+
+/* --- SEARCH PRICES (Διεγραμμένη τιμή) --- */
+.sug-price-col { display: flex; flex-direction: column; align-items: flex-end; }
+.sug-old-price {
+  font-size: 12px; color: #94a3b8; text-decoration: none; position: relative;
+  display: inline-block; margin-bottom: 2px;
+}
+.sug-old-price::after {
+  content: ''; position: absolute; left: -2px; right: -2px; top: 50%; height: 1.5px;
+  background-color: #ef4444; transform: rotate(-8deg); /* Η πλάγια κόκκινη γραμμή! */
+}
+
+/* --- BROCHURES PREMIUM EFFECTS --- */
+.mock-offers-list {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;
+}
+.real-link.offer-card {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  text-decoration: none; padding: 20px 10px; background: white; border-radius: 20px;
+  border: 1px solid #e5e7eb; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  animation: fadeUp 0.4s ease forwards;
+  opacity: 0;
+}
+/* Staggered animation για τα φυλλάδια */
+.real-link.offer-card:nth-child(1) { animation-delay: 0.1s; }
+.real-link.offer-card:nth-child(2) { animation-delay: 0.2s; }
+.real-link.offer-card:nth-child(3) { animation-delay: 0.3s; }
+.real-link.offer-card:nth-child(4) { animation-delay: 0.4s; }
+
+.real-link.offer-card:hover {
+  transform: translateY(-5px) scale(1.02); border-color: #cbd5e1;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+}
+.offer-details strong { display: block; color: #0f172a; margin: 10px 0 5px 0; font-size: 15px; }
+.offer-details span { color: #3b82f6; font-size: 13px; font-weight: 600; }
+
+/* --- APPLE-STYLE STORE FILTER CHIPS --- */
+.store-filter-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 5px 5px 15px 5px; /* Λίγο αέρα από κάτω για τη σκιά */
+    margin-bottom: 15px;
+    scrollbar-width: none; /* Κρύβει την μπάρα στο Firefox */
+    -webkit-overflow-scrolling: touch; /* Ομαλό scroll στα κινητά */
+}
+
+/* Κρύβει την μπάρα scroll σε Chrome/Safari/Edge */
+.store-filter-container::-webkit-scrollbar {
+    display: none;
+}
+
+.store-chip {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 8px 16px;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap; /* Για να μην κόβεται το κείμενο σε 2 γραμμές */
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.store-chip:hover {
+    background: #f1f5f9;
+    transform: translateY(-2px);
+}
+
+/* Όταν είναι επιλεγμένο (Το μπλε του iPhone) */
+.store-chip.active {
+    background: #2563eb; 
+    border-color: #2563eb;
+    color: white;
+    font-weight: 700;
+    box-shadow: 0 6px 12px rgba(37, 99, 235, 0.25);
+    transform: scale(1.05);
+}

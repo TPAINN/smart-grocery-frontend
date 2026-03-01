@@ -1,0 +1,86 @@
+/* src/SavedListsModal.css */
+.lists-overlay {
+  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(17, 24, 39, 0.4); backdrop-filter: blur(4px);
+  z-index: 10000; display: flex; justify-content: flex-end; /* Το πάνελ κολλάει δεξιά */
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.lists-panel {
+  width: 100%; max-width: 450px; height: 100vh;
+  background: #f8fafc; box-shadow: -10px 0 40px rgba(0,0,0,0.1);
+  display: flex; flex-direction: column;
+  animation: slideInRightPanel 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.lists-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 25px 30px; background: white; border-bottom: 1px solid #e2e8f0;
+}
+.lists-header h2 { margin: 0; font-size: 22px; color: #0f172a; font-weight: 800; }
+.back-to-grid-btn { background: #f1f5f9; border: none; padding: 8px 12px; border-radius: 10px; font-weight: 700; color: #475569; cursor: pointer; transition: 0.2s;}
+.back-to-grid-btn:hover { background: #e2e8f0; color: #0f172a; }
+.close-panel-btn { background: transparent; border: none; font-size: 20px; font-weight: bold; color: #94a3b8; cursor: pointer; transition: 0.2s;}
+.close-panel-btn:hover { color: #0f172a; transform: scale(1.1); }
+
+.lists-content { padding: 30px; flex: 1; overflow-y: auto; }
+
+/* GRID ΠΡΟΒΟΛΗ */
+.lists-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+.list-card {
+  background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px;
+  position: relative; cursor: pointer; transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+.list-card:hover { transform: translateY(-4px); border-color: #cbd5e1; box-shadow: 0 10px 20px rgba(0,0,0,0.06); }
+.delete-list-btn {
+  position: absolute; top: 15px; right: 15px; background: #fef2f2; color: #ef4444; border: none;
+  width: 28px; height: 28px; border-radius: 8px; font-size: 14px; cursor: pointer; opacity: 0; transition: 0.2s;
+}
+.list-card:hover .delete-list-btn { opacity: 1; }
+.delete-list-btn:hover { background: #fee2e2; }
+
+.list-card-title { margin: 0 0 5px 0; font-size: 16px; color: #1e293b; }
+.list-card-date { font-size: 12px; color: #94a3b8; font-weight: 600; }
+
+.list-progress-wrapper { margin-top: 15px; }
+.list-progress-info { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px;}
+.list-progress-bar { height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden; }
+.list-progress-fill { height: 100%; background: #10b981; border-radius: 10px; transition: width 0.4s ease; }
+
+/* CHECKLIST ΠΡΟΒΟΛΗ (NOTE) */
+.checklist-view { animation: fadeUp 0.3s ease forwards; }
+.checklist-title { font-size: 24px; color: #0f172a; margin-bottom: 25px; }
+.checklist-items { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.checklist-item {
+  display: flex; align-items: center; gap: 15px; background: white; padding: 16px;
+  border-radius: 14px; border: 1px solid #e2e8f0; cursor: pointer; transition: 0.2s;
+}
+.checklist-item:hover { border-color: #cbd5e1; }
+.checklist-item.checked { background: #f8fafc; border-style: dashed; opacity: 0.7; }
+
+.custom-checkbox {
+  width: 24px; height: 24px; border: 2px solid #cbd5e1; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+  color: white; font-weight: bold; transition: 0.2s;
+}
+.custom-checkbox.checked { background: #10b981; border-color: #10b981; }
+
+.checklist-item-info { display: flex; flex-direction: column; gap: 4px; }
+.checklist-item-name { font-size: 15px; font-weight: 600; color: #1e293b; transition: 0.2s;}
+.checklist-item.checked .checklist-item-name { text-decoration: line-through; color: #94a3b8; }
+.checklist-item-store { font-size: 12px; color: #64748b; font-weight: 500; }
+
+@keyframes slideInRightPanel { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+/* --- FOOTER ΚΟΣΤΟΥΣ ΛΙΣΤΑΣ --- */
+.checklist-footer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);
+  border-top: 1px solid #e2e8f0; padding: 20px 30px;
+  display: flex; justify-content: flex-end; align-items: center;
+  border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+}
+.checklist-total-cost { display: flex; align-items: center; gap: 8px; }
+.total-cost-label { font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+.total-cost-amount { font-size: 22px; font-weight: 900; color: #10b981; }
