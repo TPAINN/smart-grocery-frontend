@@ -950,3 +950,75 @@ button:active, .store-card-btn:active, .suggestion-item:active, .list-card:activ
   text-decoration: none;
 }
 .read-full-recipe:hover { text-decoration: underline; }
+/* 🎙️ VOICE BUTTON */
+.voice-btn {
+  position: absolute;
+  right: 65px; /* Δίπλα στο κουμπί + */
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  transition: 0.2s;
+  padding: 10px;
+  border-radius: 50%;
+}
+.voice-btn.listening {
+  background: rgba(239, 68, 68, 0.1);
+  animation: pulseMic 1.5s infinite;
+}
+
+/* 🧊 FRIDGE AI BOX */
+.fridge-ai-box {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 10px 15px;
+  margin-bottom: 20px;
+  transition: 0.3s;
+}
+.fridge-ai-box:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  background: white;
+}
+.fridge-icon {
+  font-size: 24px;
+  margin-right: 10px;
+}
+.fridge-input {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.fridge-input:focus { box-shadow: none !important; }
+
+/* 🛒 CART OPTIMIZER (SPLIT CART) */
+.cart-optimizer-box {
+  margin-top: 20px;
+  border-top: 1px dashed rgba(255,255,255,0.2);
+  padding-top: 10px;
+}
+.store-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.1);
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.br-name { font-weight: 600; color: #f8fafc; }
+.br-stats { color: #cbd5e1; }
+.br-stats strong { color: #10b981; font-weight: 800; margin-left: 5px; }
