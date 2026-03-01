@@ -7,6 +7,23 @@ import SavedListsModal from './SavedListsModal';
 const normalizeText = (text) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// 🟢 ΝΕΟ: Καθαρίζει τα υλικά από μεζούρες (π.χ. "1 κ.γ. αλάτι" -> "αλάτι")
+const cleanIngredientText = (text) => {
+  let cleaned = text.toLowerCase();
+  // Αφαίρεση αριθμών και κλασμάτων (π.χ. 1, 1/2, 500)
+  cleaned = cleaned.replace(/[\d/½¼¾]+/g, ' ');
+  
+  // Αφαίρεση λέξεων μέτρησης
+  const units =['κ.σ.', 'κ.γ.', 'κ.σ', 'κ.γ', 'γρ.', 'γρ', 'γραμμάρια', 'κιλό', 'κιλά', 'kg', 'ml', 'lt', 'λίτρα', 'φλιτζάνι', 'φλιτζάνια', 'κούπα', 'κούπες', 'πρέζα', 'σκελίδα', 'σκελίδες', 'κομμάτι', 'κομμάτια', 'τεμάχιο', 'τεμάχια', 'κουταλιά', 'κουταλιές', 'κουταλάκι', 'κουταλάκια', 'πακέτο', 'πακέτα', 'συσκευασία', 'ποτήρι', 'ματσάκι', 'κλωναράκι'];
+  
+  units.forEach(unit => {
+    const regex = new RegExp(`\\b${unit}\\b`, 'gi');
+    cleaned = cleaned.replace(regex, ' ');
+  });
+
+  return cleaned.replace(/\s+/g, ' ').trim(); // Καθαρίζει τα διπλά κενά
+};
+
 const greeklishToGreek = (text) => {
   let el = text.toLowerCase();
   const map = {
@@ -69,6 +86,35 @@ const getCalendarEvent = (date) => {
 };
 
 const API_BASE = "https://my-smart-grocery-api.onrender.com";
+
+// 🟢 ΝΕΟ: Ανεξάρτητος Αλγόριθμος Ταξινόμησης & Εύρεσης του Καλύτερου/Φθηνότερου
+const getBestMatch = (matches, query) => {
+  if (!matches || matches.length === 0) return null;
+  const searchGreek = greeklishToGreek(normalizeText(query));
+
+  matches.sort((a, b) => {
+    const nameA = a.normalizedName;
+    const nameB = b.normalizedName;
+    const q = searchGreek;
+
+    const getScore = (name) => {
+      if (name === q) return 100;
+      if (name.startsWith(q + ' ')) return 90;
+      const exactWordRegex = new RegExp(`\\b${escapeRegExp(q)}\\b`);
+      if (exactWordRegex.test(name)) return 80;
+      if (name.startsWith(q)) return 70;
+      return 50;
+    };
+
+    const scoreA = getScore(nameA);
+    const scoreB = getScore(nameB);
+
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    return (a.price || 0) - (b.price || 0); // Το φθηνότερο κερδίζει την ισοβαθμία!
+  });
+
+  return matches[0]; // Επιστρέφει το #1 καλύτερο προϊόν
+};
 
 export default function App() {
   const [savedLists, setSavedLists] = useState([]);
@@ -281,18 +327,51 @@ export default function App() {
     }
   };
 
-  const addRecipeToList = (recipe) => {
+  // 🟢 ΝΕΟ: Έξυπνη Προσθήκη Συνταγής με Αυτόματη Αναζήτηση Τιμών!
+  const addRecipeToList = async (recipe) => {
     if(navigator.vibrate) navigator.vibrate([30, 50]);
-    const newItems = recipe.ingredients.map(ing => ({
-      id: Date.now() + Math.random(),
-      text: ing,
-      category: getCategory(ing),
-      price: 0,
-      store: 'Άγνωστο'
-    }));
+    
+    // Εμφανίζουμε μήνυμα ότι δουλεύει το AI από πίσω
+    setNotification({ show: true, message: `⏳ Ψάχνω τις καλύτερες τιμές για ${recipe.ingredients.length} υλικά...` });
+
+    // Κάνουμε παράλληλη αναζήτηση για ΟΛΑ τα υλικά
+    const promises = recipe.ingredients.map(async (rawIng) => {
+      const cleanName = cleanIngredientText(rawIng);
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/prices/search?q=${encodeURIComponent(cleanName)}&store=Όλα`);
+        if (res.ok) {
+          const matches = await res.json();
+          const bestMatch = getBestMatch(matches, cleanName);
+          
+          if (bestMatch) {
+            return {
+              id: Date.now() + Math.random(),
+              text: rawIng, // Δείχνουμε "1 κ.γ. σκόρδο" στο UI...
+              category: getCategory(cleanName),
+              price: bestMatch.price, // ...αλλά βάζουμε την πραγματική τιμή!
+              store: bestMatch.supermarket,
+              matchedName: bestMatch.name
+            };
+          }
+        }
+      } catch (e) {}
+
+      // Αν δεν βρει τίποτα (π.χ. νερό, πιπέρι), το βάζει χωρίς τιμή
+      return { 
+        id: Date.now() + Math.random(), 
+        text: rawIng, 
+        category: getCategory(cleanName), 
+        price: 0, 
+        store: 'Άγνωστο' 
+      };
+    });
+
+    const newItems = await Promise.all(promises);
     setItems(prev =>[...newItems, ...prev]);
-    setNotification({ show: true, message: `Προστέθηκαν ${recipe.ingredients.length} υλικά στη λίστα σου!` });
-    setActiveTab('list');
+    
+    setNotification({ show: true, message: `✅ Προστέθηκαν! Βρήκαμε τις καλύτερες τιμές της αγοράς.` });
+    setActiveTab('list'); // Σε πάει στη λίστα να τα δεις!
   };
 
   const deleteItem = (id) => {
@@ -463,7 +542,7 @@ export default function App() {
                           <div className="item-content">
                             <div className="item-header">
                               <span className="item-text">{item.text}</span>
-                              <span className={`item-price ${item.price === 0 ? 'unknown-price' : ''}`}>{item.price > 0 ? `${item.price.toFixed(2)}€` : '???'}</span>
+                              <span className={`item-price ${item.price === 0 ? 'unknown-price' : ''}`}>{item.price > 0 ? `${item.price.toFixed(2)}€` : '-'}</span>
                             </div>
                             {item.store !== 'Άγνωστο' && <div style={{fontSize: '11px', color: '#64748b'}}>📍 {item.store}</div>}
                           </div>
