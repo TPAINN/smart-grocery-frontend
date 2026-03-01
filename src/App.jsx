@@ -52,10 +52,8 @@ const getCalendarEvent = (date) => {
   if (dayOfWeek === 0 || dayOfWeek === 6) return { type: 'weekend', icon: '🍳', title: 'Σαββατοκύριακο!', text: 'Ευκαιρία να οργανώσεις τα γεύματα της εβδομάδας.' };
   return null;
 };
-// Δυναμικό API Base URL (Λειτουργεί αυτόματα σε Localhost, LAN & Production)
-const API_BASE = window.location.hostname === 'localhost' 
-  ? 'http://localhost:5000' 
-  : `http://${window.location.hostname}:5000`;
+// Σκληρή σύνδεση με το Cloud Backend (Render)
+const API_BASE = "https://my-smart-grocery-api.onrender.com";
 // --- ΑΡΧΗ ΕΦΑΡΜΟΓΗΣ ---
 export default function App() {
   const [savedLists, setSavedLists] = useState([]);
