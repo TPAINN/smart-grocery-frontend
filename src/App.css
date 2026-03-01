@@ -726,3 +726,227 @@
     box-shadow: 0 6px 12px rgba(37, 99, 235, 0.25);
     transform: scale(1.05);
 }
+
+/* 🟢 Αφαίρεση του μπλε κουτιού στα κινητά (Premium Touch) */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Πατάς το κουμπί και μπαίνει προς τα μέσα σαν φυσικό iOS */
+button:active, .store-card-btn:active, .suggestion-item:active, .list-card:active {
+  transform: scale(0.96) !important;
+}
+
+/* 🟢 LIVE SCRAPING BANNER */
+.live-scraping-banner {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 10px 15px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  animation: slideDownPop 0.4s ease forwards;
+}
+
+.pulsing-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+/* 🟢 ΕΜΠΕΙΡΙΑ ΑΔΕΙΟΥ ΚΑΛΑΘΙΟΥ (EMPTY STATE) */
+.empty-cart-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: #f8fafc;
+  border: 2px dashed #e2e8f0;
+  border-radius: 24px;
+  margin-top: 20px;
+  animation: popIn 0.5s ease;
+}
+
+.empty-cart-icon {
+  font-size: 50px;
+  margin-bottom: 15px;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.05));
+  animation: floatIcon 3s ease-in-out infinite;
+}
+
+.empty-cart-state h3 {
+  color: #1e293b;
+  font-size: 18px;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+
+.empty-cart-state p {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@keyframes floatIcon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+/* =========================================
+   NEW RECIPE UI (PINTEREST / SAAS STYLE)
+   ========================================= */
+.recipe-filters {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+  margin-bottom: 10px;
+  scrollbar-width: none;
+}
+.recipe-filters::-webkit-scrollbar { display: none; }
+
+.filter-btn {
+  padding: 10px 16px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+.filter-btn.budget span { color: #10b981; margin-right: 4px; font-weight: 900; }
+.filter-btn:hover { background: #f8fafc; transform: translateY(-2px); }
+.filter-btn.active { background: #0f172a; color: white; border-color: #0f172a; }
+
+.recipes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.recipe-card {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.recipe-card:hover { border-color: #cbd5e1; box-shadow: 0 10px 25px rgba(0,0,0,0.08); }
+.recipe-card.expanded { border-color: #3b82f6; }
+
+.recipe-card-front {
+  cursor: pointer;
+}
+
+.recipe-image {
+  height: 180px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.recipe-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: white;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.recipe-badge.green { background: #10b981; }
+
+.recipe-info {
+  padding: 16px 20px;
+}
+
+.recipe-title { margin: 0 0 4px 0; font-size: 18px; color: #0f172a; }
+.recipe-chef { margin: 0 0 12px 0; font-size: 13px; color: #64748b; }
+.recipe-chef strong { color: #3b82f6; }
+
+.recipe-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.meta-item { padding: 6px 10px; border-radius: 8px; }
+.meta-item.time { background: #f1f5f9; color: #475569; }
+.meta-item.cal { background: #fef2f2; color: #ef4444; }
+.meta-item.cost { background: #ecfdf5; color: #10b981; }
+
+.recipe-card-expanded {
+  padding: 0 20px 20px 20px;
+  border-top: 1px dashed #e2e8f0;
+  margin-top: 10px;
+  padding-top: 20px;
+}
+
+.add-ingredients-btn {
+  width: 100%;
+  padding: 14px;
+  background: #0f172a;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: 0.2s;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+}
+.add-ingredients-btn:hover { background: #334155; transform: translateY(-2px); }
+
+.recipe-ingredients h5 { font-size: 14px; color: #475569; margin-bottom: 10px; text-transform: uppercase;}
+.recipe-ingredients ul { list-style: none; padding: 0; margin: 0 0 20px 0; display: flex; flex-direction: column; gap: 8px;}
+.recipe-ingredients li { font-size: 14px; color: #1e293b; font-weight: 500;}
+
+.dual-mode-cooking {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+@media (max-width: 480px) { .dual-mode-cooking { grid-template-columns: 1fr; } }
+
+.cook-method {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border-radius: 12px;
+}
+.cook-method.oven { background: #fff7ed; border: 1px solid #ffedd5; }
+.cook-method.air-fryer { background: #ecfeff; border: 1px solid #cffafe; }
+
+.cook-method h6 { margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; color: #0f172a;}
+.cook-method p { margin: 0; font-size: 14px; font-weight: 700; color: #334155;}
+.method-icon { font-size: 24px; }
+
+.read-full-recipe {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #3b82f6;
+  text-decoration: none;
+}
+.read-full-recipe:hover { text-decoration: underline; }

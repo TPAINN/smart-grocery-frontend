@@ -4,10 +4,8 @@ import RecipeNotification from './RecipeNotification';
 import AuthModal from './AuthModal';
 import SavedListsModal from './SavedListsModal';
 
-// --- 1. NORMALIZATION & GREEKLISH ENGINE ---
 const normalizeText = (text) => text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-// Μετατρέπει τα Greeklish σε Ελληνικά για να τα βρίσκει η βάση!
 const greeklishToGreek = (text) => {
   let el = text.toLowerCase();
   const map = {
@@ -21,14 +19,13 @@ const greeklishToGreek = (text) => {
   return el;
 };
 
-// --- 2. ΚΑΤΗΓΟΡΙΕΣ ΓΙΑ ΤΟ ΚΑΛΑΘΙ ---
-const CATEGORIES = [
-  { name: '🍎 Φρέσκα Φρούτα & Λαχανικά', keywords: ['μηλο', 'μπανανα', 'ντοματα', 'πατατα', 'κρεμμυδι', 'λεμονι'] },
-  { name: '🥛 Γαλακτοκομικά', keywords: ['γαλα', 'τυρι', 'γιαουρτι', 'βουτυρο', 'φετα'] },
-  { name: '🥩 Κρέας & Ψάρια', keywords: ['κοτοπουλο', 'κρεας', 'κιμας', 'ψαρι'] },
-  { name: '🍞 Φούρνος', keywords: ['ψωμι', 'πιτα', 'φρυγανιες', 'χωριατικο'] },
-  { name: '🍝 Ράφι', keywords: ['μακαρονια', 'ρυζι', 'λαδι', 'ζαχαρη', 'μελι'] },
-  { name: '📦 Διάφορα Είδη', keywords: [] }
+const CATEGORIES =[
+  { name: '🍎 Φρέσκα Φρούτα & Λαχανικά', keywords:['μηλο', 'μπανανα', 'ντοματα', 'πατατα', 'κρεμμυδι', 'λεμονι', 'σκορδο', 'πιπερια'] },
+  { name: '🥛 Γαλακτοκομικά', keywords:['γαλα', 'τυρι', 'γιαουρτι', 'βουτυρο', 'φετα', 'παρμεζανα', 'κρεμα'] },
+  { name: '🥩 Κρέας & Ψάρια', keywords:['κοτοπουλο', 'κρεας', 'κιμας', 'ψαρι', 'σολομος', 'μπειικον'] },
+  { name: '🍞 Φούρνος', keywords:['ψωμι', 'πιτα', 'φρυγανιες', 'χωριατικο'] },
+  { name: '🍝 Ράφι', keywords:['μακαρονια', 'ρυζι', 'λαδι', 'ζαχαρη', 'μελι', 'αλατι', 'πιπερι', 'αλευρι', 'ελαιολαδο', 'ζωμος'] },
+  { name: '📦 Διάφορα Είδη', keywords:[] }
 ];
 
 const getCategory = (itemName) => CATEGORIES.find(cat => cat.keywords.some(k => normalizeText(itemName).includes(k)))?.name || '📦 Διάφορα Είδη';
@@ -43,66 +40,106 @@ const SUPERMARKET_LOGOS = {
   'Market In': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQif4Kc8fqSN-sxec3L1gefzE8BGBL_hQOWDg&s',
 };
 
-// --- 3. ΕΛΛΗΝΙΚΟ ΗΜΕΡΟΛΟΓΙΟ (ΕΠΕΣΤΡΕΨΕ!) ---
 const getCalendarEvent = (date) => {
   const month = date.getMonth() + 1, day = date.getDate(), dayOfWeek = date.getDay(), year = date.getFullYear();
-  if (year === 2026 && month === 2 && day === 23) return { type: 'clean-monday', icon: '🪁', title: 'Καλή Σαρακοστή & Καθαρά Δευτέρα!', text: 'Σήμερα τα θαλασσινά, η λαγάνα και ο ταραμάς έχουν την τιμητική τους.' };
-  if (year === 2026 && ((month === 2 && day > 23) || month === 3 || (month === 4 && day < 12))) return { type: 'fasting', icon: '🌿', title: 'Περίοδος Νηστείας', text: 'Βάλε στη λίστα σου όσπρια και λαχανικά.' };
-  if (month === 12 && day >= 15) return { type: 'christmas', icon: '🎄', title: 'Πλησιάζουν τα Χριστούγεννα!', text: 'Οργάνωσε το γιορτινό τραπέζι.' };
-  if (dayOfWeek === 0 || dayOfWeek === 6) return { type: 'weekend', icon: '🍳', title: 'Σαββατοκύριακο!', text: 'Ευκαιρία να οργανώσεις τα γεύματα της εβδομάδας.' };
-  return null;
+  if (month === 1 && day === 1) return { type: 'christmas', icon: '🎉', title: 'Καλή Χρονιά!', text: 'Ετοιμάσου για το πρώτο τραπέζι της χρονιάς.' };
+  if (month === 1 && day === 6) return { type: 'clean-monday', icon: '🕊️', title: 'Καλά Θεοφάνεια!', text: 'Χρόνια πολλά! Ώρα για εορταστικά γεύματα.' };
+  if (month === 3 && day === 25) return { type: 'clean-monday', icon: '🇬🇷', title: '25η Μαρτίου', text: 'Παραδοσιακά, σήμερα τρώμε μπακαλιάρο σκορδαλιά!' };
+  if (month === 5 && day === 1) return { type: 'summer', icon: '🌸', title: 'Καλό Μήνα & Πρωτομαγιά!', text: 'Ιδανική μέρα για πικνίκ ή ψήσιμο στη φύση.' };
+  if (month === 8 && day === 15) return { type: 'summer', icon: '⛪', title: 'Δεκαπενταύγουστος', text: 'Το Πάσχα του καλοκαιριού. Καλό γιορτινό τραπέζι!' };
+  if (month === 10 && day === 28) return { type: 'clean-monday', icon: '🇬🇷', title: 'Εθνική Επέτειος 28ης Οκτωβρίου', text: 'Χρόνια πολλά σε όλους τους Έλληνες!' };
+  if (month === 12 && (day === 25 || day === 26)) return { type: 'christmas', icon: '🎄', title: 'Καλά Χριστούγεννα!', text: 'Απολαύστε το γιορτινό τραπέζι με τα αγαπημένα σας πρόσωπα.' };
+
+  if (year === 2026) {
+    if (month === 2 && day === 12) return { type: 'weekend', icon: '🍖', title: 'Τσικνοπέμπτη!', text: 'Ετοιμάσου για ψήσιμο! Βρες προσφορές σε κρέατα.' };
+    if (month === 2 && day === 23) return { type: 'clean-monday', icon: '🪁', title: 'Καθαρά Δευτέρα', text: 'Ξεκινάει η Σαρακοστή. Ώρα για λαγάνα, ταραμά και θαλασσινά!' };
+    if (month === 4 && day === 10) return { type: 'fasting', icon: '🕯️', title: 'Μεγάλη Παρασκευή', text: 'Ημέρα αυστηρής νηστείας.' };
+    if (month === 4 && day === 12) return { type: 'summer', icon: '🥚', title: 'Καλό Πάσχα!', text: 'Χριστός Ανέστη! Καλά ψησίματα και καλό σούβλισμα!' };
+    if (month === 4 && day === 13) return { type: 'summer', icon: '🥩', title: 'Δευτέρα του Πάσχα', text: 'Συνεχίζουμε τα εορταστικά τραπέζια!' };
+    if (month === 6 && day === 1) return { type: 'clean-monday', icon: '🕊️', title: 'Αγίου Πνεύματος', text: 'Καλό τριήμερο! Ετοιμάσου για μπάρμπεκιου ή εξόρμηση.' };
+    if ((month === 2 && day > 23) || month === 3 || (month === 4 && day < 10)) return { type: 'fasting', icon: '🌿', title: 'Μεγάλη Σαρακοστή', text: 'Περίοδος νηστείας: Πρόσθεσε στο καλάθι όσπρια και θαλασσινά.' };
+  }
+
+  if (month === 8 && day >= 1 && day <= 14) return { type: 'fasting', icon: '🌿', title: 'Νηστεία Δεκαπενταύγουστου', text: 'Νηστίσιμες επιλογές για τις ημέρες μέχρι την Παναγία.' };
+  if ((month === 11 && day >= 15) || (month === 12 && day <= 24)) return { type: 'christmas', icon: '✨', title: 'Χριστουγεννιάτικη Νηστεία', text: 'Προετοιμασία για τις γιορτές. Δες τις νηστίσιμες προσφορές.' };
+  if (dayOfWeek === 0 || dayOfWeek === 6) return { type: 'weekend', icon: '🛒', title: 'Σαββατοκύριακο!', text: 'Ιδανική μέρα για να οργανώσεις τα ψώνια της εβδομάδας.' };
+
+  return null; 
 };
-// Σκληρή σύνδεση με το Cloud Backend (Render)
+
 const API_BASE = "https://my-smart-grocery-api.onrender.com";
-// --- ΑΡΧΗ ΕΦΑΡΜΟΓΗΣ ---
+
 export default function App() {
   const [savedLists, setSavedLists] = useState([]);
-  const [showListsModal, setShowListsModal] = useState(false);
-  const [expandedStore, setExpandedStore] = useState(null); // Κρατάει το όνομα του ανοιχτού Supermarket
+  const[showListsModal, setShowListsModal] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [theme, setTheme] = useState('light'); // Προετοιμασία για το Dark Mode
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem('smart_grocery_user')) || null);
   const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('proGroceryItems_real')) || []);
   const [inputValue, setInputValue] = useState('');
-  const [activeTab, setActiveTab] = useState('list'); // Tabs: list, recipes, offers, brochures
+  
+  const [activeTab, setActiveTab] = useState('list');
   const [notification, setNotification] = useState({ show: false, message: '' });
-  const [recipeCategory, setRecipeCategory] = useState('discount');
-  // LIVE DB DEALS
-  const [liveDeals, setLiveDeals] = useState([]);
-  // SMART SEARCH SUGGESTIONS
   const [suggestions, setSuggestions] = useState([]);
-  const [selectedStore, setSelectedStore] = useState('Όλα');
+  const[selectedStore, setSelectedStore] = useState('Όλα');
+  const [isScraping, setIsScraping] = useState(false);
+
+  // Σωστή τοποθέτηση των Recipe Hooks!
+  const [recipes, setRecipes] = useState([]);
+  const [recipeFilter, setRecipeFilter] = useState('all');
+  const[expandedRecipe, setExpandedRecipe] = useState(null);
+
   const storeOptions =['Όλα', 'ΑΒ Βασιλόπουλος', 'Σκλαβενίτης', 'MyMarket', 'Μασούτης', 'Κρητικός', 'Γαλαξίας', 'Market In'];
   const searchTimeout = useRef(null);
 
+  // Fetch Recipes from DB
   useEffect(() => {
-    // ΜΗΝΥΜΑ ΚΑΛΩΣΟΡΙΣΜΑΤΟΣ ΜΙΑΣ ΦΟΡΑΣ
-    if (!localStorage.getItem('firstVisit_smart_grocery')) {
-      setNotification({ show: true, message: '🎉 Καλώς ήρθες στο My Smart Grocery Hub! Εδώ συγκεντρώνονται οι καλύτερες προσφορές καθημερινά.' });
-      localStorage.setItem('firstVisit_smart_grocery', 'true');
-    }
+    fetch(`${API_BASE}/api/recipes`)
+      .then(res => res.json())
+      .then(data => setRecipes(Array.isArray(data) ? data :[]))
+      .catch(err => console.log('Error fetching recipes'));
   },[]);
 
-  // --- 4. ΛΟΓΙΚΗ ΑΠΟΘΗΚΕΥΜΕΝΩΝ ΛΙΣΤΩΝ (API CALLS) ---
+  useEffect(() => {
+    if (!localStorage.getItem('firstVisit_smart_grocery')) {
+      setNotification({ show: true, message: '🎉 Καλώς ήρθες στο My Smart Grocery Hub!' });
+      localStorage.setItem('firstVisit_smart_grocery', 'true');
+    }
+    
+    const checkScrapingStatus = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/status`);
+        if (res.ok) setIsScraping((await res.json()).isScraping || false);
+      } catch (e) {}
+    };
+    checkScrapingStatus();
+    const interval = setInterval(checkScrapingStatus, 15000);
+    return () => clearInterval(interval);
+  },[]);
+
+  // Wake Up Server Mechanism (Για να μην νομίζει ότι κόλλησε στο Netlify)
+  useEffect(() => {
+    const wakeUpTimeout = setTimeout(() => {
+      setNotification({ show: true, message: '⏳ Γίνεται εκκίνηση του Cloud Server... Δώσε μας λίγα δευτερόλεπτα!' });
+    }, 3000);
+
+    fetch(`${API_BASE}/api/prices`)
+      .then(res => res.json())
+      .then(data => clearTimeout(wakeUpTimeout))
+      .catch(err => clearTimeout(wakeUpTimeout));
+  },[]);
+
   const fetchSavedLists = async () => {
     if (!user) { setSavedLists([]); return; }
     try {
       const token = localStorage.getItem('smart_grocery_token');
-      const res = await fetch(`${API_BASE}/api/lists`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSavedLists(data);
-      }
-    } catch (err) { console.error("Σφάλμα φόρτωσης λιστών", err); }
+      const res = await fetch(`${API_BASE}/api/lists`, { headers: { 'Authorization': `Bearer ${token}` }});
+      if (res.ok) setSavedLists(await res.json());
+    } catch (err) {}
   };
 
-  // Τραβάει τις λίστες κάθε φορά που συνδέεται ο χρήστης
   useEffect(() => { fetchSavedLists(); }, [user]);
 
-  // Αποθήκευση της τρέχουσας λίστας
   const saveCurrentList = async () => {
     if (!user) return setNotification({ show: true, message: 'Πρέπει να συνδεθείς για να αποθηκεύσεις λίστα!' });
     if (items.length === 0) return setNotification({ show: true, message: 'Η λίστα σου είναι άδεια!' });
@@ -112,48 +149,25 @@ export default function App() {
 
     try {
       const token = localStorage.getItem('smart_grocery_token');
-      
-      const res = await fetch('${API_BASE}/api/lists', {
+      const res = await fetch(`${API_BASE}/api/lists`, {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ title, items })
       });
-
-      // Αν ο Server απαντήσει με 404 (Cannot POST), το πιάνουμε ΕΔΩ!
-      if (res.status === 404) {
-         setNotification({ show: true, message: 'Σφάλμα 404: Ο Server δεν βρήκε τη διαδρομή. Έκανες save το server.js?' });
-         return;
-      }
-
-      const data = await res.json();
-      
       if (res.ok) {
         setNotification({ show: true, message: 'Η λίστα αποθηκεύτηκε επιτυχώς!' });
-        fetchSavedLists(); // Ανανεώνει το Badge
+        fetchSavedLists();
       } else {
-        setNotification({ show: true, message: data.message || 'Αποτυχία αποθήκευσης.' });
+        setNotification({ show: true, message: 'Αποτυχία αποθήκευσης. Δοκίμασε ξανά.' });
       }
-    } catch (err) { 
-      console.error("Σφάλμα Δικτύου:", err); 
-      setNotification({ show: true, message: 'Σφάλμα: Ο Server είναι κλειστός ή υπάρχει πρόβλημα στον κώδικα.' });
-    }
+    } catch (err) { setNotification({ show: true, message: 'Σφάλμα Δικτύου. Έλεγξε τη σύνδεσή σου.' }); }
   };
 
-  // Τικάρισμα / Ξε-τικάρισμα προϊόντος μέσα στο Modal
   const toggleListItem = async (listId, itemToToggle) => {
-    // 1. Βρίσκουμε τη λίστα και το προϊόν στο state (Optimistic UI Update)
     const listToUpdate = savedLists.find(l => l._id === listId);
-    const updatedItems = listToUpdate.items.map(i => 
-      (i._id === itemToToggle._id || i.id === itemToToggle.id) ? { ...i, isChecked: !i.isChecked } : i
-    );
-
-    // 2. Ενημερώνουμε τοπικά για να φαίνεται αστραπιαία!
+    const updatedItems = listToUpdate.items.map(i => (i._id === itemToToggle._id || i.id === itemToToggle.id) ? { ...i, isChecked: !i.isChecked } : i);
     setSavedLists(savedLists.map(l => l._id === listId ? { ...l, items: updatedItems } : l));
-
-    // 3. Στέλνουμε την αλλαγή στη Βάση (Background)
+    if(navigator.vibrate) navigator.vibrate(20);
     try {
       const token = localStorage.getItem('smart_grocery_token');
       await fetch(`${API_BASE}/api/lists/${listId}`, {
@@ -161,10 +175,9 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ title: listToUpdate.title, items: updatedItems })
       });
-    } catch (err) { console.error(err); }
+    } catch (err) {}
   };
 
-  // Διαγραφή Λίστας
   const deleteList = async (listId) => {
     if(!window.confirm("Σίγουρα θέλεις να διαγράψεις αυτή τη λίστα;")) return;
     try {
@@ -175,40 +188,26 @@ export default function App() {
       });
       fetchSavedLists();
       setNotification({ show: true, message: 'Η λίστα διεγράφη.' });
-    } catch (err) { console.error(err); }
+    } catch (err) {}
   };
 
-  // ΡΟΛΟΙ & ΗΜΕΡΟΛΟΓΙΟ
   const [currentTime, setCurrentTime] = useState(new Date());
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
-  }, []);
+  },[]);
   const formattedDate = currentTime.toLocaleDateString('el-GR', { day: 'numeric', month: 'long', year: 'numeric' });
-  const formattedTime = currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-  const todayEvent = getCalendarEvent(currentTime);
+  
+  const hour = currentTime.getHours();
+  let timeGreeting = 'Καλησπέρα'; let timeIcon = '🌙';
+  if (hour >= 5 && hour < 12) { timeGreeting = 'Καλημέρα'; timeIcon = '☀️'; }
+  else if (hour >= 12 && hour < 18) { timeGreeting = 'Καλό απόγευμα'; timeIcon = '☕'; }
 
-  useEffect(() => {
-    fetch(`${API_BASE}/api/prices`) // Αν δεν έβαλες το API_BASE από το προηγούμενο, γράψε 'http://localhost:5000/api/prices'
-      .then(res => res.json())
-      .then(data => {
-        // Σιγουρευόμαστε ότι είναι Πίνακας πριν το σώσουμε!
-        if (Array.isArray(data)) {
-          setLiveDeals(data);
-        } else {
-          setLiveDeals([]);
-        }
-      })
-      .catch(err => {
-        console.log("Ο Server είναι κλειστός.");
-        setLiveDeals([]);
-      });
-  }, []);
+  const todayEvent = getCalendarEvent(currentTime);
 
   useEffect(() => localStorage.setItem('proGroceryItems_real', JSON.stringify(items)), [items]);
 
-// --- Η ΕΞΥΠΝΗ ΑΝΑΖΗΤΗΣΗ (API-POWERED & ΦΙΛΤΡΟ ΚΑΤΑΣΤΗΜΑΤΟΣ) ---
- const triggerSearch = async (query, store) => {
+  const triggerSearch = async (query, store) => {
     if (query.trim().length >= 2) {
       const searchGreek = greeklishToGreek(normalizeText(query));
       try {
@@ -224,7 +223,7 @@ export default function App() {
           });
           setSuggestions(matches);
         }
-      } catch (error) { console.error("Σφάλμα:", error); }
+      } catch (error) {}
     } else {
       setSuggestions([]);
     }
@@ -233,42 +232,47 @@ export default function App() {
   const handleInputChange = (e) => {
     const val = e.target.value;
     setInputValue(val);
-    
-    // Debounce 300ms για να μην "σπαμάρουμε" το API
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      triggerSearch(val, selectedStore);
-    }, 300);
+    searchTimeout.current = setTimeout(() => triggerSearch(val, selectedStore), 300);
   };
 
-  // Προσθήκη επιλεγμένου προϊόντος από τη λίστα
   const addFromSuggestion = (product) => {
-    setItems(prev => [{ 
-      id: Date.now() + Math.random(), 
-      text: product.name, 
-      category: getCategory(product.name), 
-      price: product.price, 
-      store: product.supermarket,
-      matchedName: product.name 
-    }, ...prev]);
+    if(navigator.vibrate) navigator.vibrate(50);
+    setItems(prev =>[{ id: Date.now() + Math.random(), text: product.name, category: getCategory(product.name), price: product.price, store: product.supermarket, matchedName: product.name }, ...prev]);
     setInputValue('');
     setSuggestions([]);
     setNotification({ show: true, message: `${product.name} προστέθηκε!` });
   };
 
-  // Προσθήκη χειροκίνητα (αν πατήσει +)
   const handleInputAdd = () => {
     if (inputValue.trim() !== '') {
-      if (suggestions.length > 0) {
-        addFromSuggestion(suggestions[0]); // Προσθέτει αυτόματα το φθηνότερο που βρήκε!
-      } else {
-        setItems(prev => [{ id: Date.now(), text: inputValue.trim(), category: getCategory(inputValue), price: 0, store: 'Άγνωστο' }, ...prev]);
+      if(navigator.vibrate) navigator.vibrate(50);
+      if (suggestions.length > 0) addFromSuggestion(suggestions[0]);
+      else {
+        setItems(prev =>[{ id: Date.now(), text: inputValue.trim(), category: getCategory(inputValue), price: 0, store: 'Άγνωστο' }, ...prev]);
         setInputValue('');
       }
     }
   };
 
-  const deleteItem = (id) => setItems(items.filter(item => item.id !== id));
+  const addRecipeToList = (recipe) => {
+    if(navigator.vibrate) navigator.vibrate([30, 50]);
+    const newItems = recipe.ingredients.map(ing => ({
+      id: Date.now() + Math.random(),
+      text: ing,
+      category: getCategory(ing),
+      price: 0,
+      store: 'Άγνωστο'
+    }));
+    setItems(prev =>[...newItems, ...prev]);
+    setNotification({ show: true, message: `Προστέθηκαν ${recipe.ingredients.length} υλικά στη λίστα σου!` });
+    setActiveTab('list');
+  };
+
+  const deleteItem = (id) => {
+    if(navigator.vibrate) navigator.vibrate([30, 50]);
+    setItems(items.filter(item => item.id !== id));
+  }
 
   const groupedItems = items.reduce((acc, item) => {
     if (!acc[item.category]) acc[item.category] = [];
@@ -278,82 +282,61 @@ export default function App() {
   let totalCost = 0;
   items.forEach(item => { if (item.price > 0) totalCost += item.price; });
 
-  // Φιλτράρισμα για το Tab 3 (ΜΟΝΟ ΠΡΟΣΦΟΡΕΣ)
-  const offersOnly = liveDeals.filter(d => d.isOnSale === true);
+  // Σωστό Φιλτράρισμα βάσει των δεδομένων της Βάσης
+  const filteredRecipes = recipes.filter(r => {
+    if (recipeFilter === 'budget') return r.isBudget;
+    if (recipeFilter === 'healthy') return r.isHealthy;
+    if (recipeFilter === 'fast') return r.time <= 30;
+    return true;
+  });
 
   return (
     <div className="app-wrapper">
-    <SavedListsModal 
-        isOpen={showListsModal} 
-        onClose={() => setShowListsModal(false)} 
-        lists={savedLists}
-        onDelete={deleteList}
-        onToggleItem={toggleListItem}
-      />
-    <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
-        onLoginSuccess={(userData) => {
-          setUser(userData);
-          setNotification({ show: true, message: `Καλώς ήρθες, ${userData.name}!` });
-        }} 
-      />
+      <SavedListsModal isOpen={showListsModal} onClose={() => setShowListsModal(false)} lists={savedLists} onDelete={deleteList} onToggleItem={toggleListItem}/>
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onLoginSuccess={(userData) => { setUser(userData); setNotification({ show: true, message: `Καλώς ήρθες, ${userData.name}!` }); }} />
       <RecipeNotification show={notification.show} message={notification.message} onClose={() => setNotification({ show: false, message: '' })} />
 
       <div className="container">
+        
+        {isScraping && (
+          <div className="live-scraping-banner">
+            <div className="pulsing-dot"></div>
+            <span style={{fontSize:'12px', fontWeight:'700'}}>LIVE ΕΝΗΜΕΡΩΣΗ ΤΙΜΩΝ...</span>
+          </div>
+        )}
+
         <header className="app-header">
           <div className="header-top" style={{ justifyContent: 'space-between' }}>
-            
-            {/* ΑΡΙΣΤΕΡΑ: Ημερομηνία */}
             <div className="datetime-display">
-              <div className="current-date">{formattedDate}</div>
-              <div className="current-time">Η ώρα τώρα είναι : {formattedTime}</div>
+              <div className="current-date">{timeGreeting} {timeIcon}</div>
+              <div className="current-time">{formattedDate}</div>
             </div>
             
-            {/* ΔΕΞΙΑ: Εικονίδια (Λίστες, Καλάθι, Προφίλ) */}
             <div style={{ display: 'flex', gap: '15px', alignItems: 'center', position: 'relative' }}>
-              
-              {/* --- ΚΟΥΜΠΙ: Προσωρινές Λίστες (📝) --- */}
-              <div 
-                className="saved-lists-btn" 
-                onClick={() => {
-                  if(!user) return setNotification({show: true, message: 'Συνδέσου για να δεις τις λίστες σου.'});
-                  setShowListsModal(true);
-                }}
-                style={{cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: '0.2s'}}
-              >
+              <div className="saved-lists-btn" onClick={() => { if(!user) return setNotification({show: true, message: 'Συνδέσου για να δεις τις λίστες σου.'}); setShowListsModal(true); }}>
                 <div className="logo-icon" style={{background: '#f8fafc', color: '#111827', fontSize: '20px', width: '42px', height: '42px', borderRadius: '12px', border: '1px solid #e5e7eb', position: 'relative'}}>
                   📝
-                  <span className={`list-badge ${user && user.isPremium ? 'premium' : ''} ${savedLists.length > 0 ? 'has-items' : ''}`}>
-                    {savedLists.length}
-                  </span>
+                  <span className={`list-badge ${user && user.isPremium ? 'premium' : ''} ${savedLists.length > 0 ? 'has-items' : ''}`}>{savedLists.length}</span>
                 </div>
                 <span style={{fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginTop: '4px'}}>Λίστες</span>
               </div>
               
-              {/* Προφίλ / Σύνδεση (🔒 / 👤) */}
               {user ? (
                 <div style={{ position: 'relative' }}>
-                  <div 
-                    onClick={() => setShowProfileMenu(!showProfileMenu)} 
-                    style={{cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: '0.2s'}}
-                  >
-                    <div className="logo-icon" style={{background: '#10b981', fontSize: '20px', width: '42px', height: '42px', borderRadius: '12px'}}>👤</div>
-                    <span style={{fontSize: '11px', fontWeight: 'bold', color: '#10b981', marginTop: '4px'}}>{user.name.split(' ')[0]}</span>
+                  <div onClick={() => setShowProfileMenu(!showProfileMenu)} style={{cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: '0.2s'}}>
+                    <div className="logo-icon" style={{background: '#f1f5f9', color: '#64748b', width: '42px', height: '42px', borderRadius: '12px', border: '1px solid #e2e8f0'}}>
+                      <svg fill="none" viewBox="0 0 24 24" strokeWidth="1.8" stroke="currentColor" style={{width: '22px', height: '22px'}}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                      </svg>
+                    </div>
+                    <span style={{fontSize: '11px', fontWeight: 'bold', color: '#475569', marginTop: '4px'}}>{user.name.split(' ')[0]}</span>
                   </div>
 
-                  {/* Καθαρό Dropdown (ΧΩΡΙΣ ΤΟ THEME) */}
                   {showProfileMenu && (
                     <>
                       <div className="dropdown-overlay" onClick={() => setShowProfileMenu(false)}></div>
                       <div className="profile-dropdown">
-                        <div className="dropdown-item logout" onClick={() => {
-                          localStorage.removeItem('smart_grocery_token');
-                          localStorage.removeItem('smart_grocery_user');
-                          setUser(null);
-                          setShowProfileMenu(false);
-                          setNotification({ show: true, message: 'Αποσυνδεθήκατε επιτυχώς.' });
-                        }}>
+                        <div className="dropdown-item logout" onClick={() => { localStorage.removeItem('smart_grocery_token'); localStorage.removeItem('smart_grocery_user'); setUser(null); setShowProfileMenu(false); setNotification({ show: true, message: 'Αποσυνδεθήκατε επιτυχώς.' });}}>
                           <span style={{fontSize: '18px'}}>🚪</span> Αποσύνδεση
                         </div>
                       </div>
@@ -361,21 +344,16 @@ export default function App() {
                   )}
                 </div>
               ) : (
-                <div 
-                  onClick={() => setShowAuthModal(true)} 
-                  style={{cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: '0.2s'}}
-                >
+                <div onClick={() => setShowAuthModal(true)} style={{cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: '0.2s'}}>
                   <div className="logo-icon" style={{background: '#f3f4f6', color: '#374151', fontSize: '20px', width: '42px', height: '42px', borderRadius: '12px', border: '1px solid #e5e7eb'}}>🔒</div>
                   <span style={{fontSize: '11px', fontWeight: 'bold', color: '#6b7280', marginTop: '4px'}}>Σύνδεση</span>
                 </div>
               )}
             </div>
-
           </div>
-          <h1>Super List</h1>
+          <h1>Smart Hub</h1>
         </header>
 
-        {/* ΗΜΕΡΟΛΟΓΙΟ */}
         {todayEvent && (
           <div className={`seasonal-banner ${todayEvent.type}`}>
             <div className="seasonal-banner-content">
@@ -388,61 +366,34 @@ export default function App() {
           </div>
         )}
 
-        {/* --- TABS (Η ΜΟΝΑΔΙΚΗ ΚΑΙ ΣΩΣΤΗ ΜΠΑΡΑ) --- */}
-        <div className="tabs-container">
-          <button className={`tab-btn ${activeTab === 'list' ? 'active' : ''}`} onClick={() => setActiveTab('list')}>Η Λίστα</button>
+        <div className="tabs-container" style={{gridTemplateColumns: '1fr 1fr 1fr', display: 'grid'}}>
+          <button className={`tab-btn ${activeTab === 'list' ? 'active' : ''}`} onClick={() => setActiveTab('list')}>Λίστα</button>
           <button className={`tab-btn ${activeTab === 'recipes' ? 'active' : ''}`} onClick={() => setActiveTab('recipes')}>Συνταγές</button>
           <button className={`tab-btn ${activeTab === 'brochures' ? 'active' : ''}`} onClick={() => setActiveTab('brochures')}>Φυλλάδια</button>
         </div>
 
-        {/* --- TAB 1: ΛΙΣΤΑ & ΕΞΥΠΝΗ ΑΝΑΖΗΤΗΣΗ --- */}
         {activeTab === 'list' && (
           <div className="tab-content list-tab">
             {totalCost > 0 && (
               <div className="budget-banner">
                 <div className="budget-info">
-                  <div>
-                    <div className="budget-label">Κόστος Καλαθιού</div>
-                    <div className="budget-amount">{totalCost.toFixed(2)}€</div>
-                  </div>
-                  <button onClick={saveCurrentList} style={{background: '#10b981', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)'}}>
-                    💾 Αποθήκευση
-                  </button>
+                  <div><div className="budget-label">Κόστος Καλαθιού</div><div className="budget-amount">{totalCost.toFixed(2)}€</div></div>
+                  <button onClick={saveCurrentList} style={{background: '#10b981', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(16,185,129,0.3)'}}>💾 Αποθήκευση</button>
                 </div>
               </div>
             )}
             
             <div className="smart-search-wrapper">
-              
-              {/* --- ΝΕΟ: APPLE-STYLE STORE FILTER CHIPS --- */}
               <div className="store-filter-container">
                 {storeOptions.map(store => (
-                  <button 
-                    key={store}
-                    className={`store-chip ${selectedStore === store ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedStore(store);
-                      triggerSearch(inputValue, store); // Αν έχεις ήδη γράψει π.χ. "Γάλα", αλλάζει αμέσως τα αποτελέσματα!
-                    }}
-                  >
-                    {store}
-                  </button>
+                  <button key={store} className={`store-chip ${selectedStore === store ? 'active' : ''}`} onClick={() => { setSelectedStore(store); triggerSearch(inputValue, store); }}>{store}</button>
                 ))}
               </div>
-
-              {/* ΕΔΩ ΞΕΚΙΝΑΕΙ ΤΟ INPUT ΠΟΥ ΕΙΧΕΣ */}
               <div className="input-section" style={{marginBottom: suggestions.length > 0 ? '0' : '40px'}}>
-                <input 
-                  type="text" 
-                  placeholder="Αναζήτηση..." 
-                  value={inputValue} 
-                  onChange={handleInputChange} 
-                  onKeyDown={(e) => e.key === 'Enter' && handleInputAdd()} 
-                />
+                <input type="text" placeholder="Πρόσθεσε προϊόν (π.χ. Γάλα, Ψωμί)..." value={inputValue} onChange={handleInputChange} onKeyDown={(e) => e.key === 'Enter' && handleInputAdd()} />
                 <button className="add-btn" onClick={handleInputAdd}>+</button>
               </div>
 
-              {/* DROPDOWN ΠΡΟΤΑΣΕΩΝ (Premium & Accurate) */}
               {suggestions.length > 0 && (
                 <div className="suggestions-dropdown">
                   <div className="suggestions-header">🔥 Βρέθηκαν οι φθηνότερες επιλογές:</div>
@@ -469,135 +420,156 @@ export default function App() {
               )}
             </div>
 
-            <div className="categories-container">
-              {Object.keys(groupedItems).sort().map(cat => (
-                <div key={cat} className="category-group">
-                  <h2 className="category-title">{cat}</h2>
-                  <ul className="grocery-list">
-                    {groupedItems[cat].map(item => (
-                      <li key={item.id} className="item-card">
-                        <div className="item-content">
-                          <div className="item-header">
-                            <span className="item-text">{item.text}</span>
-                            <span className={`item-price ${item.price === 0 ? 'unknown-price' : ''}`}>{item.price > 0 ? `${item.price.toFixed(2)}€` : '???'}</span>
+            {items.length === 0 ? (
+              <div className="empty-cart-state">
+                <div className="empty-cart-icon">🛒</div>
+                <h3>Το καλάθι σου είναι άδειο!</h3>
+                <p>Γράψε ένα προϊόν παραπάνω για να βρούμε την καλύτερη τιμή της αγοράς.</p>
+              </div>
+            ) : (
+              <div className="categories-container">
+                {Object.keys(groupedItems).sort().map(cat => (
+                  <div key={cat} className="category-group">
+                    <h2 className="category-title">{cat}</h2>
+                    <ul className="grocery-list">
+                      {groupedItems[cat].map(item => (
+                        <li key={item.id} className="item-card">
+                          <div className="item-content">
+                            <div className="item-header">
+                              <span className="item-text">{item.text}</span>
+                              <span className={`item-price ${item.price === 0 ? 'unknown-price' : ''}`}>{item.price > 0 ? `${item.price.toFixed(2)}€` : '???'}</span>
+                            </div>
+                            {item.store !== 'Άγνωστο' && <div style={{fontSize: '11px', color: '#64748b'}}>📍 {item.store}</div>}
                           </div>
-                          {item.store !== 'Άγνωστο' && <div style={{fontSize: '11px', color: '#64748b'}}>📍 {item.store}</div>}
-                        </div>
-                        <button className="delete-btn" onClick={() => deleteItem(item.id)}>❌</button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+                          <button className="delete-btn" onClick={() => deleteItem(item.id)}>❌</button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* --- TAB 2: ΣΥΝΤΑΓΕΣ --- */}
         {activeTab === 'recipes' && (
-          <div className="tab-content">
-            <div className="real-offers-container">
-               <h3>Συνταγές</h3>
-               <p>Διαθέσιμες στο Premium Πακέτο (Coming soon!)</p>
+          <div className="tab-content recipes-tab">
+            <div className="recipe-filters">
+              <button className={`filter-btn ${recipeFilter === 'all' ? 'active' : ''}`} onClick={() => setRecipeFilter('all')}>Όλες</button>
+              <button className={`filter-btn budget ${recipeFilter === 'budget' ? 'active' : ''}`} onClick={() => setRecipeFilter('budget')}>
+                <span>€</span> Οικονομικές
+              </button>
+              <button className={`filter-btn fast ${recipeFilter === 'fast' ? 'active' : ''}`} onClick={() => setRecipeFilter('fast')}>
+                ⏱️ Γρήγορες
+              </button>
+              <button className={`filter-btn healthy ${recipeFilter === 'healthy' ? 'active' : ''}`} onClick={() => setRecipeFilter('healthy')}>
+                🥗 Υγιεινές
+              </button>
             </div>
-          </div>
-        )}
 
-{/* --- TAB 3: ΠΡΟΣΦΟΡΕΣ (PREMIUM GRID & DRILL-DOWN) --- */}
-        {activeTab === 'offers' && (
-          <div className="tab-content offers-tab">
-            <div className="real-offers-container">
-              
-              {/* Κεφαλίδα με Δυναμικό Κουμπί Πίσω */}
-              <div className="offers-header-flex">
-                <h3>🔥 Top Προσφορές</h3>
-                {expandedStore && (
-                  <button className="back-btn" onClick={() => setExpandedStore(null)}>
-                    ← Πίσω στα Καταστήματα
-                  </button>
-                )}
+            {recipes.length === 0 ? (
+              <div className="empty-cart-state" style={{marginTop: '40px'}}>
+                <div className="empty-cart-icon" style={{animation: 'none'}}>👨‍🍳</div>
+                <h3>Φόρτωση Συνταγών...</h3>
+                <p>Αντλούμε τα καλύτερα πιάτα από το Cloud!</p>
               </div>
-              
-              {/* SUB-TABS ΓΙΑ ΠΡΟΣΦΟΡΕΣ */}
-              <div className="recipe-subtabs" style={{marginBottom: '20px', display: expandedStore ? 'none' : 'flex'}}>
-                <button className={recipeCategory === 'discount' ? 'active' : ''} onClick={() => {setRecipeCategory('discount'); setExpandedStore(null);}}>-% Έκπτωση</button>
-                <button className={recipeCategory === '1plus1' ? 'active' : ''} onClick={() => {setRecipeCategory('1plus1'); setExpandedStore(null);}}>+1 Δώρο</button>
-              </div>
-
-              {offersOnly.length > 0 ? (() => {
-                // Φιλτράρουμε τις προσφορές ανάλογα το Sub-tab ΠΡΙΝ δείξουμε τα καταστήματα
-                const currentOffers = offersOnly.filter(d => recipeCategory === '1plus1' ? d.is1plus1 : (!d.is1plus1 && d.isOnSale));
-                
-                // Βρίσκουμε ποια καταστήματα έχουν ΟΝΤΩΣ προσφορές σε αυτή την κατηγορία
-                const availableStores = Array.from(new Set(currentOffers.map(d => d.supermarket)));
-
-                if (currentOffers.length === 0) return <p className="empty-offers">Δεν υπάρχουν προσφορές εδώ σήμερα.</p>;
-
-                return (
-                  <div className="offers-dynamic-area">
-                    {!expandedStore ? (
-                      /* --- ΠΡΟΒΟΛΗ 1: ΚΑΡΤΕΣ ΚΑΤΑΣΤΗΜΑΤΩΝ (GRID) --- */
-                      <div className="stores-grid">
-                        {availableStores.map(storeName => {
-                          const storeCount = currentOffers.filter(d => d.supermarket === storeName).length;
-                          return (
-                            <div key={storeName} className="store-card-btn" onClick={() => setExpandedStore(storeName)}>
-                              <img src={SUPERMARKET_LOGOS[storeName]} alt={storeName} className="store-card-logo" />
-                              <span className="store-card-name">{storeName}</span>
-                              <span className="store-card-count">{storeCount} Προσφορές</span>
-                            </div>
-                          );
-                        })}
+            ) : (
+              <div className="recipes-grid">
+                {filteredRecipes.map(recipe => (
+                  <div key={recipe._id || recipe.id} className={`recipe-card ${expandedRecipe === (recipe._id || recipe.id) ? 'expanded' : ''}`}>
+                    
+                    <div className="recipe-card-front" onClick={() => setExpandedRecipe(expandedRecipe === (recipe._id || recipe.id) ? null : (recipe._id || recipe.id))}>
+                      <div className="recipe-image" style={{backgroundImage: `url(${recipe.image})`}}>
+                        {recipe.isBudget && <div className="recipe-badge green">Οικονομική</div>}
                       </div>
-                    ) : (
-                      /* --- ΠΡΟΒΟΛΗ 2: ΛΙΣΤΑ ΠΡΟΣΦΟΡΩΝ ΤΟΥ ΕΠΙΛΕΓΜΕΝΟΥ ΚΑΤΑΣΤΗΜΑΤΟΣ --- */
-                      <div className="expanded-deals-list">
-                        <div className="expanded-store-title">
-                          <img src={SUPERMARKET_LOGOS[expandedStore]} alt="logo" className="small-inline-logo"/>
-                          <h4>{expandedStore}</h4>
+                      <div className="recipe-info">
+                        <h4 className="recipe-title">{recipe.title}</h4>
+                        <p className="recipe-chef">από <strong>{recipe.chef}</strong></p>
+                        
+                        <div className="recipe-meta">
+                          <span className="meta-item time">⏱️ {recipe.time}'</span>
+                          <span className="meta-item cal">🔥 {recipe.calories} kcal</span>
+                          <span className="meta-item cost">~{recipe.cost.toFixed(2)}€</span>
                         </div>
-                        <div className="db-deals-list">
-                          {currentOffers.filter(d => d.supermarket === expandedStore).map(deal => (
-                            <div key={deal._id} className="db-deal-card fade-in-item">
-                              <div className="db-deal-info">
-                                <span className="db-deal-name">{deal.name}</span>
-                                <div style={{display: 'flex', gap: '6px', marginTop: '4px'}}>
-                                  {deal.is1plus1 && <span className="sale-badge" style={{background: '#8b5cf6'}}>🎁 +1 ΔΩΡΟ</span>}
-                                  {!deal.is1plus1 && deal.discountPercent && <span className="sale-badge">📉 -{deal.discountPercent}%</span>}
-                                </div>
-                              </div>
-                              <div className="db-deal-price" style={{textAlign: 'right'}}>
-                                {deal.oldPrice && <span className="old-price-strike">{deal.oldPrice.toFixed(2)}€</span>}
-                                <strong>{deal.price.toFixed(2)}€</strong>
+                      </div>
+                    </div>
+
+                    {expandedRecipe === (recipe._id || recipe.id) && (
+                      <div className="recipe-card-expanded fade-in-item">
+                        
+                        <button className="add-ingredients-btn" onClick={() => addRecipeToList(recipe)}>
+                          🛒 Προσθήκη υλικών στη Λίστα μου
+                        </button>
+
+                        <div className="recipe-ingredients">
+                          <h5>Υλικά:</h5>
+                          <ul>
+                            {recipe.ingredients.map((ing, idx) => (
+                              <li key={idx}>• {ing}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {recipe.instructions && recipe.instructions.length > 0 && (
+                          <div className="pro-recipe-instructions">
+                            <h5>Εκτέλεση:</h5>
+                            <ul>
+                              {recipe.instructions.map((step, idx) => (
+                                <li key={idx} style={{ display: 'flex', gap: '12px', marginBottom: '15px' }}>
+                                  <div style={{ background: '#f1f5f9', color: '#475569', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontWeight: 'bold', flexShrink: 0, fontSize: '13px' }}>
+                                    {idx + 1}
+                                  </div>
+                                  <p style={{ margin: 0, fontSize: '14px', color: '#334155', lineHeight: '1.5' }}>{step}</p>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {recipe.ovenTemp && (
+                          <div className="dual-mode-cooking">
+                            <div className="cook-method oven">
+                              <span className="method-icon">♨️</span>
+                              <div>
+                                <h6>Φούρνος</h6>
+                                <p>{recipe.ovenTemp}°C για {recipe.ovenTime}'</p>
                               </div>
                             </div>
-                          ))}
-                        </div>
+                            
+                            <div className="cook-method air-fryer">
+                              <span className="method-icon">💨</span>
+                              <div>
+                                <h6>Air Fryer (Auto)</h6>
+                                <p>{recipe.ovenTemp - 20}°C για {Math.round(recipe.ovenTime * 0.8)}'</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <a href={recipe.url} target="_blank" rel="noopener noreferrer" className="read-full-recipe">
+                          Διαβάστε την εκτέλεση στο site του σεφ ↗
+                        </a>
                       </div>
                     )}
                   </div>
-                );
-              })() : ( <p className="empty-offers">Σαρώνουμε την αγορά... Επιστρέψτε αργότερα.</p> )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-{/* --- TAB 4: ΦΥΛΛΑΔΙΑ (ΕΠΙΣΗΜΑ LINKS) --- */}
         {activeTab === 'brochures' && (
           <div className="tab-content brochures-tab">
             <div className="real-offers-container">
               <div className="alert-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#166534" strokeWidth="2" style={{width: '40px', marginBottom:'10px'}}>
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                 </svg>
               </div>
               <h3>Επίσημα Φυλλάδια</h3>
               <p>Ξεφυλλίστε τα επίσημα φυλλάδια της εβδομάδας απευθείας από την πηγή.</p>
-
               <div className="mock-offers-list">
                 {Object.keys(SUPERMARKET_LOGOS).map(sm => {
-                  // Ορίζουμε το σωστό link για το κάθε σούπερ μάρκετ
                   let link = '#';
                   if (sm === 'ΑΒ Βασιλόπουλος') link = 'https://www.fylladiomat.gr/%CE%B1%CE%B2-%CE%B2%CE%B1%CF%83%CE%B9%CE%BB%CF%8C%CF%80%CE%BF%CF%85%CE%BB%CE%BF%CF%82/';
                   else if (sm === 'MyMarket') link = 'https://www.fylladiomat.gr/my-market/';
@@ -606,14 +578,10 @@ export default function App() {
                   else if (sm === 'Γαλαξίας') link = 'https://www.fylladiomat.gr/%CE%B3%CE%B1%CE%BB%CE%B1%CE%BE%CE%AF%CE%B1%CF%82/';
                   else if (sm === 'Market In') link = 'https://www.fylladiomat.gr/market-in/';
                   else link = 'https://www.fylladiomat.gr/%CF%83%CE%BA%CE%BB%CE%B1%CE%B2%CE%B5%CE%BD%CE%B9%CF%84%CE%B7%CF%83/';
-
                   return (
                     <a key={sm} href={link} target="_blank" rel="noopener noreferrer" className="offer-card real-link">
                       <img src={SUPERMARKET_LOGOS[sm]} alt={sm} className="offer-logo"/>
-                      <div className="offer-details">
-                        <strong>{sm}</strong>
-                        <span>Δείτε το φυλλάδιο ↗</span>
-                      </div>
+                      <div className="offer-details"><strong>{sm}</strong><span>Δείτε το φυλλάδιο ↗</span></div>
                     </a>
                   )
                 })}
@@ -621,7 +589,6 @@ export default function App() {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

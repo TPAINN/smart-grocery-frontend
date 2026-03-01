@@ -1,7 +1,7 @@
 // src/AuthModal.jsx
 import { useState } from 'react';
 import './AuthModal.css';
-// Σκληρή σύνδεση με το Cloud Backend (Render)
+// Δυναμικό API Base URL (Λειτουργεί αυτόματα σε Localhost, LAN & Production)
 const API_BASE = "https://my-smart-grocery-api.onrender.com";
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess }) {
