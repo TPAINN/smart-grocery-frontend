@@ -306,6 +306,18 @@ body.dark-mode .dropdown-item.logout:hover { background: rgba(239,68,68,.1); }
 
 .tab-btn:active { transform: scale(0.95) !important; }
 
+/* ── TAB CONTENT ─────────────────────────────────────────── */
+.tab-content {
+  animation: fadeUp 0.4s var(--smooth) forwards;
+}
+
+.list-tab,
+.recipes-tab,
+.brochures-tab {
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── BUDGET BANNER ─────────────────────────────────────── */
 .budget-banner {
   background: linear-gradient(135deg, #0c1526 0%, #162035 50%, #0c1526 100%);
