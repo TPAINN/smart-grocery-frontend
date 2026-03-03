@@ -1208,8 +1208,14 @@ export default function App() {
   };
 
   const addRecipeToList = async (recipe) => {
+    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    if (!ingredients.length) {
+      setNotification({ show:true, message:'Δεν βρέθηκαν υλικά για αυτή τη συνταγή.' });
+      return;
+    }
+
     if (!isOnline) {
-      const newItems = recipe.ingredients.map(rawIng => ({
+      const newItems = ingredients.map(rawIng => ({
         id: Date.now() + Math.random(), text: rawIng,
         category: getCategory(cleanIngredientText(rawIng)),
         price: 0, store: '—', recipeSource: recipe.title,
@@ -1220,11 +1226,11 @@ export default function App() {
       return;
     }
 
-    setRecipeAddModal({ open:true, recipeName:recipe.title, progress:0, total:recipe.ingredients.length });
+    setRecipeAddModal({ open:true, recipeName:recipe.title, progress:0, total:ingredients.length });
     const newItems  = [];
     const batchSize = 3;
-    for (let i = 0; i < recipe.ingredients.length; i += batchSize) {
-      const batch   = recipe.ingredients.slice(i, i + batchSize);
+    for (let i = 0; i < ingredients.length; i += batchSize) {
+      const batch   = ingredients.slice(i, i + batchSize);
       const results = await Promise.all(batch.map(rawIng => searchIngredient(rawIng)));
       results.forEach((best, idx) => {
         const rawIng = batch[idx];
@@ -1238,7 +1244,7 @@ export default function App() {
           price: 0, store: '—', recipeSource: recipe.title,
         });
       });
-      setRecipeAddModal(prev => ({ ...prev, progress: Math.min(recipe.ingredients.length, i + batchSize) }));
+      setRecipeAddModal(prev => ({ ...prev, progress: Math.min(ingredients.length, i + batchSize) }));
     }
     setItems(prev => [...newItems, ...prev]);
     setActiveTab('list');
@@ -1265,15 +1271,18 @@ export default function App() {
   const handleLogout       = () => { localStorage.removeItem('smart_grocery_token'); localStorage.removeItem('smart_grocery_user'); setUser(null); setSavedLists([]); setShowProfileMenu(false); };
   const handleCopyShareKey = () => { if (user?.shareKey) { navigator.clipboard.writeText(user.shareKey); setNotification({ show:true, message:`📋 Αντιγράφηκε: ${user.shareKey}` }); } };
 
-  const filteredRecipes = recipes.filter(r => {
-    if (recipeFilter === 'budget' && !r.isBudget) return false;
-    if (recipeFilter === 'fast'   && r.time > 30) return false;
-    if (fridgeQuery.trim()) {
-      const q = greeklishToGreek(normalizeText(fridgeQuery));
-      return r.ingredients.some(ing => greeklishToGreek(normalizeText(ing)).includes(q));
-    }
-    return true;
-  });
+  const filteredRecipes = recipes
+    .filter(r => r && r.title) // skip malformed entries
+    .filter(r => {
+      if (recipeFilter === 'budget' && !r.isBudget) return false;
+      if (recipeFilter === 'fast'   && r.time > 30)  return false;
+      if (fridgeQuery.trim()) {
+        const q = greeklishToGreek(normalizeText(fridgeQuery));
+        const ings = Array.isArray(r.ingredients) ? r.ingredients : [];
+        return ings.some(ing => greeklishToGreek(normalizeText(String(ing))).includes(q));
+      }
+      return true;
+    });
 
   const hour         = currentTime.getHours();
   const timeGreeting = hour < 5 ? 'Καλό βράδυ' : hour < 12 ? 'Καλημέρα' : hour < 18 ? 'Καλό απόγευμα' : 'Καλησπέρα';
@@ -1564,14 +1573,14 @@ export default function App() {
                 {filteredRecipes.length > 0 && (
                   <div className="recipes-grid">
                     {filteredRecipes.map(recipe => (
-                      <div key={recipe._id} className="recipe-card" onClick={() => setExpandedRecipe(expandedRecipe === recipe._id ? null : recipe._id)}>
+                      <div key={recipe._id || recipe.title} className="recipe-card" onClick={() => setExpandedRecipe(expandedRecipe === recipe._id ? null : recipe._id)}>
                         {recipe.image && <div className="recipe-image" style={{ backgroundImage:`url(${recipe.image})` }} />}
                         <div className="recipe-info">
                           <h4>{recipe.title}</h4>
-                          <p className="recipe-chef">από {recipe.chef}</p>
+                          <p className="recipe-chef">από {recipe.chef || 'Άγνωστος'}</p>
                           <div className="recipe-meta">
-                            <span>⏱️ {recipe.time}'</span>
-                            <span>💰 ~{recipe.cost?.toFixed(1)}€</span>
+                            {recipe.time && <span>⏱️ {recipe.time}'</span>}
+                            {recipe.cost != null && <span>💰 ~{Number(recipe.cost).toFixed(1)}€</span>}
                           </div>
                         </div>
                         {expandedRecipe === recipe._id && (
@@ -1580,7 +1589,11 @@ export default function App() {
                               🛒 Προσθήκη Υλικών στη Λίστα
                             </button>
                             <h5>Υλικά</h5>
-                            <ul className="ing-list">{recipe.ingredients.map((ing, i) => <li key={i}>• {ing}</li>)}</ul>
+                            <ul className="ing-list">
+                              {(Array.isArray(recipe.ingredients) ? recipe.ingredients : []).map((ing, i) => (
+                                <li key={i}>• {ing}</li>
+                              ))}
+                            </ul>
                           </div>
                         )}
                       </div>
