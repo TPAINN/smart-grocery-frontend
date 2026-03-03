@@ -191,51 +191,6 @@ function SwipeableItem({ item, onDelete, onSend }) {
   );
 }
 
-function NameModal({ isOpen, value, onChange, onConfirm, onCancel }) {
-  if (!isOpen) return null;
-  return (
-    <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
-      <div className="modal-content" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Όνομα Λίστας</h2>
-        </div>
-        <input
-          type="text"
-          className="auth-form"
-          style={{ width: '100%', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'var(--font)', outline: 'none', marginBottom: 12 }}
-          placeholder="π.χ. Ψώνια Σαββατοκύριακου"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && value.trim() && onConfirm()}
-          autoFocus
-        />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="submit-btn" style={{ flex: 1 }} onClick={onConfirm} disabled={!value.trim()}>💾 Αποθήκευση</button>
-          <button className="submit-btn" style={{ flex: 1, background: 'var(--bg-subtle)', color: 'var(--text-primary)' }} onClick={onCancel}>Ακύρωση</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ConfirmModal({ isOpen, message, onConfirm, onCancel }) {
-  if (!isOpen) return null;
-  return (
-    <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
-      <div className="modal-content" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Επιβεβαίωση</h2>
-          <p>{message}</p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <button className="submit-btn" style={{ flex: 1, background: 'rgba(239,68,68,.12)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,.25)' }} onClick={onConfirm}>Ναι, διαγραφή</button>
-          <button className="submit-btn" style={{ flex: 1, background: 'var(--bg-subtle)', color: 'var(--text-primary)' }} onClick={onCancel}>Ακύρωση</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Welcome Modal ────────────────────────────────────────────────────────────
 function WelcomeModal({ onLogin, onRegister, onSkip }) {
   return (
@@ -427,7 +382,7 @@ export default function App() {
   useEffect(() => {
     fetch(`${API_BASE}/api/recipes`)
       .then((r) => r.json())
-      .then((d) => setRecipes(Array.isArray(d) ? d : []))
+      .then((d) => setRecipes(Array.isArray(d) ? d : (d.recipes || [])))
       .catch(() => {});
     const checkStatus = async () => {
       try {
@@ -575,21 +530,24 @@ const handleSaveConfirm = async () => {
   // ── Recipe → list ─────────────────────────────────────────────────────────────
   const addRecipeToList = async (recipe) => {
     setNotification({ show: true, message: '⏳ Ψάχνω τιμές...' });
-    const newItems = await Promise.all(
-      recipe.ingredients.map(async (rawIng) => {
-        const clean = cleanIngredientText(rawIng);
-        try {
-          const r = await fetch(`${API_BASE}/api/prices/search?q=${encodeURIComponent(clean)}&store=Όλα`);
-          if (r.ok) {
-            const matches = await r.json();
-            const best = getBestMatch(matches, clean);
-            if (best) return { id: Date.now() + Math.random(), text: rawIng, category: getCategory(clean), price: best.price, store: best.supermarket };
+    const newItems = [];
+    for (const rawIng of recipe.ingredients) {
+      const clean = cleanIngredientText(rawIng);
+      try {
+        const r = await fetch(`${API_BASE}/api/prices/search?q=${encodeURIComponent(clean)}&store=Όλα`);
+        if (r.ok) {
+          const matches = await r.json();
+          const best = getBestMatch(matches, clean);
+          if (best) {
+            newItems.push({ id: Date.now() + Math.random(), text: rawIng, category: getCategory(clean), price: best.price, store: best.supermarket });
+            continue;
           }
-        } catch {}
-        return { id: Date.now() + Math.random(), text: rawIng, category: getCategory(clean), price: 0, store: 'Άγνωστο' };
-      })
-    );
+        }
+      } catch {}
+      newItems.push({ id: Date.now() + Math.random(), text: rawIng, category: getCategory(clean), price: 0, store: 'Άγνωστο' });
+    }
     setItems((prev) => [...newItems, ...prev]);
+    setNotification({ show: true, message: `✅ Προστέθηκαν ${newItems.length} υλικά!` });
     setActiveTab('list');
   };
 
