@@ -37,6 +37,23 @@ const cleanIngredientText = (text) => {
   return cleaned.replace(/\s+/g, ' ').trim();
 };
 
+// ─── Smart ingredient keyword extraction ─────────────────────────────────────
+// Extracts the core food word(s) from an ingredient string, trying multiple strategies
+const extractIngredientKeywords = (rawIngredient) => {
+  const cleaned = cleanIngredientText(rawIngredient);
+  const norm = normalizeText(cleaned);
+
+  // Strategy 1: words longer than 3 chars that are likely food names
+  const words = norm.split(/\s+/).filter(w => w.length > 3);
+
+  // Strategy 2: try pairs of adjacent words (e.g. "ελαιολαδο παρθενο")
+  const pairs = [];
+  for (let i = 0; i < words.length - 1; i++) pairs.push(`${words[i]} ${words[i+1]}`);
+
+  // Return: [full_cleaned, best_word, pairs...]
+  return [cleaned, ...pairs.slice(0,2), words[0] || cleaned].filter(Boolean);
+};
+
 const getBestMatch = (matches, query) => {
   if (!matches?.length) return null;
   const q = greeklishToGreek(normalizeText(query));
@@ -46,6 +63,7 @@ const getBestMatch = (matches, query) => {
       if (name.startsWith(q + ' ')) return 90;
       if (new RegExp(`(^|\\s)${escapeRegExp(q)}(\\s|$)`).test(name)) return 80;
       if (new RegExp(`(^|\\s)${escapeRegExp(q)}`).test(name)) return 60;
+      if (name.includes(q)) return 40;
       return 10;
     };
     const diff = score(b.normalizedName) - score(a.normalizedName);
@@ -57,7 +75,7 @@ const getBestMatch = (matches, query) => {
 const CATEGORIES = [
   { name: '🍎 Φρέσκα Φρούτα & Λαχανικά', keywords: ['μηλο','μπανανα','ντοματα','πατατα','κρεμμυδι','λεμονι','σκορδο','πιπερια'] },
   { name: '🥛 Γαλακτοκομικά',             keywords: ['γαλα','τυρι','γιαουρτι','βουτυρο','φετα','παρμεζανα','κρεμα'] },
-  { name: '🥩 Κρέας & Ψάρια',             keywords: ['κοτοπουλο','κρεας','κιμας','ψαρι','σολομος','μπειικον'] },
+  { name: '🥩 Κρέας & Ψάρια',             keywords: ['κοτοπουλο','κρεας','κιμας','ψαρι','σολομος','μπεικον'] },
   { name: '🍞 Φούρνος',                   keywords: ['ψωμι','πιτα','φρυγανιες','χωριατικο'] },
   { name: '🍝 Ράφι',                      keywords: ['μακαρονια','ρυζι','λαδι','ζαχαρη','μελι','αλατι','πιπερι','αλευρι','ελαιολαδο','ζωμος'] },
   { name: '📦 Διάφορα Είδη',              keywords: [] },
@@ -65,27 +83,61 @@ const CATEGORIES = [
 const getCategory = (name) =>
   CATEGORIES.find((c) => c.keywords.some((k) => normalizeText(name).includes(k)))?.name || '📦 Διάφορα Είδη';
 
-// 🟢 ΕΞΥΠΝΟΣ ΘΕΡΜΙΔΟΜΕΤΡΗΤΗΣ (OFFLINE NLP DICTIONARY)
-const getAdvancedCalories = (itemName) => {
+// ─── FOOD DATABASE - Smart calorie detection ──────────────────────────────────
+// isFood: true = τρόφιμο, false = μη-τρόφιμο (καθαριστικά, προσωπικής φροντίδας κλπ)
+const FOOD_DB = [
+  { keywords:['λαδι','ελαιολαδο','σπορελαιο','βουτυρο','μαργαρινη','μαγιονεζα'], cals: 800,  isFood: true, category: 'Λιπαρά' },
+  { keywords:['σοκολατα','μερεντα','μπισκοτα','κρουασαν','πατατακια','τσιπς','γαριδακια','waffle','βαφλα'], cals: 500, isFood: true, category: 'Σνακ' },
+  { keywords:['ζαχαρη','μελι','μαρμελαδα','σιροπι','γλυκ'], cals: 400, isFood: true, category: 'Γλυκαντικά' },
+  { keywords:['τυρι','φετα','γκουντα','κασερι','παρμεζανα','γραβιερα','μοτσαρελα'], cals: 350, isFood: true, category: 'Τυριά' },
+  { keywords:['ψωμι','μακαρονια','ρυζι','αλευρι','βρωμη','δημητριακα','φρυγανιες','πιτα','ζυμαρικ'], cals: 350, isFood: true, category: 'Αμυλούχα' },
+  { keywords:['αλλαντικα','ζαμπον','μπεικον','λουκανικο','σαλαμι'], cals: 300, isFood: true, category: 'Αλλαντικά' },
+  { keywords:['κρεας','κοτοπουλο','μοσχαρι','κιμας','μπριζολα','σολομος','τονος','γαριδα'], cals: 200, isFood: true, category: 'Πρωτεΐνες' },
+  { keywords:['αυγο','αυγα'], cals: 150, isFood: true, category: 'Αυγά' },
+  { keywords:['γαλα','γιαουρτι','κεφιρ','κρεμα γαλακτος'], cals: 80, isFood: true, category: 'Γαλακτοκομικά' },
+  { keywords:['μηλο','μπανανα','πορτοκαλι','φρουτ','χυμος','σταφυλ','ροδακιν','αχλαδι','κιτρο','ακτινιδι'], cals: 60, isFood: true, category: 'Φρούτα' },
+  { keywords:['ντοματα','πατατα','κρεμμυδι','σαλατα','λαχανικ','καροτο','μαρουλι','αγγουρι','κολοκυθ','σπανακ','μελιτζαν'], cals: 25, isFood: true, category: 'Λαχανικά' },
+  { keywords:['νερο','μεταλλικο','σοδα','ανθρακουχο'], cals: 0, isFood: true, category: 'Νερό' },
+  { keywords:['καφες','τσαι','ροφημα'], cals: 5, isFood: true, category: 'Ροφήματα' },
+  { keywords:['αναψυκτικο','κολα','σπρ','φαντα','λεμοναδα'], cals: 40, isFood: true, category: 'Αναψυκτικά' },
+  // ─── ΜΗ ΤΡΟΦΙΜΑ (0 θερμίδες, isFood: false) ───
+  { keywords:['σαμπουαν','σαμπουαν','κρεμα μαλλιων','μαλακτικο','βαφη μαλλιων'], cals: 0, isFood: false },
+  { keywords:['απορρυπαντικο','σκονη πλυσιμ','υγρο πιατ','καθαριστικ','χλωρινη','μπλε κατ'], cals: 0, isFood: false },
+  { keywords:['χαρτι','χαρτομαντιλ','πετσετ','χαρτοπετσετ','σακουλ'], cals: 0, isFood: false },
+  { keywords:['οδοντοκρεμ','οδοντοβουρτσ','στοματικο'], cals: 0, isFood: false },
+  { keywords:['σαπουνι','αφρολουτρ','αποσμητικ'], cals: 0, isFood: false },
+  { keywords:['ξυριστικ','μηχανη ξυρισμ'], cals: 0, isFood: false },
+  { keywords:['μπαταρι','λαμπτηρ','ηλεκτρικ'], cals: 0, isFood: false },
+];
+
+const getFoodInfo = (itemName) => {
   const text = normalizeText(itemName);
-  const foodDB =[
-    { keywords:['λαδι', 'ελαιολαδο', 'σπορελαιο', 'βουτυρο', 'μαργαρινη', 'μαγιονεζα'], cals: 800 },
-    { keywords:['σοκολατα', 'μερεντα', 'μπισκοτα', 'κρουασαν', 'πατατακια', 'τσιπς', 'γαριδακια'], cals: 500 },
-    { keywords:['ζαχαρη', 'μελι', 'μαρμελαδα'], cals: 400 },
-    { keywords:['τυρι', 'φετα', 'γκουντα', 'κασπερι', 'παρμεζανα', 'γραβιερα'], cals: 350 },
-    { keywords:['ψωμι', 'μακαρονια', 'ρυζι', 'αλευρι', 'βρωμη', 'δημητριακα', 'φρυγανιες', 'πιτα'], cals: 350 },
-    { keywords:['αλλαντικα', 'ζαμπον', 'μπεικον', 'λουκανικο', 'σαλαμι'], cals: 300 },
-    { keywords:['κρεας', 'κοτοπουλο', 'μοσχαρι', 'κιμας', 'μπριζολα', 'ψαρι', 'σολομος'], cals: 200 },
-    { keywords:['αυγο', 'αυγα'], cals: 150 },
-    { keywords:['γαλα', 'γιαουρτι', 'κεφιρ'], cals: 80 },
-    { keywords:['μηλο', 'μπανανα', 'πορτοκαλι', 'φρουτ', 'χυμος'], cals: 60 },
-    { keywords:['ντοματα', 'πατατα', 'κρεμμυδι', 'σαλατα', 'λαχανικ', 'καροτο', 'μαρουλι'], cals: 25 },
-    { keywords:['νερο', 'σοδα', 'καφες', 'τσαι', 'αναψυκτικο zero'], cals: 0 }
-  ];
-  for (let category of foodDB) {
-    if (category.keywords.some(word => text.includes(word))) return category.cals;
+  for (let entry of FOOD_DB) {
+    if (entry.keywords.some(word => text.includes(word))) {
+      return { calories: entry.cals, isFood: entry.isFood, category: entry.category || null };
+    }
   }
-  return 120; // Fallback
+  // Αν δεν αναγνωριστεί → θεωρούμε τρόφιμο με 120 kcal (fallback)
+  return { calories: 120, isFood: true, category: null };
+};
+
+// Calorie label color
+const getCalorieColor = (cals) => {
+  if (cals === 0) return '#94a3b8';
+  if (cals < 100) return '#22c55e';
+  if (cals < 300) return '#f97316';
+  return '#ef4444';
+};
+
+// ─── Supermarket brochure links ───────────────────────────────────────────────
+const BROCHURE_LINKS = {
+  'Market In':        'https://www.fylladiomat.gr/market-in/',
+  'MyMarket':         'https://www.fylladiomat.gr/my-market/',
+  'ΑΒ Βασιλόπουλος': 'https://www.fylladiomat.gr/%CE%B1%CE%B2-%CE%B2%CE%B1%CF%83%CE%B9%CE%BB%CF%8C%CF%80%CE%BF%CF%85%CE%BB%CE%BF%CF%82/',
+  'Γαλαξίας':         'https://www.fylladiomat.gr/%CE%B3%CE%B1%CE%BB%CE%B1%CE%BE%CE%AF%CE%B1%CF%82/',
+  'Σκλαβενίτης':      'https://www.fylladiomat.gr/%CF%83%CE%BA%CE%BB%CE%B1%CE%B2%CE%B5%CE%BD%CE%B9%CF%84%CE%B7%CF%82/',
+  'Μασούτης':         'https://www.fylladiomat.gr/%CE%BC%CE%B1%CF%83%CE%BF%CF%8D%CF%84%CE%B7%CF%82/',
+  'Κρητικός':         'https://www.fylladiomat.gr/%CE%BA%CF%81%CE%B7%CF%84%CE%B9%CE%BA%CE%BF%CF%82/',
 };
 
 const SUPERMARKET_LOGOS = {
@@ -98,7 +150,118 @@ const SUPERMARKET_LOGOS = {
   'Market In':       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQif4Kc8fqSN-sxec3L1gefzE8BGBL_hQOWDg&s',
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://my-smart-grocery-api.onrender.com';
+const API_BASE = 'https://my-smart-grocery-api.onrender.com';
+
+// ─── Offline Banner ───────────────────────────────────────────────────────────
+function OfflineBanner({ isOnline, wasOffline }) {
+  if (isOnline && !wasOffline) return null;
+
+  if (!isOnline) {
+    return (
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+        background: 'linear-gradient(135deg, #1e1e2e, #2d1b4e)',
+        color: '#fff', padding: '12px 20px',
+        display: 'flex', alignItems: 'center', gap: 10,
+        fontSize: 13, fontWeight: 600,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+        animation: 'slideDown 0.3s ease',
+      }}>
+        <span style={{ fontSize: 20 }}>📡</span>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 14 }}>Χωρίς σύνδεση στο διαδίκτυο</div>
+          <div style={{ fontWeight: 400, fontSize: 11, opacity: 0.8, marginTop: 2 }}>
+            Η λίστα σου εμφανίζεται από τη μνήμη — οι τιμές & αναζητήσεις δεν είναι διαθέσιμες
+          </div>
+        </div>
+        <div style={{
+          marginLeft: 'auto', background: 'rgba(255,255,255,0.1)', borderRadius: 20,
+          padding: '6px 14px', fontSize: 11, animation: 'pulse 1.5s infinite',
+        }}>
+          ● OFFLINE
+        </div>
+      </div>
+    );
+  }
+
+  // Back online toast (shown briefly)
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+      background: 'linear-gradient(135deg, #064e3b, #065f46)',
+      color: '#fff', padding: '12px 20px',
+      display: 'flex', alignItems: 'center', gap: 10,
+      fontSize: 13, fontWeight: 600,
+      boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+    }}>
+      <span style={{ fontSize: 20 }}>✅</span>
+      <div>
+        <div style={{ fontWeight: 800, fontSize: 14 }}>Σύνδεση αποκαταστάθηκε!</div>
+        <div style={{ fontWeight: 400, fontSize: 11, opacity: 0.8 }}>Οι τιμές ενημερώνονται ξανά κανονικά</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Calorie Visualization ────────────────────────────────────────────────────
+function CalorieSummary({ items }) {
+  const foodItems = items.filter(item => {
+    const info = getFoodInfo(item.text);
+    return info.isFood;
+  });
+
+  const totalCals = foodItems.reduce((sum, item) => {
+    return sum + getFoodInfo(item.text).calories;
+  }, 0);
+
+  const dailyGoal = 2000;
+  const pct = Math.min(100, (totalCals / dailyGoal) * 100);
+
+  const barColor = pct < 50 ? '#22c55e' : pct < 80 ? '#f97316' : '#ef4444';
+
+  if (foodItems.length === 0) return null;
+
+  return (
+    <div style={{
+      background: 'var(--bg-surface)',
+      borderRadius: 12,
+      padding: '14px 16px',
+      marginBottom: 12,
+      border: '1px solid var(--border-light)',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 18 }}>🔥</span>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Εκτιμ. Θερμίδες (τρόφιμα)
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: barColor, lineHeight: 1.1 }}>
+              {totalCals} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-secondary)' }}>kcal</span>
+            </div>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>ΗΜ. ΣΤΟΧΟΣ</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{dailyGoal}</div>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{
+        height: 8, background: 'var(--bg-subtle)', borderRadius: 99, overflow: 'hidden',
+      }}>
+        <div style={{
+          height: '100%', width: `${pct}%`, background: barColor,
+          borderRadius: 99, transition: 'width 0.6s ease',
+        }} />
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+        {pct.toFixed(0)}% του ημερήσιου στόχου • {foodItems.length} τρόφιμα από {items.length} είδη
+      </div>
+    </div>
+  );
+}
 
 // ─── Swipeable Item Component ─────────────────────────────────────────────────
 function SwipeableItem({ item, onDelete, onSend }) {
@@ -107,9 +270,11 @@ function SwipeableItem({ item, onDelete, onSend }) {
   const [dismissed, setDismissed] = useState(false);
   const startX    = useRef(0);
   const startY    = useRef(0);
-  const isLocked  = useRef(false); // locked to horizontal swipe
+  const isLocked  = useRef(false);
 
-  const THRESHOLD = 80; // px to trigger delete
+  const THRESHOLD = 80;
+
+  const foodInfo = getFoodInfo(item.text);
 
   const handleTouchStart = (e) => {
     startX.current  = e.touches[0].clientX;
@@ -121,8 +286,6 @@ function SwipeableItem({ item, onDelete, onSend }) {
   const handleTouchMove = (e) => {
     const dx = e.touches[0].clientX - startX.current;
     const dy = e.touches[0].clientY - startY.current;
-
-    // First movement decides direction — lock axis
     if (!isLocked.current) {
       if (Math.abs(dx) > Math.abs(dy) + 4) {
         isLocked.current = 'h';
@@ -130,12 +293,9 @@ function SwipeableItem({ item, onDelete, onSend }) {
         isLocked.current = 'v';
       } else return;
     }
-
     if (isLocked.current === 'v') return;
-    e.preventDefault(); // prevent scroll during horizontal swipe
-
+    e.preventDefault();
     setSwiping(true);
-    // Only allow left swipe (negative dx)
     const clamped = Math.min(0, Math.max(-160, dx));
     setOffsetX(clamped);
   };
@@ -143,7 +303,6 @@ function SwipeableItem({ item, onDelete, onSend }) {
   const handleTouchEnd = () => {
     if (isLocked.current !== 'h') { setOffsetX(0); setSwiping(false); return; }
     if (offsetX < -THRESHOLD) {
-      // Dismiss — slide out fully then delete
       setOffsetX(-400);
       setDismissed(true);
       setTimeout(() => onDelete(item.id), 320);
@@ -161,7 +320,6 @@ function SwipeableItem({ item, onDelete, onSend }) {
       className={`item-card-wrapper ${dismissed ? 'dismissed' : ''}`}
       style={{ '--reveal': revealPct }}
     >
-      {/* Red delete background revealed on swipe */}
       <div className="swipe-delete-bg" style={{ opacity: bgOpacity }}>
         <span className="swipe-delete-icon">🗑️</span>
       </div>
@@ -175,11 +333,33 @@ function SwipeableItem({ item, onDelete, onSend }) {
       >
         <div className="item-content">
           <span className="item-text">{item.text}</span>
+          {/* Recipe source badge */}
+          {item.recipeSource && (
+            <span style={{
+              display: 'inline-block', fontSize: 10, fontWeight: 700,
+              color: '#a78bfa', background: 'rgba(167,139,250,0.1)',
+              border: '1px solid rgba(167,139,250,0.25)',
+              borderRadius: 99, padding: '2px 8px', marginTop: 2,
+            }}>
+              📖 {item.recipeSource}
+            </span>
+          )}
           <div className="item-meta-row">
             <span className="item-price-tag">
               {item.price > 0 ? `${item.price.toFixed(2)}€` : '—'}
             </span>
             <span className="item-store-tag">📍 {item.store}</span>
+            {/* Calories badge - ONLY for food items */}
+            {foodInfo.isFood && foodInfo.calories > 0 && (
+              <span style={{
+                fontSize: 11, fontWeight: 700,
+                color: getCalorieColor(foodInfo.calories),
+                background: `${getCalorieColor(foodInfo.calories)}18`,
+                borderRadius: 99, padding: '2px 7px',
+              }}>
+                🔥 {foodInfo.calories}
+              </span>
+            )}
           </div>
         </div>
         <div className="item-actions">
@@ -188,87 +368,6 @@ function SwipeableItem({ item, onDelete, onSend }) {
         </div>
       </div>
     </li>
-  );
-}
-
-// ─── Welcome Modal ────────────────────────────────────────────────────────────
-function WelcomeModal({ onLogin, onRegister, onSkip }) {
-  return (
-    <div className="welcome-overlay">
-      <div className="welcome-box">
-        <div className="welcome-emoji-row">
-          <span>🛒</span><span>🥦</span><span>💡</span>
-        </div>
-        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Hub</span></h2>
-        <p className="welcome-subtitle">
-          Το έξυπνο καλάθι αγορών που συγκρίνει τιμές από
-          όλα τα σούπερ μάρκετ σε πραγματικό χρόνο.
-        </p>
-
-        <div className="welcome-features">
-          <div className="wf-row wf-locked">
-            <span className="wf-icon">🔍</span>
-            <div>
-              <strong>Έξυπνη Αναζήτηση</strong>
-              <span>Τιμές από ΑΒ, Σκλαβενίτη, MyMarket & άλλα</span>
-            </div>
-            <span className="wf-lock">🔒</span>
-          </div>
-          <div className="wf-row wf-locked">
-            <span className="wf-icon">🍽️</span>
-            <div>
-              <strong>Συνταγές & Υλικά</strong>
-              <span>Προσθήκη υλικών απευθείας στη λίστα</span>
-            </div>
-            <span className="wf-lock">🔒</span>
-          </div>
-          <div className="wf-row">
-            <span className="wf-icon">📋</span>
-            <div>
-              <strong>Βασική Λίστα</strong>
-              <span>Δωρεάν για όλους</span>
-            </div>
-            <span className="wf-free">✓</span>
-          </div>
-          <div className="wf-row">
-            <span className="wf-icon">🤝</span>
-            <div>
-              <strong>Κοινό Καλάθι</strong>
-              <span>Μοιράσου τη λίστα με φίλους</span>
-            </div>
-            <span className="wf-free">✓</span>
-          </div>
-        </div>
-
-        <div className="welcome-cta">
-          <button className="welcome-register-btn" onClick={onRegister}>
-            Δημιουργία Λογαριασμού
-          </button>
-          <button className="welcome-login-btn" onClick={onLogin}>
-            Έχω ήδη λογαριασμό
-          </button>
-          <button className="welcome-skip-btn" onClick={onSkip}>
-            Συνέχεια χωρίς λογαριασμό
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Locked Feature Overlay ───────────────────────────────────────────────────
-function LockedFeature({ label, onUnlock }) {
-  return (
-    <div className="locked-feature-overlay">
-      <div className="locked-feature-box">
-        <span className="locked-icon">🔒</span>
-        <h3>Απαιτείται Λογαριασμός</h3>
-        <p>Το <strong>{label}</strong> είναι διαθέσιμο μόνο σε εγγεγραμμένους χρήστες.</p>
-        <button className="locked-unlock-btn" onClick={onUnlock}>
-          Σύνδεση / Εγγραφή
-        </button>
-      </div>
-    </div>
   );
 }
 
@@ -315,6 +414,118 @@ function ConfirmModal({ isOpen, message, onConfirm, onCancel }) {
   );
 }
 
+// ─── Welcome Modal ────────────────────────────────────────────────────────────
+function WelcomeModal({ onLogin, onRegister, onSkip }) {
+  return (
+    <div className="welcome-overlay">
+      <div className="welcome-box">
+        <div className="welcome-emoji-row">
+          <span>🛒</span><span>🥦</span><span>💡</span>
+        </div>
+        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Hub</span></h2>
+        <p className="welcome-subtitle">
+          Το έξυπνο καλάθι αγορών που συγκρίνει τιμές από
+          όλα τα σούπερ μάρκετ σε πραγματικό χρόνο.
+        </p>
+        <div className="welcome-features">
+          <div className="wf-row wf-locked">
+            <span className="wf-icon">🔍</span>
+            <div>
+              <strong>Έξυπνη Αναζήτηση</strong>
+              <span>Τιμές από ΑΒ, Σκλαβενίτη, MyMarket & άλλα</span>
+            </div>
+            <span className="wf-lock">🔒</span>
+          </div>
+          <div className="wf-row wf-locked">
+            <span className="wf-icon">🍽️</span>
+            <div>
+              <strong>Συνταγές & Υλικά</strong>
+              <span>Προσθήκη υλικών απευθείας στη λίστα</span>
+            </div>
+            <span className="wf-lock">🔒</span>
+          </div>
+          <div className="wf-row">
+            <span className="wf-icon">📋</span>
+            <div>
+              <strong>Βασική Λίστα</strong>
+              <span>Δωρεάν για όλους</span>
+            </div>
+            <span className="wf-free">✓</span>
+          </div>
+          <div className="wf-row">
+            <span className="wf-icon">🤝</span>
+            <div>
+              <strong>Κοινό Καλάθι</strong>
+              <span>Μοιράσου τη λίστα με φίλους</span>
+            </div>
+            <span className="wf-free">✓</span>
+          </div>
+        </div>
+        <div className="welcome-cta">
+          <button className="welcome-register-btn" onClick={onRegister}>
+            Δημιουργία Λογαριασμού
+          </button>
+          <button className="welcome-login-btn" onClick={onLogin}>
+            Έχω ήδη λογαριασμό
+          </button>
+          <button className="welcome-skip-btn" onClick={onSkip}>
+            Συνέχεια χωρίς λογαριασμό
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LockedFeature({ label, onUnlock }) {
+  return (
+    <div className="locked-feature-overlay">
+      <div className="locked-feature-box">
+        <span className="locked-icon">🔒</span>
+        <h3>Απαιτείται Λογαριασμός</h3>
+        <p>Το <strong>{label}</strong> είναι διαθέσιμο μόνο σε εγγεγραμμένους χρήστες.</p>
+        <button className="locked-unlock-btn" onClick={onUnlock}>
+          Σύνδεση / Εγγραφή
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Recipe Add Progress Modal ────────────────────────────────────────────────
+function RecipeAddModal({ isOpen, recipeName, progress, total, onClose }) {
+  if (!isOpen) return null;
+  const pct = total > 0 ? Math.round((progress / total) * 100) : 0;
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: 340, textAlign: 'center' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🍽️</div>
+        <h3 style={{ margin: '0 0 6px', fontSize: 16 }}>{recipeName}</h3>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+          Ψάχνω τιμές για τα υλικά...
+        </p>
+        <div style={{
+          height: 10, background: 'var(--bg-subtle)', borderRadius: 99,
+          overflow: 'hidden', marginBottom: 10,
+        }}>
+          <div style={{
+            height: '100%', width: `${pct}%`, borderRadius: 99,
+            background: 'linear-gradient(90deg, #7c3aed, #a78bfa)',
+            transition: 'width 0.4s ease',
+          }} />
+        </div>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+          {progress} / {total} υλικά ({pct}%)
+        </div>
+        {progress === total && total > 0 && (
+          <button className="submit-btn" style={{ marginTop: 16, width: '100%' }} onClick={onClose}>
+            ✅ Προστέθηκαν στη λίστα
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
@@ -323,17 +534,19 @@ export default function App() {
   const [targetFriendKey, setTargetFriendKey] = useState('');
   const socketRef = useRef(null);
 
-  // Welcome modal — show once per browser session (not every reload, just first ever visit)
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem('sg_welcomed'));
 
   const [savedLists, setSavedLists]           = useState([]);
   const [showListsModal, setShowListsModal]   = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showAuthModal, setShowAuthModal]     = useState(false);
-  const [authInitMode, setAuthInitMode]       = useState('login'); // 'login' | 'register'
-  const [nameModalOpen, setNameModalOpen]   = useState(false);
-  const [nameModalValue, setNameModalValue] = useState('');
-  const [confirmModal, setConfirmModal]     = useState({ open: false, message: '', onConfirm: null });
+  const [authInitMode, setAuthInitMode]       = useState('login');
+  const [nameModalOpen, setNameModalOpen]     = useState(false);
+  const [nameModalValue, setNameModalValue]   = useState('');
+  const [confirmModal, setConfirmModal]       = useState({ open: false, message: '', onConfirm: null });
+
+  // Recipe add progress modal
+  const [recipeAddModal, setRecipeAddModal] = useState({ open: false, recipeName: '', progress: 0, total: 0 });
 
   const [user, setUser]   = useState(() => JSON.parse(localStorage.getItem('smart_grocery_user')) || null);
   const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('proGroceryItems_real')) || []);
@@ -350,6 +563,34 @@ export default function App() {
   const [expandedRecipe, setExpandedRecipe] = useState(null);
   const [fridgeQuery, setFridgeQuery]       = useState('');
   const [currentTime, setCurrentTime]       = useState(new Date());
+
+  // ── Offline detection ─────────────────────────────────────────────────────
+  const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [wasOffline, setWasOffline] = useState(false);
+
+  useEffect(() => {
+    const handleOffline = () => {
+      setIsOnline(false);
+      setWasOffline(true);
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    };
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Show "back online" banner for 3 seconds
+      setTimeout(() => setWasOffline(false), 3000);
+      // Re-fetch recipes & status when back online
+      fetch(`${API_BASE}/api/recipes`)
+        .then(r => r.json())
+        .then(d => setRecipes(Array.isArray(d) ? d : []))
+        .catch(() => {});
+    };
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
 
   const storeOptions   = ['Όλα','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
   const searchTimeout  = useRef(null);
@@ -380,9 +621,10 @@ export default function App() {
 
   // ── Recipes + status ─────────────────────────────────────────────────────────
   useEffect(() => {
+    if (!isOnline) return;
     fetch(`${API_BASE}/api/recipes`)
       .then((r) => r.json())
-      .then((d) => setRecipes(Array.isArray(d) ? d : (d.recipes || [])))
+      .then((d) => setRecipes(Array.isArray(d) ? d : []))
       .catch(() => {});
     const checkStatus = async () => {
       try {
@@ -393,7 +635,7 @@ export default function App() {
     checkStatus();
     const iv = setInterval(checkStatus, 15000);
     return () => clearInterval(iv);
-  }, []);
+  }, [isOnline]);
 
   useEffect(() => {
     localStorage.setItem('proGroceryItems_real', JSON.stringify(items));
@@ -401,36 +643,36 @@ export default function App() {
 
   // ── Saved lists ───────────────────────────────────────────────────────────────
   const fetchSavedLists = useCallback(async () => {
-  if (!user) return;
-  try {
-    const token = localStorage.getItem('smart_grocery_token');
-    const r = await fetch(`${API_BASE}/api/lists`, { headers: { Authorization: `Bearer ${token}` } });
-    if (r.ok) setSavedLists(await r.json());
-  } catch {}
-}, [user]);
-useEffect(() => { fetchSavedLists(); }, [fetchSavedLists]);
+    if (!user) return;
+    try {
+      const token = localStorage.getItem('smart_grocery_token');
+      const r = await fetch(`${API_BASE}/api/lists`, { headers: { Authorization: `Bearer ${token}` } });
+      if (r.ok) setSavedLists(await r.json());
+    } catch {}
+  }, [user]);
+  useEffect(() => { fetchSavedLists(); }, [fetchSavedLists]);
 
   const saveCurrentList = () => {
-  if (!user)         return setNotification({ show: true, message: 'Πρέπει να συνδεθείς!' });
-  if (!items.length) return setNotification({ show: true, message: 'Η λίστα σου είναι άδεια!' });
-  setNameModalValue('Ψώνια');
-  setNameModalOpen(true);
-};
+    if (!user)         return setNotification({ show: true, message: 'Πρέπει να συνδεθείς!' });
+    if (!items.length) return setNotification({ show: true, message: 'Η λίστα σου είναι άδεια!' });
+    setNameModalValue('Ψώνια');
+    setNameModalOpen(true);
+  };
 
-const handleSaveConfirm = async () => {
-  if (!nameModalValue.trim()) return;
-  setNameModalOpen(false);
-  try {
-    const token = localStorage.getItem('smart_grocery_token');
-    const r = await fetch(`${API_BASE}/api/lists`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ title: nameModalValue.trim(), items }),
-    });
-    if (r.ok) { setNotification({ show: true, message: '✅ Αποθηκεύτηκε!' }); fetchSavedLists(); }
-    else { const e = await r.json(); setNotification({ show: true, message: e.message || 'Σφάλμα.' }); }
-  } catch {}
-};
+  const handleSaveConfirm = async () => {
+    if (!nameModalValue.trim()) return;
+    setNameModalOpen(false);
+    try {
+      const token = localStorage.getItem('smart_grocery_token');
+      const r = await fetch(`${API_BASE}/api/lists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: nameModalValue.trim(), items }),
+      });
+      if (r.ok) { setNotification({ show: true, message: '✅ Αποθηκεύτηκε!' }); fetchSavedLists(); }
+      else { const e = await r.json(); setNotification({ show: true, message: e.message || 'Σφάλμα.' }); }
+    } catch {}
+  };
 
   const toggleListItem = async (listId, itemToToggle) => {
     const list = savedLists.find((l) => l._id === listId);
@@ -450,21 +692,21 @@ const handleSaveConfirm = async () => {
   };
 
   const deleteList = (listId) => {
-  setConfirmModal({
-    open: true,
-    message: 'Θέλεις σίγουρα να διαγράψεις αυτή τη λίστα;',
-    onConfirm: async () => {
-      setConfirmModal({ open: false, message: '', onConfirm: null });
-      try {
-        await fetch(`${API_BASE}/api/lists/${listId}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${localStorage.getItem('smart_grocery_token')}` },
-        });
-        fetchSavedLists();
-      } catch {}
-    },
-  });
-};
+    setConfirmModal({
+      open: true,
+      message: 'Θέλεις σίγουρα να διαγράψεις αυτή τη λίστα;',
+      onConfirm: async () => {
+        setConfirmModal({ open: false, message: '', onConfirm: null });
+        try {
+          await fetch(`${API_BASE}/api/lists/${listId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${localStorage.getItem('smart_grocery_token')}` },
+          });
+          fetchSavedLists();
+        } catch {}
+      },
+    });
+  };
 
   // ── Shared cart ───────────────────────────────────────────────────────────────
   const handleSendToFriend = (item) => {
@@ -474,20 +716,24 @@ const handleSaveConfirm = async () => {
   };
 
   const handleMassClear = () => {
-  setConfirmModal({
-    open: true,
-    message: 'Θέλεις σίγουρα να αδειάσεις όλη τη λίστα;',
-    onConfirm: () => {
-      setItems([]);
-      setConfirmModal({ open: false, message: '', onConfirm: null });
-      if (navigator.vibrate) navigator.vibrate(50);
-    },
-  });
-};
+    setConfirmModal({
+      open: true,
+      message: 'Θέλεις σίγουρα να αδειάσεις όλη τη λίστα;',
+      onConfirm: () => {
+        setItems([]);
+        setConfirmModal({ open: false, message: '', onConfirm: null });
+        if (navigator.vibrate) navigator.vibrate(50);
+      },
+    });
+  };
 
   // ── Search ────────────────────────────────────────────────────────────────────
   const triggerSearch = async (query, store) => {
-    if (!user) { setSuggestions([]); return; } // locked for guests
+    if (!user) { setSuggestions([]); return; }
+    if (!isOnline) {
+      setNotification({ show: true, message: '📡 Δεν υπάρχει σύνδεση για αναζήτηση' });
+      return;
+    }
     if (query.trim().length < 2) { setSuggestions([]); return; }
     try {
       const q = greeklishToGreek(normalizeText(query));
@@ -527,28 +773,78 @@ const handleSaveConfirm = async () => {
     r.start();
   };
 
-  // ── Recipe → list ─────────────────────────────────────────────────────────────
-  const addRecipeToList = async (recipe) => {
-    setNotification({ show: true, message: '⏳ Ψάχνω τιμές...' });
-    const newItems = [];
-    for (const rawIng of recipe.ingredients) {
-      const clean = cleanIngredientText(rawIng);
+  // ── Recipe → list (IMPROVED) ──────────────────────────────────────────────────
+  // Multi-strategy ingredient search: tries multiple keyword combinations
+  const searchIngredient = async (rawIng) => {
+    const strategies = extractIngredientKeywords(rawIng);
+    for (const query of strategies) {
+      if (query.trim().length < 2) continue;
       try {
-        const r = await fetch(`${API_BASE}/api/prices/search?q=${encodeURIComponent(clean)}&store=Όλα`);
+        const q = greeklishToGreek(normalizeText(query));
+        const r = await fetch(`${API_BASE}/api/prices/search?q=${encodeURIComponent(q)}&store=Όλα`);
         if (r.ok) {
           const matches = await r.json();
-          const best = getBestMatch(matches, clean);
-          if (best) {
-            newItems.push({ id: Date.now() + Math.random(), text: rawIng, category: getCategory(clean), price: best.price, store: best.supermarket });
-            continue;
-          }
+          const best = getBestMatch(matches, query);
+          if (best) return best;
         }
       } catch {}
-      newItems.push({ id: Date.now() + Math.random(), text: rawIng, category: getCategory(clean), price: 0, store: 'Άγνωστο' });
     }
-    setItems((prev) => [...newItems, ...prev]);
-    setNotification({ show: true, message: `✅ Προστέθηκαν ${newItems.length} υλικά!` });
+    return null;
+  };
+
+  const addRecipeToList = async (recipe) => {
+    if (!isOnline) {
+      // Offline: add ingredients without prices
+      const newItems = recipe.ingredients.map(rawIng => ({
+        id: Date.now() + Math.random(),
+        text: rawIng,
+        category: getCategory(cleanIngredientText(rawIng)),
+        price: 0,
+        store: '—',
+        recipeSource: recipe.title,
+      }));
+      setItems(prev => [...newItems, ...prev]);
+      setActiveTab('list');
+      setNotification({ show: true, message: `📡 Offline: Προστέθηκαν ${newItems.length} υλικά χωρίς τιμές` });
+      return;
+    }
+
+    setRecipeAddModal({ open: true, recipeName: recipe.title, progress: 0, total: recipe.ingredients.length });
+
+    const newItems = [];
+    for (let i = 0; i < recipe.ingredients.length; i++) {
+      const rawIng = recipe.ingredients[i];
+      const best = await searchIngredient(rawIng);
+      if (best) {
+        newItems.push({
+          id: Date.now() + Math.random(),
+          text: best.name,          // use matched product name
+          originalIngredient: rawIng, // keep original for reference
+          category: getCategory(best.name),
+          price: best.price,
+          store: best.supermarket,
+          recipeSource: recipe.title,
+        });
+      } else {
+        newItems.push({
+          id: Date.now() + Math.random(),
+          text: rawIng,
+          category: getCategory(cleanIngredientText(rawIng)),
+          price: 0,
+          store: '—',
+          recipeSource: recipe.title,
+        });
+      }
+      setRecipeAddModal(prev => ({ ...prev, progress: i + 1 }));
+    }
+
+    setItems(prev => [...newItems, ...prev]);
     setActiveTab('list');
+  };
+
+  const closeRecipeAddModal = () => {
+    setRecipeAddModal({ open: false, recipeName: '', progress: 0, total: 0 });
+    setNotification({ show: true, message: `✅ Προστέθηκαν τα υλικά στη λίστα σου!` });
   };
 
   const deleteItem = useCallback((id) => setItems((prev) => prev.filter((i) => i.id !== id)), []);
@@ -580,23 +876,19 @@ const handleSaveConfirm = async () => {
 
   const totalCost = items.reduce((s, i) => s + (i.price > 0 ? i.price : 0), 0);
 
-  // 🟢 Υπολογισμός Θερμίδων
-  let totalCalories = 0;
-  items.forEach(item => { totalCalories += getAdvancedCalories(item.text); });
+  const handleLogout = () => {
+    localStorage.removeItem('smart_grocery_token');
+    localStorage.removeItem('smart_grocery_user');
+    setUser(null);
+    setSavedLists([]);
+    setShowProfileMenu(false);
+  };
 
-const handleLogout = () => {
-  localStorage.removeItem('smart_grocery_token');
-  localStorage.removeItem('smart_grocery_user');
-  setUser(null);
-  setSavedLists([]);
-  setShowProfileMenu(false);
-};
-  // 🟢 Συνάρτηση για COPY του Share Key
   const handleCopyShareKey = () => {
     if (user?.shareKey) {
-        navigator.clipboard.writeText(user.shareKey);
-        setNotification({ show: true, message: `📋 Αντιγράφηκε το Share Key: ${user.shareKey}` });
-        if(navigator.vibrate) navigator.vibrate(50);
+      navigator.clipboard.writeText(user.shareKey);
+      setNotification({ show: true, message: `📋 Αντιγράφηκε: ${user.shareKey}` });
+      if (navigator.vibrate) navigator.vibrate(50);
     }
   };
 
@@ -610,7 +902,7 @@ const handleLogout = () => {
     return true;
   });
 
-  const hour        = currentTime.getHours();
+  const hour         = currentTime.getHours();
   const timeGreeting = hour < 5 ? 'Καλό βράδυ' : hour < 12 ? 'Καλημέρα' : hour < 18 ? 'Καλό απόγευμα' : 'Καλησπέρα';
   const timeIcon     = hour < 5 ? '🌙' : hour < 12 ? '☀️' : hour < 18 ? '☕' : '🌙';
 
@@ -618,7 +910,10 @@ const handleLogout = () => {
   return (
     <div className="app-wrapper">
 
-      {/* ── Welcome Modal (first visit) ── */}
+      {/* ── Offline banner (FIXED top) ── */}
+      <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} />
+
+      {/* ── Welcome Modal ── */}
       {showWelcome && !user && (
         <WelcomeModal
           onLogin={handleWelcomeLogin}
@@ -632,6 +927,13 @@ const handleLogout = () => {
       <NameModal isOpen={nameModalOpen} value={nameModalValue} onChange={setNameModalValue} onConfirm={handleSaveConfirm} onCancel={() => setNameModalOpen(false)}/>
       <ConfirmModal isOpen={confirmModal.open} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={() => setConfirmModal({ open: false, message: '', onConfirm: null })}/>
       <RecipeNotification show={notification.show} message={notification.message} onClose={() => setNotification({ show: false, message: '' })} />
+      <RecipeAddModal
+        isOpen={recipeAddModal.open}
+        recipeName={recipeAddModal.recipeName}
+        progress={recipeAddModal.progress}
+        total={recipeAddModal.total}
+        onClose={closeRecipeAddModal}
+      />
 
       {/* ── Shared Cart Modal ── */}
       {showShareModal && (
@@ -647,7 +949,7 @@ const handleLogout = () => {
         </div>
       )}
 
-      <div className="container">
+      <div className="container" style={!isOnline ? { marginTop: 64 } : {}}>
         {isScraping && (
           <div className="live-scraping-banner"><div className="pulsing-dot" /><span>LIVE ΕΝΗΜΕΡΩΣΗ ΤΙΜΩΝ...</span></div>
         )}
@@ -666,6 +968,16 @@ const handleLogout = () => {
             </div>
 
             <div className="header-actions">
+              {/* Offline indicator in header */}
+              {!isOnline && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)',
+                  borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: '#ef4444',
+                }}>
+                  📡 Offline
+                </div>
+              )}
               <div className="action-btn-new" onClick={() => setShowShareModal(true)} title="Κοινό Καλάθι">
                 {targetFriendKey ? <span style={{ fontSize:'12px', fontWeight:800, color:'var(--success)' }}>🔗</span> : '🤝'}
               </div>
@@ -682,8 +994,8 @@ const handleLogout = () => {
                         <div className="dropdown-info" style={{padding: '15px', borderBottom: '1px solid var(--border-light)'}}>
                           <strong style={{display: 'block', fontSize: '14px'}}>{user.name}</strong>
                           <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px'}}>
-                             <span style={{color: 'var(--text-secondary)', fontSize: '12px'}}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
-                             <button onClick={handleCopyShareKey} style={{background: 'var(--bg-surface-hover)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', padding: '4px 8px', borderRadius: '6px'}}>📋</button>
+                            <span style={{color: 'var(--text-secondary)', fontSize: '12px'}}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
+                            <button onClick={handleCopyShareKey} style={{background: 'var(--bg-surface-hover)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', padding: '4px 8px', borderRadius: '6px'}}>📋</button>
                           </div>
                         </div>
                         <div className="dropdown-item" onClick={() => { setIsDarkMode((v) => !v); setShowProfileMenu(false); }}>
@@ -715,25 +1027,29 @@ const handleLogout = () => {
         {activeTab === 'list' && (
           <div className="tab-content list-tab">
             {items.length > 0 && (
-              <div className="budget-banner" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)', padding: '15px', borderRadius: '12px', border: '1px solid var(--border-light)', marginBottom: '15px'}}>
-                <div style={{display: 'flex', gap: '20px'}}>
-                    <div>
-                        <div style={{fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase'}}>Κοστος</div>
-                        <div className="budget-amount" style={{fontSize: '20px', fontWeight: 'bold', color: 'var(--brand-primary)'}}>{totalCost.toFixed(2)}€</div>
+              <div className="budget-banner" style={{
+                background: 'var(--bg-surface)', padding: '15px', borderRadius: '12px',
+                border: '1px solid var(--border-light)', marginBottom: '15px',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase'}}>Κόστος</div>
+                    <div className="budget-amount" style={{fontSize: '22px', fontWeight: 'bold', color: 'var(--brand-primary)'}}>
+                      {totalCost.toFixed(2)}€
                     </div>
-                    <div style={{borderLeft: '1px solid var(--border-light)', paddingLeft: '20px'}}>
-                        <div style={{fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase'}}>Θερμιδες (Est.)</div>
-                        <div className="budget-amount" style={{fontSize: '20px', fontWeight: 'bold', color: '#f97316'}}>🔥 {totalCalories}</div>
-                    </div>
-                </div>
-                <div style={{display: 'flex', gap: '8px'}}>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={handleMassClear} className="mass-clear-btn" style={{background: 'rgba(239, 68, 68, 0.1)', color: 'var(--brand-danger)', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer'}} title="Αδειασμα">🗑️</button>
                     <button onClick={saveCurrentList} className="save-list-btn" style={{background: 'var(--brand-success)', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}} title="Αποθήκευση">💾</button>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Smart Search — locked for guests */}
+            {/* Calorie summary - only food items */}
+            {items.length > 0 && <CalorieSummary items={items} />}
+
+            {/* Smart Search */}
             <div className="smart-search-wrapper">
               <div className="store-filter-container">
                 {storeOptions.map((store) => (
@@ -747,13 +1063,16 @@ const handleLogout = () => {
               <div className="input-section" style={{ position:'relative' }}>
                 <input
                   type="text"
-                  placeholder={user ? 'Αναζήτηση προϊόντος...' : '🔒 Σύνδεση για αναζήτηση τιμών...'}
+                  placeholder={
+                    !isOnline ? '📡 Offline — αναζήτηση μη διαθέσιμη' :
+                    user ? 'Αναζήτηση προϊόντος...' : '🔒 Σύνδεση για αναζήτηση τιμών...'
+                  }
                   value={inputValue}
                   onChange={handleInputChange}
                   onKeyDown={(e) => e.key === 'Enter' && triggerSearch(inputValue, selectedStore)}
-                  readOnly={!user}
+                  readOnly={!user || !isOnline}
                   onClick={() => !user && setShowAuthModal(true)}
-                  style={!user ? { cursor:'pointer', opacity:0.7 } : {}}
+                  style={(!user || !isOnline) ? { cursor:'pointer', opacity:0.7 } : {}}
                 />
                 <button className={`voice-btn ${isListening ? 'listening' : ''}`} onClick={handleVoiceClick} title="Φωνητική αναζήτηση">
                   {isListening ? '🔴' : '🎤'}
@@ -805,6 +1124,19 @@ const handleLogout = () => {
               <LockedFeature label="Συνταγές" onUnlock={() => setShowAuthModal(true)} />
             ) : (
               <>
+                {!isOnline && (
+                  <div style={{
+                    background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                    borderRadius: 12, padding: '12px 16px', marginBottom: 16,
+                    display: 'flex', alignItems: 'center', gap: 10, fontSize: 13,
+                  }}>
+                    <span>📡</span>
+                    <div>
+                      <strong>Offline mode</strong> — Οι συνταγές εμφανίζονται από την τελευταία φόρτωση.
+                      Τα υλικά θα προστεθούν χωρίς τιμές.
+                    </div>
+                  </div>
+                )}
                 <div className="fridge-ai-box">
                   <span className="fridge-icon">🧊</span>
                   <input type="text" placeholder="Τι έχεις στο ψυγείο;" value={fridgeQuery} onChange={(e) => setFridgeQuery(e.target.value)} className="fridge-input" />
@@ -828,7 +1160,12 @@ const handleLogout = () => {
                       </div>
                       {expandedRecipe === recipe._id && (
                         <div className="recipe-details-expanded">
-                          <button className="add-recipe-btn" onClick={(e) => { e.stopPropagation(); addRecipeToList(recipe); }}>🛒 Προσθήκη Υλικών στη Λίστα</button>
+                          <button
+                            className="add-recipe-btn"
+                            onClick={(e) => { e.stopPropagation(); addRecipeToList(recipe); }}
+                          >
+                            🛒 Προσθήκη Υλικών στη Λίστα
+                          </button>
                           <h5>Υλικά</h5>
                           <ul className="ing-list">{recipe.ingredients.map((ing, i) => <li key={i}>• {ing}</li>)}</ul>
                         </div>
@@ -844,12 +1181,52 @@ const handleLogout = () => {
         {/* ════ BROCHURES TAB ════ */}
         {activeTab === 'brochures' && (
           <div className="tab-content brochures-tab">
-            <div className="mock-offers-list">
-              {Object.entries(SUPERMARKET_LOGOS).map(([name, logo]) => (
-                <div key={name} className="offer-card">
-                  <img src={logo} alt={name} className="offer-logo" />
-                  <strong>{name}</strong>
-                </div>
+            <div style={{ marginBottom: 16, padding: '0 4px' }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
+                📰 Φυλλάδια Σούπερ Μάρκετ
+              </h3>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                Πάτα για να δεις τις τρέχουσες προσφορές
+              </p>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12,
+            }}>
+              {Object.entries(BROCHURE_LINKS).map(([name, url]) => (
+                <a
+                  key={name}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+                    background: 'var(--bg-surface)', border: '1px solid var(--border-light)',
+                    borderRadius: 16, padding: '18px 12px', textDecoration: 'none',
+                    color: 'var(--text-primary)', fontWeight: 700, fontSize: 13,
+                    transition: 'transform 0.15s, box-shadow 0.15s',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
+                >
+                  <img
+                    src={SUPERMARKET_LOGOS[name]}
+                    alt={name}
+                    style={{
+                      width: 60, height: 60, objectFit: 'contain',
+                      borderRadius: 12, background: '#fff', padding: 4,
+                    }}
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                  <span style={{ textAlign: 'center', lineHeight: 1.3 }}>{name}</span>
+                  <span style={{
+                    fontSize: 10, color: 'var(--text-secondary)',
+                    background: 'var(--bg-subtle)', borderRadius: 99,
+                    padding: '3px 8px', fontWeight: 500,
+                  }}>
+                    Δες Φυλλάδιο →
+                  </span>
+                </a>
               ))}
             </div>
           </div>
