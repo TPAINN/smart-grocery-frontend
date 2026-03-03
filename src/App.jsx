@@ -98,7 +98,7 @@ const SUPERMARKET_LOGOS = {
   'Market In':       'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQif4Kc8fqSN-sxec3L1gefzE8BGBL_hQOWDg&s',
 };
 
-const API_BASE = 'https://my-smart-grocery-api.onrender.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://my-smart-grocery-api.onrender.com';
 
 // ─── Swipeable Item Component ─────────────────────────────────────────────────
 function SwipeableItem({ item, onDelete, onSend }) {
