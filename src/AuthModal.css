@@ -1,118 +1,187 @@
-/* src/AuthModal.css */
+/* ─── AUTH MODAL ─────────────────────────────────────── */
 .modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-  background: rgba(0, 0, 0, 0.7); /* Πιο σκούρο για να κρύβει το app από πίσω */
-  backdrop-filter: blur(12px);
-  display: flex; justify-content: center; align-items: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(14px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   z-index: 10000;
-  animation: fadeInOverlay 0.3s ease;
+  animation: fadeInOverlay 0.25s ease;
 }
 
 .modal-content {
-  background: white; padding: 40px 35px; border-radius: 28px;
-  width: 100%; max-width: 420px; position: relative;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-  animation: popInModal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 38px 32px;
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: var(--shadow-xl);
+  animation: popInModal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   overflow: hidden;
 }
 
 .close-btn {
-  position: absolute; top: 20px; right: 20px;
-  background: #f3f4f6; border: none; font-size: 16px; font-weight: bold;
-  width: 32px; height: 32px; border-radius: 50%;
-  color: #6b7280; cursor: pointer; transition: 0.2s;
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 700;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.close-btn:hover { background: #e5e7eb; color: #111827; transform: scale(1.1); }
 
-.modal-header { text-align: center; margin-bottom: 25px; }
-.modal-header h2 { margin: 0 0 8px 0; font-size: 26px; color: #111827; font-weight: 800;}
-.modal-header p { margin: 0; color: #6b7280; font-size: 14px; }
-
-/* SOCIAL GRID */
-.social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.social-btn {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 12px; border-radius: 14px; font-size: 13px; font-weight: 700;
-  cursor: pointer; border: 1px solid #e5e7eb; background: white; color: #374151;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+.close-btn:hover {
+  background: var(--bg-chip-hover);
+  color: var(--text-primary);
+  transform: scale(1.1);
 }
-.social-btn .s-icon { font-size: 16px; }
 
-.social-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.06); }
-.social-btn.google:hover { border-color: #4285F4; color: #4285F4; }
-.social-btn.apple { background: #111827; color: white; border-color: #111827;}
-.social-btn.apple:hover { background: #000; box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
-.social-btn.facebook:hover { border-color: #1877F2; color: #1877F2; }
-.social-btn.github:hover { border-color: #24292e; color: #24292e; }
-.social-btn.instagram:hover { border-color: #E1306C; color: #E1306C; }
-.social-btn.tiktok:hover { border-color: #000; color: #000; }
+.modal-header { text-align: center; margin-bottom: 28px; }
 
-.divider {
-  display: flex; align-items: center; text-align: center; margin: 25px 0; color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+.modal-header h2 {
+  font-family: var(--font-display);
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  color: var(--text-primary);
+  font-weight: 800;
 }
-.divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e5e7eb; }
-.divider::before { margin-right: 15px; }
-.divider::after { margin-left: 15px; }
+
+.modal-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
 
 /* FORM */
-.auth-form { display: flex; flex-direction: column; gap: 12px; position: relative;}
-.auth-form input { 
-  padding: 16px 20px; border: 1px solid #e5e7eb; border-radius: 14px; 
-  font-size: 14px; outline: none; transition: 0.3s; background: #f9fafb;
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
-.auth-form input:focus { border-color: #111827; background: white; box-shadow: 0 0 0 4px rgba(17,24,39,0.05);}
 
-.slide-down-input { animation: slideDownForm 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.auth-form input {
+  padding: 15px 18px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.auth-form input::placeholder { color: var(--text-muted); }
+
+.auth-form input:focus {
+  border-color: var(--accent);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
 
 .submit-btn {
-  padding: 16px; background: #111827; color: white; border: none;
-  border-radius: 14px; font-size: 15px; font-weight: 700;
-  cursor: pointer; transition: 0.3s; margin-top: 5px;
-}
-.submit-btn:hover { background: #374151; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(17,24,39,0.2);}
-
-.error-message { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 12px; font-size: 13px; text-align: center; font-weight: 600; border: 1px solid #fecaca;}
-
-.toggle-text { text-align: center; margin-top: 25px; font-size: 14px; color: #6b7280; }
-.toggle-text span { color: #111827; font-weight: 800; cursor: pointer; transition: 0.2s;}
-.toggle-text span:hover { text-decoration: underline; color: #4f46e5; }
-
-/* STAGGERED ANIMATIONS */
-.staggered-1 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.1s; }
-.staggered-2 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.2s; }
-.staggered-3 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.3s; }
-.staggered-4 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.4s; }
-.staggered-5 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.5s; }
-
-@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-@keyframes popInModal { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slideDownForm { from { opacity: 0; transform: translateY(-15px); margin-bottom: -10px;} to { opacity: 1; transform: translateY(0); margin-bottom: 0;} }
-
-/* 🟢 NEW: LOADING SPINNER & BUTTON STATES */
-.submit-btn {
+  padding: 15px;
+  background: var(--text-primary);
+  color: var(--bg-container);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 6px;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 52px; /* Κρατάει το ύψος σταθερό για να μην χοροπηδάει όταν μπαίνει το spinner */
+  min-height: 50px;
+}
+
+.submit-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .submit-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
 }
 
-.auth-spinner {
-  width: 22px;
-  height: 22px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #ffffff;
-  animation: spin 1s linear infinite;
+.error-message {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--danger);
+  padding: 11px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  text-align: center;
+  font-weight: 600;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: 4px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.toggle-text {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
+
+.toggle-text span {
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.toggle-text span:hover { text-decoration: underline; }
+
+/* Spinner */
+.auth-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #ffffff;
+  animation: spin 0.9s linear infinite;
+}
+
+/* Staggered */
+.staggered-1 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.1s; }
+.staggered-2 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.2s; }
+.staggered-3 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.3s; }
+
+.slide-down-input {
+  animation: slideDownForm 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popInModal {
+  from { opacity: 0; transform: scale(0.94) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDownForm {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -1,4 +1,4 @@
-/* Τοποθετεί το pop-up στο κέντρο πάνω (όπως στο iPhone) */
+/* ─── RECIPE NOTIFICATION ────────────────────────────── */
 .notification-container {
   position: fixed;
   top: 20px;
@@ -6,68 +6,73 @@
   width: 100vw;
   display: flex;
   justify-content: center;
-  z-index: 9999; /* Το κρατάει πάνω από ΟΛΑ τα άλλα στοιχεία */
-  pointer-events: none; /* Επιτρέπει να κάνεις κλικ "από πίσω" του */
+  z-index: 9999;
+  pointer-events: none;
 }
 
-/* Το κουτί της ειδοποίησης */
 .notification-box {
-  pointer-events: auto; /* Επαναφέρει το κλικ για το X */
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 14px 20px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
-  border-left: 4px solid #10b981; /* Πράσινη γραμμή επιτυχίας */
+  pointer-events: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  padding: 13px 18px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  border-left: 4px solid var(--success);
   display: flex;
   align-items: center;
-  gap: 15px;
-  min-width: 320px;
-  
-  /* Το animation που το κάνει να μπαίνει από πάνω */
+  gap: 13px;
+  min-width: 300px;
+  max-width: 440px;
   animation: slideDownPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .notification-icon {
-  width: 24px;
-  height: 24px;
-  color: #10b981;
+  width: 22px;
+  height: 22px;
+  color: var(--success);
+  flex-shrink: 0;
 }
+
+.notification-content { flex: 1; }
 
 .notification-content h4 {
   margin: 0 0 2px 0;
-  font-size: 15px;
-  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .notification-content p {
   margin: 0;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .close-notify-btn {
   background: transparent;
   border: none;
-  font-size: 20px;
-  color: #9ca3af;
+  font-size: 18px;
+  color: var(--text-muted);
   cursor: pointer;
   margin-left: auto;
-  transition: 0.2s;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  flex-shrink: 0;
 }
 
 .close-notify-btn:hover {
-  color: #111827;
+  background: var(--bg-chip-hover);
+  color: var(--text-primary);
 }
 
 @keyframes slideDownPop {
-  from {
-    opacity: 0;
-    transform: translateY(-30px) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }

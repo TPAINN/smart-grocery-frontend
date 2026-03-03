@@ -1,22 +1,90 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
 
-/* --- ΤΟ ΜΥΣΤΙΚΟ ΓΙΑ ΝΑ ΜΗΝ ΧΑΛΑΕΙ ΠΟΤΕ ΤΟ RATIO --- */
-* {
+/* ─── CSS VARIABLES ─────────────────────────────────── */
+:root {
+  --bg-app:        #eef0f4;
+  --bg-container:  #ffffff;
+  --bg-card:       #ffffff;
+  --bg-subtle:     #f8fafc;
+  --bg-input:      #f1f5f9;
+  --bg-chip:       #f1f5f9;
+  --bg-chip-hover: #e2e8f0;
+
+  --text-primary:   #0a0f1e;
+  --text-secondary: #64748b;
+  --text-muted:     #94a3b8;
+
+  --border:         #e2e8f0;
+  --border-strong:  #cbd5e1;
+
+  --accent:         #2563eb;
+  --accent-subtle:  #eff6ff;
+  --success:        #10b981;
+  --danger:         #ef4444;
+  --warning:        #f59e0b;
+
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:  0 4px 16px rgba(0,0,0,.07);
+  --shadow-lg:  0 10px 40px rgba(0,0,0,.10);
+  --shadow-xl:  0 20px 60px rgba(0,0,0,.14);
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-display: 'Syne', system-ui, sans-serif;
+
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --spring:     all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ─── DARK MODE VARIABLES ───────────────────────────── */
+body.dark-mode {
+  --bg-app:        #060a12;
+  --bg-container:  #0d1424;
+  --bg-card:       #111827;
+  --bg-subtle:     #0f1929;
+  --bg-input:      #1a2540;
+  --bg-chip:       #1a2540;
+  --bg-chip-hover: #1e2d4f;
+
+  --text-primary:   #f0f4ff;
+  --text-secondary: #8ca0bf;
+  --text-muted:     #4d6080;
+
+  --border:        #1e2d4a;
+  --border-strong: #253859;
+
+  --accent:        #3b82f6;
+  --accent-subtle: #0d1e3d;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.4);
+  --shadow-md:  0 4px 16px rgba(0,0,0,.5);
+  --shadow-lg:  0 10px 40px rgba(0,0,0,.6);
+  --shadow-xl:  0 20px 60px rgba(0,0,0,.7);
+}
+
+/* ─── BASE ──────────────────────────────────────────── */
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+  font-family: var(--font-body);
+  background: var(--bg-app);
+  color: var(--text-primary);
   min-height: 100vh;
-  
-  overflow-x: hidden; 
-  /* --- ΤΟ ΑΠΟΛΥΤΟ FIX ΓΙΑ ΤΟ JUMPING BUG --- */
-  /* Κρατάει μόνιμα δεσμευμένο τον χώρο για το scrollbar, 
-     έτσι ώστε όταν ανοίγει το dropdown να ΜΗΝ κουνιέται το site αριστερά-δεξιά! */
-  overflow-y: scroll; 
-  
-  color: #333;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  transition: background 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
