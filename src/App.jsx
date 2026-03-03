@@ -191,6 +191,51 @@ function SwipeableItem({ item, onDelete, onSend }) {
   );
 }
 
+function NameModal({ isOpen, value, onChange, onConfirm, onCancel }) {
+  if (!isOpen) return null;
+  return (
+    <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
+      <div className="modal-content" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Όνομα Λίστας</h2>
+        </div>
+        <input
+          type="text"
+          className="auth-form"
+          style={{ width: '100%', padding: '14px 16px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: 14, fontFamily: 'var(--font)', outline: 'none', marginBottom: 12 }}
+          placeholder="π.χ. Ψώνια Σαββατοκύριακου"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && value.trim() && onConfirm()}
+          autoFocus
+        />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="submit-btn" style={{ flex: 1 }} onClick={onConfirm} disabled={!value.trim()}>💾 Αποθήκευση</button>
+          <button className="submit-btn" style={{ flex: 1, background: 'var(--bg-subtle)', color: 'var(--text-primary)' }} onClick={onCancel}>Ακύρωση</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmModal({ isOpen, message, onConfirm, onCancel }) {
+  if (!isOpen) return null;
+  return (
+    <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
+      <div className="modal-content" style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Επιβεβαίωση</h2>
+          <p>{message}</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <button className="submit-btn" style={{ flex: 1, background: 'rgba(239,68,68,.12)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,.25)' }} onClick={onConfirm}>Ναι, διαγραφή</button>
+          <button className="submit-btn" style={{ flex: 1, background: 'var(--bg-subtle)', color: 'var(--text-primary)' }} onClick={onCancel}>Ακύρωση</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Welcome Modal ────────────────────────────────────────────────────────────
 function WelcomeModal({ onLogin, onRegister, onSkip }) {
   return (
@@ -272,6 +317,50 @@ function LockedFeature({ label, onUnlock }) {
   );
 }
 
+function NameModal({ isOpen, value, onChange, onConfirm, onCancel }) {
+  if (!isOpen) return null;
+  return (
+    <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
+      <div className="modal-content" style={{ maxWidth: 360 }} onClick={(e) => e.stopPropagation()}>
+        <button className="close-btn" onClick={onCancel}>✕</button>
+        <div className="modal-header">
+          <h2>Όνομα Λίστας</h2>
+          <p>Δώσε ένα όνομα για τη λίστα σου.</p>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:16 }}>
+          <input type="text" placeholder="π.χ. Ψώνια Σαββατοκύριακου" value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && value.trim() && onConfirm()} autoFocus
+            style={{ padding:'14px 16px', borderRadius:'var(--radius-md)', border:'1.5px solid var(--border)', background:'var(--bg-input)', color:'var(--text-primary)', fontSize:14, fontFamily:'var(--font)', outline:'none', width:'100%' }} />
+          <div style={{ display:'flex', gap:8 }}>
+            <button className="submit-btn" style={{ flex:1 }} onClick={onConfirm} disabled={!value.trim()}>💾 Αποθήκευση</button>
+            <button className="submit-btn" style={{ flex:1, background:'var(--bg-subtle)', color:'var(--text-primary)', backgroundImage:'none' }} onClick={onCancel}>Ακύρωση</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConfirmModal({ isOpen, message, onConfirm, onCancel }) {
+  if (!isOpen) return null;
+  return (
+    <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
+      <div className="modal-content" style={{ maxWidth: 360 }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Επιβεβαίωση</h2>
+          <p>{message}</p>
+        </div>
+        <div style={{ display:'flex', gap:8, marginTop:20 }}>
+          <button className="submit-btn" style={{ flex:1, background:'rgba(239,68,68,.12)', color:'var(--danger)', border:'1px solid rgba(239,68,68,.25)', backgroundImage:'none' }} onClick={onConfirm}>Ναι, διαγραφή</button>
+          <button className="submit-btn" style={{ flex:1, background:'var(--bg-subtle)', color:'var(--text-primary)', backgroundImage:'none' }} onClick={onCancel}>Ακύρωση</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [isDarkMode, setIsDarkMode]           = useState(() => localStorage.getItem('theme') === 'dark');
@@ -287,6 +376,9 @@ export default function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showAuthModal, setShowAuthModal]     = useState(false);
   const [authInitMode, setAuthInitMode]       = useState('login'); // 'login' | 'register'
+  const [nameModalOpen, setNameModalOpen]   = useState(false);
+  const [nameModalValue, setNameModalValue] = useState('');
+  const [confirmModal, setConfirmModal]     = useState({ open: false, message: '', onConfirm: null });
 
   const [user, setUser]   = useState(() => JSON.parse(localStorage.getItem('smart_grocery_user')) || null);
   const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('proGroceryItems_real')) || []);
@@ -353,31 +445,37 @@ export default function App() {
   }, [items]);
 
   // ── Saved lists ───────────────────────────────────────────────────────────────
-  const fetchSavedLists = async () => {
-    if (!user) return;
-    try {
-      const token = localStorage.getItem('smart_grocery_token');
-      const r = await fetch(`${API_BASE}/api/lists`, { headers: { Authorization: `Bearer ${token}` } });
-      if (r.ok) setSavedLists(await r.json());
-    } catch {}
-  };
-  useEffect(() => { fetchSavedLists(); }, [user]);
+  const fetchSavedLists = useCallback(async () => {
+  if (!user) return;
+  try {
+    const token = localStorage.getItem('smart_grocery_token');
+    const r = await fetch(`${API_BASE}/api/lists`, { headers: { Authorization: `Bearer ${token}` } });
+    if (r.ok) setSavedLists(await r.json());
+  } catch {}
+}, [user]);
+useEffect(() => { fetchSavedLists(); }, [fetchSavedLists]);
 
-  const saveCurrentList = async () => {
-    if (!user) return setNotification({ show: true, message: 'Πρέπει να συνδεθείς!' });
-    if (!items.length) return setNotification({ show: true, message: 'Η λίστα σου είναι άδεια!' });
-    const title = window.prompt('Όνομα Λίστας:', 'Ψώνια');
-    if (!title) return;
-    try {
-      const token = localStorage.getItem('smart_grocery_token');
-      const r = await fetch(`${API_BASE}/api/lists`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title, items }),
-      });
-      if (r.ok) { setNotification({ show: true, message: '✅ Αποθηκεύτηκε!' }); fetchSavedLists(); }
-    } catch {}
-  };
+  const saveCurrentList = () => {
+  if (!user)         return setNotification({ show: true, message: 'Πρέπει να συνδεθείς!' });
+  if (!items.length) return setNotification({ show: true, message: 'Η λίστα σου είναι άδεια!' });
+  setNameModalValue('Ψώνια');
+  setNameModalOpen(true);
+};
+
+const handleSaveConfirm = async () => {
+  if (!nameModalValue.trim()) return;
+  setNameModalOpen(false);
+  try {
+    const token = localStorage.getItem('smart_grocery_token');
+    const r = await fetch(`${API_BASE}/api/lists`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title: nameModalValue.trim(), items }),
+    });
+    if (r.ok) { setNotification({ show: true, message: '✅ Αποθηκεύτηκε!' }); fetchSavedLists(); }
+    else { const e = await r.json(); setNotification({ show: true, message: e.message || 'Σφάλμα.' }); }
+  } catch {}
+};
 
   const toggleListItem = async (listId, itemToToggle) => {
     const list = savedLists.find((l) => l._id === listId);
@@ -396,16 +494,22 @@ export default function App() {
     } catch {}
   };
 
-  const deleteList = async (listId) => {
-    if (!window.confirm('Διαγραφή;')) return;
-    try {
-      await fetch(`${API_BASE}/api/lists/${listId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('smart_grocery_token')}` },
-      });
-      fetchSavedLists();
-    } catch {}
-  };
+  const deleteList = (listId) => {
+  setConfirmModal({
+    open: true,
+    message: 'Θέλεις σίγουρα να διαγράψεις αυτή τη λίστα;',
+    onConfirm: async () => {
+      setConfirmModal({ open: false, message: '', onConfirm: null });
+      try {
+        await fetch(`${API_BASE}/api/lists/${listId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${localStorage.getItem('smart_grocery_token')}` },
+        });
+        fetchSavedLists();
+      } catch {}
+    },
+  });
+};
 
   // ── Shared cart ───────────────────────────────────────────────────────────────
   const handleSendToFriend = (item) => {
@@ -415,11 +519,16 @@ export default function App() {
   };
 
   const handleMassClear = () => {
-    if (window.confirm('Καθαρισμός όλης της λίστας;')) {
+  setConfirmModal({
+    open: true,
+    message: 'Θέλεις σίγουρα να αδειάσεις όλη τη λίστα;',
+    onConfirm: () => {
       setItems([]);
+      setConfirmModal({ open: false, message: '', onConfirm: null });
       if (navigator.vibrate) navigator.vibrate(50);
-    }
-  };
+    },
+  });
+};
 
   // ── Search ────────────────────────────────────────────────────────────────────
   const triggerSearch = async (query, store) => {
@@ -517,6 +626,13 @@ export default function App() {
   let totalCalories = 0;
   items.forEach(item => { totalCalories += getAdvancedCalories(item.text); });
 
+const handleLogout = () => {
+  localStorage.removeItem('smart_grocery_token');
+  localStorage.removeItem('smart_grocery_user');
+  setUser(null);
+  setSavedLists([]);
+  setShowProfileMenu(false);
+};
   // 🟢 Συνάρτηση για COPY του Share Key
   const handleCopyShareKey = () => {
     if (user?.shareKey) {
@@ -555,6 +671,8 @@ export default function App() {
 
       <SavedListsModal isOpen={showListsModal} onClose={() => setShowListsModal(false)} lists={savedLists} onDelete={deleteList} onToggleItem={toggleListItem} />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onLoginSuccess={(u) => setUser(u)} initMode={authInitMode} />
+      <NameModal isOpen={nameModalOpen} value={nameModalValue} onChange={setNameModalValue} onConfirm={handleSaveConfirm} onCancel={() => setNameModalOpen(false)}/>
+      <ConfirmModal isOpen={confirmModal.open} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={() => setConfirmModal({ open: false, message: '', onConfirm: null })}/>
       <RecipeNotification show={notification.show} message={notification.message} onClose={() => setNotification({ show: false, message: '' })} />
 
       {/* ── Shared Cart Modal ── */}
@@ -613,7 +731,7 @@ export default function App() {
                         <div className="dropdown-item" onClick={() => { setIsDarkMode((v) => !v); setShowProfileMenu(false); }}>
                           {isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
                         </div>
-                        <div className="dropdown-item logout" onClick={() => { localStorage.clear(); window.location.reload(); }}>🚪 Αποσύνδεση</div>
+                        <div className="dropdown-item logout" onClick={handleLogout}>🚪 Αποσύνδεση</div>
                       </div>
                     </>
                   )}
