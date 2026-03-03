@@ -1022,3 +1022,32 @@ button:active, .store-card-btn:active, .suggestion-item:active, .list-card:activ
 .br-name { font-weight: 600; color: #f8fafc; }
 .br-stats { color: #cbd5e1; }
 .br-stats strong { color: #10b981; font-weight: 800; margin-left: 5px; }
+body.dark-mode {
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+body.dark-mode .app-wrapper { background: #1e293b; color: #f8fafc;}
+body.dark-mode .item-card, body.dark-mode .recipe-card {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+body.dark-mode .budget-banner, body.dark-mode .input-section {
+  background: #1e293b; border-color: #334155;
+}
+body.dark-mode .pro-input { background: #334155; color: white;}
+
+/* Animations */
+.item-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideIn 0.3s ease forwards;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.profile-dropdown, .suggestions-dropdown {
+  animation: fade-in 0.2s ease-out;
+}
