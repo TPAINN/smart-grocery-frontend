@@ -131,35 +131,89 @@ const CATEGORIES = [
 const getCategory = (name) =>
   CATEGORIES.find((c) => c.keywords.some((k) => normalizeText(name).includes(k)))?.name || '📦 Διάφορα';
 
-// ─── Food database ────────────────────────────────────────────────────────────
-const FOOD_DB = [
-  { keywords:['λαδι','ελαιολαδο','σπορελαιο','βουτυρο','μαργαρινη','μαγιονεζα'], cals:800, isFood:true },
-  { keywords:['σοκολατα','μερεντα','μπισκοτα','κρουασαν','πατατακια','τσιπς','γαριδακια'], cals:500, isFood:true },
-  { keywords:['ζαχαρη','μελι','μαρμελαδα','σιροπι'], cals:400, isFood:true },
-  { keywords:['τυρι','φετα','γκουντα','κασερι','παρμεζανα','γραβιερα','μοτσαρελα'], cals:350, isFood:true },
-  { keywords:['ψωμι','μακαρονια','ρυζι','αλευρι','βρωμη','δημητριακα','φρυγανιες','πιτα','ζυμαρικ'], cals:350, isFood:true },
-  { keywords:['αλλαντικα','ζαμπον','μπεικον','λουκανικο','σαλαμι'], cals:300, isFood:true },
-  { keywords:['κρεας','κοτοπουλο','μοσχαρι','κιμας','μπριζολα','σολομος','τονος','γαριδα'], cals:200, isFood:true },
-  { keywords:['αυγο','αυγα'], cals:150, isFood:true },
-  { keywords:['γαλα','γιαουρτι','κεφιρ'], cals:80, isFood:true },
-  { keywords:['μηλο','μπανανα','πορτοκαλι','φρουτ','χυμος','σταφυλ','ροδακιν'], cals:60, isFood:true },
-  { keywords:['ντοματα','πατατα','κρεμμυδι','σαλατα','λαχανικ','καροτο','μαρουλι','αγγουρι'], cals:25, isFood:true },
-  { keywords:['νερο','μεταλλικο','σοδα'], cals:0, isFood:true },
-  { keywords:['καφες','τσαι','ροφημα'], cals:5, isFood:true },
-  { keywords:['αναψυκτικο','κολα','σπρ','φαντα','λεμοναδα'], cals:40, isFood:true },
-  // Non-food
-  { keywords:['σαμπουαν','κρεμα μαλλιων','μαλακτικο','βαφη'], cals:0, isFood:false },
-  { keywords:['απορρυπαντικο','σκονη πλυσιμ','υγρο πιατ','καθαριστικ','χλωρινη'], cals:0, isFood:false },
-  { keywords:['χαρτι','χαρτομαντιλ','πετσετ','σακουλ'], cals:0, isFood:false },
-  { keywords:['οδοντοκρεμ','οδοντοβουρτσ'], cals:0, isFood:false },
-  { keywords:['σαπουνι','αφρολουτρ','αποσμητικ'], cals:0, isFood:false },
+// ─── NON-FOOD blacklist (checked FIRST — if match → not food) ─────────────────
+const NON_FOOD_KEYWORDS = [
+  // Καθαριστικά / Απορρυπαντικά
+  'απορρυπαντικ','σκονη πλυσιμ','υγρο πλυσιμ','υγρο πιατ','καθαριστικ',
+  'χλωρινη','χλωρ','αντισηπτικ','απολυμαντ','υαλοκαθαριστ','σφουγγαριστρ',
+  'σφουγγαρ','σκουπ','σκουπιδοσακουλ','σακουλ','τζαμ','βερνικ',
+  // Προσωπική υγιεινή / Καλλυντικά
+  'σαμπουαν','κρεμα μαλλιων','μαλακτικ','βαφη μαλλ','ντεκαπ',
+  'σαπουνι','αφρολουτρ','αποσμητικ','αντιιδρωτ','αντισηπτικ','αντιιδρωτ',
+  'οδοντοκρεμ','οδοντοβουρτσ','οδοντων','στοματ','στοματικ','στοματοπλυτ',
+  'ξυριστικ','ξυρισμ','αφρος ξυρ','gel ξυρ','aftershave',
+  'κρεμα προσωπ','κρεμα χερι','λοσιον','μουσκ','αρωμα','perfume','cologne',
+  'ντεοντοραν','foundation','ρουζ','mascara','βαφη ματ','μακιγιαζ',
+  'βαμβακ','μπατονετ','οδοντογλυφ','νιφαδε','νιφαδ',
+  // Φαρμακευτικά / Υγεία (δεν τρώγονται)
+  'ασπιρινη','παυσιπον','βιταμιν','συμπληρωμ','κολυρ','ναζονεξ',
+  'πανε','ακουσ','στοματ','επιδεσμ','βαμβακι φαρμ',
+  // Χαρτικά
+  'χαρτι κουζ','χαρτι υγε','χαρτομαντιλ','χαρτοπετσετ','χαρτιν','tissue',
+  // Ταμπόν / Πάνες
+  'ταμπον','σερβιετ','πανα βρεφ','εισφορε','ακοα','pampers','huggies',
+  // Ηλεκτρικά / Μπαταρίες
+  'μπαταρι','λαμπτηρ','λαμπ led','λαμπ','φακ',
+  // Σκεύη / Πλαστικά
+  'σακουλακ','μεμβραν','αλουμινοχαρτ','λαδοκολλ','βουρτσ','σφουγγαρ',
+  'γαντια καθαρ','γαντια latex','γαντια nitrile',
+  // Ζωοτροφές (έχουν θερμίδες αλλά δεν τρώγονται από ανθρώπους)
+  'τροφη σκυλ','τροφη γατ','κιμπλ','whiskas','pedigree','purina','friskies',
+  'αμμος γατ','παιχνιδι σκυλ',
+  // Φυτά / Λιπάσματα
+  'λιπασμ','χωμα φυτ','γλαστρ',
 ];
 
+// ─── FOOD database (calories per 100g estimate) ────────────────────────────────
+const FOOD_CAL_DB = [
+  { keywords:['ελαιολαδ','λαδι','σπορελαι','βουτυρ','μαργαριν','μαγιονεζ','κρεμ γαλακτ'], cals:780 },
+  { keywords:['σοκολατ','μερεντ','φουντουκοκρεμ','nutella'], cals:540 },
+  { keywords:['μπισκοτ','κρουασαν','πιτα κεικ','κεικ','γλυκ','τσουρεκ','παξιμαδ'], cals:480 },
+  { keywords:['πατατακ','τσιπς','ποπ κορν','ξηρ καρπ','φιστικ','καρυδ','αμυγδαλ','κεσιου','πεκαν'], cals:560 },
+  { keywords:['γαριδακ','πρετζελ','κρακερ','στικ'], cals:440 },
+  { keywords:['ζαχαρ','μελ','μαρμελαδ','σιροπ','ζαχαροπλαστ'], cals:390 },
+  { keywords:['τυρ','φετ','γκουντ','κασερ','παρμεζαν','γραβιερ','μοτσαρελ','εμενταλ','ροκφορ','γουδα','ταλαγαν'], cals:360 },
+  { keywords:['ψωμ','μακαρον','σπαγετ','ζυμαρικ','ρυζ','αλευρ','βρωμ','δημητριακ','φρυγανι','πιτ ψωμ','τορτιγ'], cals:350 },
+  { keywords:['αλλαντικ','ζαμπον','μπεικον','λουκανικ','σαλαμ','κοπανιστ','πεπερον'], cals:310 },
+  { keywords:['κρεας','κοτοπουλ','μοσχαρ','χοιρ','κιμας','μπριζολ','φιλετ','στηθ','μπουτ','συκωτ'], cals:210 },
+  { keywords:['σολομ','τονοσ','τουν','ψαρ','σαρδελ','ρεγγ','γαριδ','καλαμαρ','μυδ','χταπ'], cals:160 },
+  { keywords:['αυγ'], cals:155 },
+  { keywords:['γαλ','γιαουρτ','κεφιρ','ρυζογαλ'], cals:75 },
+  { keywords:['χυμ','φρουτοχυμ','smoothie','nectar'], cals:55 },
+  { keywords:['μηλ','μπαναν','πορτοκαλ','σταφυλ','ροδακιν','αχλαδ','κερασ','φραουλ','ακτινιδ','ανανα','μανγκ','αβοκαντ','λεμον','μανταρ'], cals:55 },
+  { keywords:['ντοματ','πατατ','γλυκοπατατ','κολοκυθ','μελιτζαν','πιπερι','φρεσκ'], cals:30 },
+  { keywords:['μαρουλ','σπανακ','λαχαν','καροτ','κρεμμυδ','σκορδ','αγγουρ','σελιν','μαιντ','δυοσμ','ρεπαν','παντζαρ'], cals:22 },
+  { keywords:['αναψυκτικ','κολα','σπρ','φαντ','λεμοναδ','πορτοκαλαδ','ενεργει','energy drink','red bull'], cals:42 },
+  { keywords:['μπυρ','beer','μπιρ'], cals:43 },
+  { keywords:['κρασ','οινοσ','σαμπανι','prosecco','wine'], cals:80 },
+  { keywords:['ουισκ','βοτκ','ρουμ','τσιπουρ','ρακ','ούζ','ouzo','tsipouro'], cals:220 },
+  { keywords:['καφ','espresso','cappuccin','frappe'], cals:8 },
+  { keywords:['τσα','chamomile','herbal','χαμομηλ'], cals:2 },
+  { keywords:['νερ','μεταλλικ','σοδα','sparkling'], cals:0 },
+  { keywords:['ελι','ελιε','ελιτσ'], cals:145 },
+  { keywords:['ξυδ','μουσταρδ','κετσαπ','σαλτσ','pesto','μπεσαμελ','ταχιν','χουμ'], cals:100 },
+  { keywords:['αλατ','πιπερ','ριγαν','θυμαρ','κανελ','κυμιν','μπαχαρ','κουρκουμ','paprika'], cals:25 },
+  { keywords:['κομπ','παγωτ','sorbet','gelato'], cals:200 },
+  { keywords:['κρεπ','βαφλ','pancake','τηγανιτ'], cals:230 },
+];
+
+// Checks if a product name is food/drink (edible by humans)
 const getFoodInfo = (name) => {
   const t = normalizeText(name);
-  for (let e of FOOD_DB) {
-    if (e.keywords.some(k => t.includes(k))) return { calories: e.cals, isFood: e.isFood };
+
+  // 1. Check non-food blacklist FIRST
+  if (NON_FOOD_KEYWORDS.some(k => t.includes(k))) {
+    return { calories: 0, isFood: false };
   }
+
+  // 2. Check food calorie DB
+  for (let e of FOOD_CAL_DB) {
+    if (e.keywords.some(k => t.includes(k))) {
+      return { calories: e.cals, isFood: true };
+    }
+  }
+
+  // 3. Unknown → assume food (grocery app context)
   return { calories: 120, isFood: true };
 };
 
@@ -295,40 +349,91 @@ function OfflineBanner({ isOnline, wasOffline }) {
   );
 }
 
-// ─── Calorie Summary ──────────────────────────────────────────────────────────
+// ─── Calorie Summary (no goal limit — just shows total & breakdown) ────────────
 function CalorieSummary({ items }) {
   const foodItems = items.filter(i => getFoodInfo(i.text).isFood);
+  const nonFoodItems = items.filter(i => !getFoodInfo(i.text).isFood);
+  if (!items.length) return null;
+
   const totalCals = foodItems.reduce((s, i) => s + getFoodInfo(i.text).calories, 0);
-  const dailyGoal = 2000;
-  const pct       = Math.min(100, (totalCals / dailyGoal) * 100);
-  const barColor  = pct < 50 ? '#22c55e' : pct < 80 ? '#f97316' : '#ef4444';
-  if (!foodItems.length) return null;
+
+  // Group calories by category bucket
+  const buckets = [
+    { label:'Λαχ/Φρούτα', max:50,  color:'#22c55e', icon:'🥦' },
+    { label:'Πρωτεΐνες',  max:250,  color:'#3b82f6', icon:'🥩' },
+    { label:'Γαλακτ.',    max:200,  color:'#a78bfa', icon:'🥛' },
+    { label:'Αμυλ.',      max:400,  color:'#f97316', icon:'🍞' },
+    { label:'Λιπαρά',     max:999,  color:'#ef4444', icon:'🧈' },
+  ];
+
+  // Build per-item sparkle color
+  const calColor = (c) =>
+    c === 0   ? '#64748b' :
+    c <= 50   ? '#22c55e' :
+    c <= 200  ? '#3b82f6' :
+    c <= 400  ? '#f97316' : '#ef4444';
+
+  const totalColor = calColor(totalCals / Math.max(foodItems.length, 1));
+
   return (
     <div style={{
       background: 'var(--bg-surface)', borderRadius: 14, padding: '14px 16px',
       marginBottom: 12, border: '1px solid var(--border-light)',
     }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+      {/* Header row */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:20 }}>🔥</span>
           <div>
-            <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>Εκτιμ. Θερμίδες</div>
-            <div style={{ fontSize:22, fontWeight:800, color:barColor, lineHeight:1.1 }}>
-              {totalCals} <span style={{ fontSize:11, fontWeight:400, color:'var(--text-secondary)' }}>kcal</span>
+            <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>
+              Εκτιμώμενες Θερμίδες
+            </div>
+            <div style={{ fontSize:24, fontWeight:800, color: totalColor, lineHeight:1.1 }}>
+              {totalCals.toLocaleString('el-GR')}
+              <span style={{ fontSize:11, fontWeight:400, color:'var(--text-secondary)', marginLeft:4 }}>kcal</span>
             </div>
           </div>
         </div>
-        <div style={{ textAlign:'right' }}>
-          <div style={{ fontSize:10, color:'var(--text-secondary)' }}>ΣΤΟΧΟΣ</div>
-          <div style={{ fontSize:14, fontWeight:700 }}>{dailyGoal}</div>
+        <div style={{ textAlign:'right', display:'flex', flexDirection:'column', gap:2 }}>
+          <div style={{ fontSize:11, color:'var(--text-secondary)' }}>
+            🛒 {foodItems.length} τρόφιμα
+          </div>
+          {nonFoodItems.length > 0 && (
+            <div style={{ fontSize:11, color:'#64748b' }}>
+              🧴 {nonFoodItems.length} μη τρόφιμα
+            </div>
+          )}
         </div>
       </div>
-      <div style={{ height:8, background:'var(--bg-subtle)', borderRadius:99, overflow:'hidden' }}>
-        <div style={{ height:'100%', width:`${pct}%`, background:barColor, borderRadius:99, transition:'width 0.6s ease' }} />
-      </div>
-      <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop:4 }}>
-        {pct.toFixed(0)}% ημερήσιου στόχου · {foodItems.length}/{items.length} τρόφιμα
-      </div>
+
+      {/* Per-item mini chips */}
+      {foodItems.length > 0 && (
+        <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+          {foodItems.slice(0, 8).map((item, i) => {
+            const cals = getFoodInfo(item.text).calories;
+            return (
+              <div key={i} style={{
+                display:'flex', alignItems:'center', gap:4,
+                background:`${calColor(cals)}12`,
+                border:`1px solid ${calColor(cals)}30`,
+                borderRadius:99, padding:'3px 8px',
+                fontSize:10, fontWeight:700, color: calColor(cals),
+                maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+              }}>
+                {cals === 0 ? '~0' : cals} kcal
+                <span style={{ color:'var(--text-secondary)', fontWeight:400, overflow:'hidden', textOverflow:'ellipsis' }}>
+                  {' '}{item.text.split(' ')[0]}
+                </span>
+              </div>
+            );
+          })}
+          {foodItems.length > 8 && (
+            <div style={{ fontSize:10, color:'var(--text-secondary)', padding:'3px 6px', alignSelf:'center' }}>
+              +{foodItems.length - 8} ακόμα
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -795,6 +900,7 @@ export default function App() {
   const [isServerWaking, setIsServerWaking] = useState(false);
   const [isListening, setIsListening]     = useState(false);
   const [recipes, setRecipes]             = useState([]);
+  const [recipesLoading, setRecipesLoading] = useState(true);
   const [recipeFilter, setRecipeFilter]   = useState('all');
   const [expandedRecipe, setExpandedRecipe] = useState(null);
   const [fridgeQuery, setFridgeQuery]     = useState('');
@@ -865,13 +971,32 @@ export default function App() {
     return () => clearInterval(t);
   }, []);
 
-  // ── Recipes (with cache) ───────────────────────────────────────────────────
+  // ── Recipes (with cache + retry) ──────────────────────────────────────────
+  const fetchRecipes = useCallback(async () => {
+    setRecipesLoading(true);
+    try {
+      // Show cached instantly
+      const ck = cacheGet('recipes');
+      if (ck && Array.isArray(ck.data) && ck.data.length > 0) {
+        setRecipes(ck.data);
+        setRecipesLoading(false);
+        if (!ck.stale) return;
+      }
+      const r = await fetch(`${API_BASE}/api/recipes`);
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d)) {
+          cacheSet('recipes', d);
+          setRecipes(d);
+        }
+      }
+    } catch {}
+    setRecipesLoading(false);
+  }, []);
+
   useEffect(() => {
-    if (!isOnline) return;
-    cachedFetch(`${API_BASE}/api/recipes`, 'recipes', {
-      onData: (d) => setRecipes(Array.isArray(d) ? d : []),
-      onBackground: (d) => setRecipes(Array.isArray(d) ? d : []),
-    });
+    if (!isOnline) { setRecipesLoading(false); return; }
+    fetchRecipes();
 
     const checkStatus = async () => {
       try {
@@ -891,7 +1016,7 @@ export default function App() {
     checkStatus();
     const iv = setInterval(checkStatus, 15000);
     return () => clearInterval(iv);
-  }, [isOnline]);
+  }, [isOnline, fetchRecipes]);
 
   useEffect(() => {
     localStorage.setItem('proGroceryItems_real', JSON.stringify(items));
@@ -1377,39 +1502,91 @@ export default function App() {
                     <div><strong>Offline mode</strong> — Συνταγές από τελευταία φόρτωση. Υλικά χωρίς τιμές.</div>
                   </div>
                 )}
+
                 <div className="fridge-ai-box">
                   <span className="fridge-icon">🧊</span>
                   <input type="text" placeholder="Τι έχεις στο ψυγείο;" value={fridgeQuery} onChange={(e) => setFridgeQuery(e.target.value)} className="fridge-input" />
                 </div>
+
                 <div className="recipe-filters">
                   {[{id:'all',label:'Όλες'},{id:'budget',label:'€ Φθηνές'},{id:'fast',label:'⏱️ Γρήγορες'}].map(f => (
                     <button key={f.id} className={`filter-btn ${recipeFilter === f.id ? 'active' : ''}`} onClick={() => setRecipeFilter(f.id)}>{f.label}</button>
                   ))}
                 </div>
-                <div className="recipes-grid">
-                  {filteredRecipes.map(recipe => (
-                    <div key={recipe._id} className="recipe-card" onClick={() => setExpandedRecipe(expandedRecipe === recipe._id ? null : recipe._id)}>
-                      {recipe.image && <div className="recipe-image" style={{ backgroundImage:`url(${recipe.image})` }} />}
-                      <div className="recipe-info">
-                        <h4>{recipe.title}</h4>
-                        <p className="recipe-chef">από {recipe.chef}</p>
-                        <div className="recipe-meta">
-                          <span>⏱️ {recipe.time}'</span>
-                          <span>💰 ~{recipe.cost?.toFixed(1)}€</span>
+
+                {/* ── Loading skeletons ── */}
+                {recipesLoading && recipes.length === 0 && (
+                  <div className="recipes-grid">
+                    {[1,2,3].map(i => (
+                      <div key={i} style={{ background:'var(--bg-surface)', borderRadius:16, border:'1px solid var(--border-light)', overflow:'hidden' }}>
+                        <div className="skeleton" style={{ height:160, borderRadius:0 }} />
+                        <div style={{ padding:'14px 18px', display:'flex', flexDirection:'column', gap:8 }}>
+                          <div className="skeleton" style={{ height:14, width:'70%', borderRadius:8 }} />
+                          <div className="skeleton" style={{ height:11, width:'40%', borderRadius:8 }} />
+                          <div style={{ display:'flex', gap:6, marginTop:4 }}>
+                            <div className="skeleton" style={{ height:24, width:60, borderRadius:20 }} />
+                            <div className="skeleton" style={{ height:24, width:70, borderRadius:20 }} />
+                          </div>
                         </div>
                       </div>
-                      {expandedRecipe === recipe._id && (
-                        <div className="recipe-details-expanded">
-                          <button className="add-recipe-btn" onClick={(e) => { e.stopPropagation(); addRecipeToList(recipe); }}>
-                            🛒 Προσθήκη Υλικών στη Λίστα
-                          </button>
-                          <h5>Υλικά</h5>
-                          <ul className="ing-list">{recipe.ingredients.map((ing, i) => <li key={i}>• {ing}</li>)}</ul>
+                    ))}
+                  </div>
+                )}
+
+                {/* ── Empty / error state ── */}
+                {!recipesLoading && filteredRecipes.length === 0 && (
+                  <div style={{ textAlign:'center', padding:'48px 20px', background:'var(--bg-surface)', border:'2px dashed var(--border-light)', borderRadius:16 }}>
+                    <div style={{ fontSize:44, marginBottom:12 }}>🍽️</div>
+                    {recipes.length === 0 ? (
+                      <>
+                        <h3 style={{ margin:'0 0 8px', fontSize:16 }}>Δεν φορτώθηκαν συνταγές</h3>
+                        <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>
+                          {isOnline ? 'Ο server μπορεί να ξυπνάει (~15 δευτ.)' : 'Δεν υπάρχει σύνδεση'}
+                        </p>
+                        {isOnline && (
+                          <button
+                            className="submit-btn"
+                            style={{ padding:'10px 24px', fontSize:13 }}
+                            onClick={fetchRecipes}
+                          >🔄 Δοκιμή ξανά</button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <h3 style={{ margin:'0 0 8px', fontSize:16 }}>Κανένα αποτέλεσμα</h3>
+                        <p style={{ fontSize:13, color:'var(--text-secondary)' }}>Δοκίμασε διαφορετικό φίλτρο</p>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* ── Recipes grid ── */}
+                {filteredRecipes.length > 0 && (
+                  <div className="recipes-grid">
+                    {filteredRecipes.map(recipe => (
+                      <div key={recipe._id} className="recipe-card" onClick={() => setExpandedRecipe(expandedRecipe === recipe._id ? null : recipe._id)}>
+                        {recipe.image && <div className="recipe-image" style={{ backgroundImage:`url(${recipe.image})` }} />}
+                        <div className="recipe-info">
+                          <h4>{recipe.title}</h4>
+                          <p className="recipe-chef">από {recipe.chef}</p>
+                          <div className="recipe-meta">
+                            <span>⏱️ {recipe.time}'</span>
+                            <span>💰 ~{recipe.cost?.toFixed(1)}€</span>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                        {expandedRecipe === recipe._id && (
+                          <div className="recipe-details-expanded">
+                            <button className="add-recipe-btn" onClick={(e) => { e.stopPropagation(); addRecipeToList(recipe); }}>
+                              🛒 Προσθήκη Υλικών στη Λίστα
+                            </button>
+                            <h5>Υλικά</h5>
+                            <ul className="ing-list">{recipe.ingredients.map((ing, i) => <li key={i}>• {ing}</li>)}</ul>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
           </div>
