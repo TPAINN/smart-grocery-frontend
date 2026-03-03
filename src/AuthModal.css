@@ -1,71 +1,96 @@
-/* ─── AUTH MODAL ─────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════
+   AUTH MODAL — Premium
+   ════════════════════════════════════════════════════════ */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(14px);
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 10000;
-  animation: fadeInOverlay 0.25s ease;
+  animation: overlayIn 0.25s var(--ease) forwards;
+  padding: 20px;
 }
 
 .modal-content {
   background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
-  padding: 38px 32px;
+  padding: 38px 30px;
   border-radius: var(--radius-xl);
   width: 100%;
   max-width: 400px;
   position: relative;
   box-shadow: var(--shadow-xl);
-  animation: popInModal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: modalIn 0.42s var(--spring) forwards;
   overflow: hidden;
+  /* Highlight top edge */
+  background-image: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.05) 0px,
+    transparent 50px
+  );
+}
+
+body.dark-mode .modal-content {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.025) 0px,
+    transparent 50px
+  );
 }
 
 .close-btn {
   position: absolute;
-  top: 18px;
-  right: 18px;
+  top: 16px; right: 16px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  width: 30px;
-  height: 30px;
+  width: 30px; height: 30px;
   border-radius: 50%;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
+  transition:
+    transform    0.22s var(--spring),
+    background   0.18s var(--ease),
+    color        0.18s var(--ease),
+    box-shadow   0.18s var(--ease);
 }
 
 .close-btn:hover {
   background: var(--bg-chip-hover);
   color: var(--text-primary);
-  transform: scale(1.1);
+  transform: scale(1.12) rotate(90deg);
+  box-shadow: var(--shadow-sm);
 }
+
+.close-btn:active { transform: scale(0.9) !important; }
 
 .modal-header { text-align: center; margin-bottom: 28px; }
 
 .modal-header h2 {
-  font-family: var(--font-display);
   margin: 0 0 8px 0;
   font-size: 24px;
   color: var(--text-primary);
   font-weight: 800;
+  letter-spacing: -0.4px;
 }
 
 .modal-header p {
   margin: 0;
   color: var(--text-secondary);
   font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
 }
 
-/* FORM */
+/* Form */
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -78,11 +103,16 @@
   border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
   font-size: 14px;
-  font-family: var(--font-body);
+  font-family: var(--font);
+  font-weight: 500;
   color: var(--text-primary);
   outline: none;
-  transition: var(--transition);
   width: 100%;
+  transition:
+    border-color 0.2s var(--ease),
+    background   0.2s var(--ease),
+    box-shadow   0.2s var(--ease);
+  -webkit-appearance: none;
 }
 
 .auth-form input::placeholder { color: var(--text-muted); }
@@ -90,7 +120,7 @@
 .auth-form input:focus {
   border-color: var(--accent);
   background: var(--bg-card);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--glow-accent);
 }
 
 .submit-btn {
@@ -101,39 +131,52 @@
   border-radius: var(--radius-md);
   font-size: 15px;
   font-weight: 700;
-  font-family: var(--font-body);
+  font-family: var(--font);
   cursor: pointer;
-  transition: var(--transition);
   margin-top: 6px;
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 50px;
+  letter-spacing: 0.1px;
+  transition:
+    transform   0.22s var(--spring),
+    opacity     0.18s var(--ease),
+    box-shadow  0.2s var(--ease);
+  /* Subtle gradient */
+  background-image: linear-gradient(135deg, var(--text-primary) 0%, rgba(30,40,60,0.92) 100%);
+}
+
+body.dark-mode .submit-btn {
+  background-image: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: var(--text-primary);
 }
 
 .submit-btn:hover {
-  opacity: 0.85;
+  opacity: 0.9;
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
 }
 
+.submit-btn:active { transform: scale(0.97) !important; }
+
 .submit-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
 }
 
 .error-message {
-  background: rgba(239, 68, 68, 0.08);
+  background: rgba(239,68,68,.07);
   color: var(--danger);
-  padding: 11px 14px;
-  border-radius: var(--radius-md);
+  padding: 12px 15px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   text-align: center;
   font-weight: 600;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  margin-bottom: 4px;
+  border: 1px solid rgba(239,68,68,.18);
+  animation: shakeError 0.4s var(--ease) forwards;
 }
 
 .toggle-text {
@@ -147,41 +190,48 @@
   color: var(--accent);
   font-weight: 700;
   cursor: pointer;
-  transition: var(--transition);
+  transition: opacity 0.15s var(--ease);
 }
 
-.toggle-text span:hover { text-decoration: underline; }
+.toggle-text span:hover { opacity: 0.75; text-decoration: underline; }
 
 /* Spinner */
 .auth-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2.5px solid rgba(255, 255, 255, 0.3);
+  width: 20px; height: 20px;
+  border: 2.5px solid rgba(255,255,255,.25);
   border-radius: 50%;
-  border-top-color: #ffffff;
-  animation: spin 0.9s linear infinite;
+  border-top-color: white;
+  animation: spin 0.85s linear infinite;
 }
 
-/* Staggered */
-.staggered-1 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.1s; }
-.staggered-2 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.2s; }
-.staggered-3 { opacity: 0; animation: fadeUp 0.4s ease forwards 0.3s; }
+/* Staggered entry */
+.staggered-1 { opacity: 0; animation: fadeUp 0.4s var(--smooth) forwards 0.08s; }
+.staggered-2 { opacity: 0; animation: fadeUp 0.4s var(--smooth) forwards 0.18s; }
+.staggered-3 { opacity: 0; animation: fadeUp 0.4s var(--smooth) forwards 0.28s; }
 
 .slide-down-input {
-  animation: slideDownForm 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: slideDownIn 0.3s var(--spring) forwards;
 }
 
-@keyframes fadeInOverlay { from { opacity: 0; } to { opacity: 1; } }
-@keyframes popInModal {
-  from { opacity: 0; transform: scale(0.94) translateY(16px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+/* Keyframes */
+@keyframes overlayIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.92) translateY(20px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
 }
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes slideDownForm {
+@keyframes slideDownIn {
   from { opacity: 0; transform: translateY(-12px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shakeError {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-6px); }
+  40%     { transform: translateX(6px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(4px); }
 }
 @keyframes spin { to { transform: rotate(360deg); } }

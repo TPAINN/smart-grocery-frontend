@@ -1,71 +1,90 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-/* ─── CSS VARIABLES ─────────────────────────────────── */
+/* ════════════════════════════════════════════════════════
+   CSS VARIABLES — LIGHT
+   ════════════════════════════════════════════════════════ */
 :root {
-  --bg-app:        #eef0f4;
-  --bg-container:  #ffffff;
-  --bg-card:       #ffffff;
-  --bg-subtle:     #f8fafc;
-  --bg-input:      #f1f5f9;
-  --bg-chip:       #f1f5f9;
-  --bg-chip-hover: #e2e8f0;
+  --bg-app:        #eef1f7;
+  --bg-container:  rgba(255, 255, 255, 0.94);
+  --bg-card:       rgba(255, 255, 255, 0.88);
+  --bg-subtle:     rgba(248, 250, 252, 0.92);
+  --bg-input:      rgba(241, 245, 249, 0.85);
+  --bg-chip:       rgba(241, 245, 249, 0.9);
+  --bg-chip-hover: rgba(226, 232, 240, 0.95);
+  --bg-glass:      rgba(255, 255, 255, 0.6);
 
   --text-primary:   #0a0f1e;
   --text-secondary: #64748b;
   --text-muted:     #94a3b8;
 
-  --border:         #e2e8f0;
-  --border-strong:  #cbd5e1;
+  --border:        rgba(226, 232, 240, 0.9);
+  --border-strong: rgba(203, 213, 225, 0.95);
 
   --accent:         #2563eb;
-  --accent-subtle:  #eff6ff;
+  --accent-2:       #7c3aed;
+  --accent-subtle:  rgba(239, 246, 255, 0.95);
   --success:        #10b981;
+  --success-subtle: rgba(209, 250, 229, 0.7);
   --danger:         #ef4444;
   --warning:        #f59e0b;
 
-  --shadow-sm:  0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-md:  0 4px 16px rgba(0,0,0,.07);
-  --shadow-lg:  0 10px 40px rgba(0,0,0,.10);
-  --shadow-xl:  0 20px 60px rgba(0,0,0,.14);
+  --shadow-xs: 0 1px 3px rgba(0,0,0,.04);
+  --shadow-sm: 0 2px 10px rgba(0,0,0,.06), 0 1px 3px rgba(0,0,0,.04);
+  --shadow-md: 0 6px 24px rgba(0,0,0,.07), 0 2px 8px rgba(0,0,0,.04);
+  --shadow-lg: 0 14px 48px rgba(0,0,0,.09), 0 4px 16px rgba(0,0,0,.05);
+  --shadow-xl: 0 28px 72px rgba(0,0,0,.12), 0 8px 28px rgba(0,0,0,.06);
+  --glow-accent:  0 0 0 3px rgba(37,99,235,.13), 0 4px 16px rgba(37,99,235,.12);
+  --glow-success: 0 4px 20px rgba(16,185,129,.28);
+  --glow-danger:  0 4px 16px rgba(239,68,68,.22);
 
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 30px;
 
-  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --spring:     all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease:   cubic-bezier(0.4, 0, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --smooth: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ─── DARK MODE VARIABLES ───────────────────────────── */
+/* ════════════════════════════════════════════════════════
+   DARK MODE
+   ════════════════════════════════════════════════════════ */
 body.dark-mode {
-  --bg-app:        #060a12;
-  --bg-container:  #0d1424;
-  --bg-card:       #111827;
-  --bg-subtle:     #0f1929;
-  --bg-input:      #1a2540;
-  --bg-chip:       #1a2540;
-  --bg-chip-hover: #1e2d4f;
+  --bg-app:        #04070f;
+  --bg-container:  rgba(10, 16, 30, 0.98);
+  --bg-card:       rgba(14, 21, 40, 0.96);
+  --bg-subtle:     rgba(12, 18, 34, 0.92);
+  --bg-input:      rgba(20, 31, 56, 0.88);
+  --bg-chip:       rgba(20, 31, 56, 0.82);
+  --bg-chip-hover: rgba(26, 40, 70, 0.92);
+  --bg-glass:      rgba(14, 21, 40, 0.55);
 
-  --text-primary:   #f0f4ff;
-  --text-secondary: #8ca0bf;
-  --text-muted:     #4d6080;
+  --text-primary:   #eef2ff;
+  --text-secondary: #7a96bb;
+  --text-muted:     #3c5270;
 
-  --border:        #1e2d4a;
-  --border-strong: #253859;
+  --border:        rgba(28, 42, 70, 0.95);
+  --border-strong: rgba(36, 54, 90, 0.95);
 
-  --accent:        #3b82f6;
-  --accent-subtle: #0d1e3d;
-  --shadow-sm:  0 1px 3px rgba(0,0,0,.4);
-  --shadow-md:  0 4px 16px rgba(0,0,0,.5);
-  --shadow-lg:  0 10px 40px rgba(0,0,0,.6);
-  --shadow-xl:  0 20px 60px rgba(0,0,0,.7);
+  --accent:         #4f8ef7;
+  --accent-subtle:  rgba(12, 28, 58, 0.85);
+  --success-subtle: rgba(5, 42, 30, 0.7);
+
+  --shadow-sm: 0 2px 10px rgba(0,0,0,.4);
+  --shadow-md: 0 6px 24px rgba(0,0,0,.5);
+  --shadow-lg: 0 14px 48px rgba(0,0,0,.6);
+  --shadow-xl: 0 28px 72px rgba(0,0,0,.7);
+  --glow-accent:  0 0 0 3px rgba(79,142,247,.18), 0 4px 20px rgba(79,142,247,.15);
+  --glow-success: 0 4px 20px rgba(16,185,129,.22);
 }
 
-/* ─── BASE ──────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════
+   RESET
+   ════════════════════════════════════════════════════════ */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -75,16 +94,49 @@ body.dark-mode {
 
 html {
   scroll-behavior: smooth;
+  height: 100%;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font);
   background: var(--bg-app);
   color: var(--text-primary);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   overflow-y: scroll;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background 0.4s var(--smooth), color 0.3s var(--ease);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
 }
+
+/* ── Animated gradient mesh ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 900px 700px at 15% 8%,  rgba(37,99,235,.065)  0%, transparent 65%),
+    radial-gradient(ellipse 700px 600px at 85% 85%, rgba(124,58,237,.045) 0%, transparent 65%),
+    radial-gradient(ellipse 800px 500px at 50% 45%, rgba(16,185,129,.03)  0%, transparent 70%);
+  animation: meshDrift 22s ease-in-out infinite alternate;
+}
+
+body.dark-mode::before {
+  background:
+    radial-gradient(ellipse 900px 700px at 15% 8%,  rgba(79,142,247,.08)  0%, transparent 65%),
+    radial-gradient(ellipse 700px 600px at 85% 85%, rgba(124,58,237,.065) 0%, transparent 65%),
+    radial-gradient(ellipse 800px 500px at 50% 45%, rgba(16,185,129,.04)  0%, transparent 70%);
+}
+
+@keyframes meshDrift {
+  0%   { transform: translate(0,0)      scale(1);    }
+  33%  { transform: translate(1.5%,1%)  scale(1.015);}
+  66%  { transform: translate(-1%, .5%) scale(0.985);}
+  100% { transform: translate(.5%,-1%)  scale(1.01); }
+}
+
+#root { position: relative; z-index: 1; }
