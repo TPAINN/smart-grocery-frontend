@@ -11,7 +11,7 @@
   justify-content: center;
   align-items: center;
   z-index: 10000;
-  animation: overlayIn 0.25s var(--ease) forwards;
+  animation: overlayIn 0.35s var(--ease) forwards;
   padding: 20px;
 }
 
@@ -26,7 +26,7 @@
   max-width: 400px;
   position: relative;
   box-shadow: var(--shadow-xl);
-  animation: modalIn 0.42s var(--spring) forwards;
+  animation: modalIn 0.65s var(--spring) forwards;
   overflow: hidden;
   /* Highlight top edge */
   background-image: linear-gradient(
@@ -57,10 +57,10 @@ body.dark-mode .modal-content {
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition:
-    transform    0.22s var(--spring),
-    background   0.18s var(--ease),
-    color        0.18s var(--ease),
-    box-shadow   0.18s var(--ease);
+    transform    0.36s var(--spring),
+    background   0.28s var(--ease),
+    color        0.28s var(--ease),
+    box-shadow   0.28s var(--ease);
 }
 
 .close-btn:hover {
@@ -109,9 +109,9 @@ body.dark-mode .modal-content {
   outline: none;
   width: 100%;
   transition:
-    border-color 0.2s var(--ease),
-    background   0.2s var(--ease),
-    box-shadow   0.2s var(--ease);
+    border-color 0.32s var(--ease),
+    background   0.32s var(--ease),
+    box-shadow   0.32s var(--ease);
   -webkit-appearance: none;
 }
 
@@ -140,9 +140,9 @@ body.dark-mode .modal-content {
   min-height: 50px;
   letter-spacing: 0.1px;
   transition:
-    transform   0.22s var(--spring),
-    opacity     0.18s var(--ease),
-    box-shadow  0.2s var(--ease);
+    transform   0.36s var(--spring),
+    opacity     0.28s var(--ease),
+    box-shadow  0.32s var(--ease);
   /* Subtle gradient */
   background-image: linear-gradient(135deg, var(--text-primary) 0%, rgba(30,40,60,0.92) 100%);
 }
@@ -205,12 +205,12 @@ body.dark-mode .submit-btn {
 }
 
 /* Staggered entry */
-.staggered-1 { opacity: 0; animation: fadeUp 0.4s var(--smooth) forwards 0.08s; }
-.staggered-2 { opacity: 0; animation: fadeUp 0.4s var(--smooth) forwards 0.18s; }
-.staggered-3 { opacity: 0; animation: fadeUp 0.4s var(--smooth) forwards 0.28s; }
+.staggered-1 { opacity: 0; animation: fadeUp 0.6s var(--smooth) forwards 0.12s; }
+.staggered-2 { opacity: 0; animation: fadeUp 0.6s var(--smooth) forwards 0.24s; }
+.staggered-3 { opacity: 0; animation: fadeUp 0.6s var(--smooth) forwards 0.38s; }
 
 .slide-down-input {
-  animation: slideDownIn 0.3s var(--spring) forwards;
+  animation: slideDownIn 0.45s var(--spring) forwards;
 }
 
 /* Keyframes */

@@ -24,8 +24,8 @@
   border: 1px solid var(--border);
   width: 100%;
   max-width: 500px;
-  animation: containerIn 0.6s var(--smooth) forwards;
-  transition: background 0.35s var(--ease), border-color 0.35s var(--ease), box-shadow 0.35s var(--ease);
+  animation: containerIn 0.9s var(--smooth) forwards;
+  transition: background 0.5s var(--ease), border-color 0.5s var(--ease), box-shadow 0.5s var(--ease);
   /* Subtle inner highlight on top edge */
   background-image: linear-gradient(
     180deg,
@@ -59,7 +59,7 @@ body.dark-mode .container {
   padding: 10px 16px;
   border-radius: var(--radius-sm);
   text-align: left;
-  transition: background 0.25s var(--ease), border-color 0.25s var(--ease);
+  transition: background 0.4s var(--ease), border-color 0.4s var(--ease);
   flex: 1;
 }
 
@@ -94,10 +94,10 @@ body.dark-mode .container {
   cursor: pointer;
   position: relative;
   transition:
-    transform    0.2s var(--spring),
-    box-shadow   0.2s var(--ease),
-    background   0.2s var(--ease),
-    border-color 0.2s var(--ease);
+    transform    0.32s var(--spring),
+    box-shadow   0.32s var(--ease),
+    background   0.28s var(--ease),
+    border-color 0.28s var(--ease);
   box-shadow: var(--shadow-xs);
   -webkit-user-select: none; user-select: none;
 }
@@ -125,7 +125,7 @@ body.dark-mode .container {
   display: flex; align-items: center; justify-content: center;
   border-radius: 50%;
   border: 2px solid var(--bg-container);
-  animation: badgePop 0.4s var(--spring) forwards;
+  animation: badgePop 0.6s var(--spring) forwards;
 }
 
 .app-header h1 {
@@ -160,7 +160,7 @@ body.dark-mode .app-header h1 {
   box-shadow: var(--shadow-xl);
   z-index: 200;
   overflow: hidden;
-  animation: dropDownIn 0.3s var(--spring) forwards;
+  animation: dropDownIn 0.45s var(--spring) forwards;
   transform-origin: top right;
 }
 
@@ -190,7 +190,7 @@ body.dark-mode .app-header h1 {
   color: var(--accent);
   letter-spacing: 1px;
   cursor: pointer;
-  transition: all 0.18s var(--ease);
+  transition: all 0.28s var(--ease);
 }
 
 .share-key-badge:hover {
@@ -208,7 +208,7 @@ body.dark-mode .app-header h1 {
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: all 0.18s var(--ease);
+  transition: all 0.28s var(--ease);
   border-bottom: 1px solid var(--border);
 }
 
@@ -239,7 +239,7 @@ body.dark-mode .dropdown-item.logout:hover { background: rgba(239,68,68,.1); }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  animation: slideDown 0.4s var(--smooth) forwards;
+  animation: slideDown 0.6s var(--smooth) forwards;
 }
 
 .pulsing-dot {
@@ -259,7 +259,7 @@ body.dark-mode .dropdown-item.logout:hover { background: rgba(239,68,68,.1); }
   border-radius: var(--radius-md);
   margin-bottom: 22px;
   gap: 4px;
-  transition: background 0.25s var(--ease);
+  transition: background 0.4s var(--ease);
 }
 
 .tab-btn {
@@ -276,10 +276,10 @@ body.dark-mode .dropdown-item.logout:hover { background: rgba(239,68,68,.1); }
   letter-spacing: 0.1px;
   position: relative;
   transition:
-    color      0.2s var(--ease),
+    color      0.28s var(--ease),
     background 0.2s var(--ease),
-    box-shadow 0.2s var(--ease),
-    transform  0.2s var(--spring);
+    box-shadow 0.32s var(--ease),
+    transform  0.34s var(--spring);
   -webkit-user-select: none; user-select: none;
 }
 
@@ -308,7 +308,7 @@ body.dark-mode .dropdown-item.logout:hover { background: rgba(239,68,68,.1); }
   border: 1px solid rgba(255,255,255,.06);
   position: relative;
   overflow: hidden;
-  animation: slideDown 0.4s var(--smooth) forwards;
+  animation: slideDown 0.6s var(--smooth) forwards;
 }
 
 /* Shimmer effect on budget banner */
@@ -362,7 +362,7 @@ body.dark-mode .budget-banner {
   font-size: 17px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s var(--spring);
+  transition: all 0.34s var(--spring);
   backdrop-filter: blur(4px);
 }
 
@@ -414,11 +414,11 @@ body.dark-mode .budget-banner {
   cursor: pointer;
   flex-shrink: 0;
   transition:
-    transform    0.22s var(--spring),
-    box-shadow   0.22s var(--ease),
-    background   0.18s var(--ease),
-    border-color 0.18s var(--ease),
-    color        0.18s var(--ease);
+    transform    0.34s var(--spring),
+    box-shadow   0.34s var(--ease),
+    background   0.26s var(--ease),
+    border-color 0.26s var(--ease),
+    color        0.26s var(--ease);
   -webkit-user-select: none; user-select: none;
 }
 
@@ -458,9 +458,9 @@ body.dark-mode .budget-banner {
   color: var(--text-primary);
   outline: none;
   transition:
-    border-color 0.2s var(--ease),
-    background   0.2s var(--ease),
-    box-shadow   0.2s var(--ease);
+    border-color 0.28s var(--ease),
+    background   0.28s var(--ease),
+    box-shadow   0.32s var(--ease);
   -webkit-appearance: none;
 }
 
@@ -482,9 +482,9 @@ body.dark-mode .budget-banner {
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   transition:
-    transform    0.2s var(--spring),
-    background   0.18s var(--ease),
-    border-color 0.18s var(--ease),
+    transform    0.32s var(--spring),
+    background   0.26s var(--ease),
+    border-color 0.26s var(--ease),
     box-shadow   0.18s var(--ease);
 }
 
@@ -517,7 +517,7 @@ body.dark-mode .budget-banner {
   line-height: 1;
   transition:
     transform   0.22s var(--spring),
-    opacity     0.18s var(--ease),
+    opacity     0.28s var(--ease),
     box-shadow  0.2s var(--ease);
 }
 
@@ -545,7 +545,7 @@ body.dark-mode .budget-banner {
   max-height: 290px;
   overflow-y: auto;
   overflow-x: hidden;
-  animation: dropdownIn 0.22s var(--smooth) forwards;
+  animation: dropdownIn 0.36s var(--smooth) forwards;
 }
 
 .suggestions-dropdown::-webkit-scrollbar { width: 4px; }
@@ -559,7 +559,7 @@ body.dark-mode .budget-banner {
   padding: 12px 15px;
   cursor: pointer;
   border-bottom: 1px solid var(--border);
-  transition: background 0.15s var(--ease), transform 0.15s var(--ease);
+  transition: background 0.25s var(--ease), transform 0.25s var(--ease);
   gap: 11px;
 }
 
@@ -609,15 +609,15 @@ body.dark-mode .budget-banner {
 }
 
 .category-group {
-  animation: fadeUp 0.38s var(--smooth) forwards;
+  animation: fadeUp 0.6s var(--smooth) forwards;
   opacity: 0;
 }
-.category-group:nth-child(1) { animation-delay: .03s; }
-.category-group:nth-child(2) { animation-delay: .07s; }
-.category-group:nth-child(3) { animation-delay: .11s; }
-.category-group:nth-child(4) { animation-delay: .15s; }
-.category-group:nth-child(5) { animation-delay: .19s; }
-.category-group:nth-child(6) { animation-delay: .23s; }
+.category-group:nth-child(1) { animation-delay: .06s; }
+.category-group:nth-child(2) { animation-delay: .28s; }
+.category-group:nth-child(3) { animation-delay: .22s; }
+.category-group:nth-child(4) { animation-delay: .30s; }
+.category-group:nth-child(5) { animation-delay: .38s; }
+.category-group:nth-child(6) { animation-delay: .46s; }
 
 .category-title {
   font-size: 11px;
@@ -646,11 +646,11 @@ body.dark-mode .budget-banner {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   transition:
-    transform    0.22s var(--spring),
-    box-shadow   0.22s var(--ease),
+    transform    0.34s var(--spring),
+    box-shadow   0.34s var(--ease),
     border-color 0.22s var(--ease),
     background   0.22s var(--ease);
-  animation: itemSlideIn 0.32s var(--smooth) forwards;
+  animation: itemSlideIn 0.5s var(--smooth) forwards;
   opacity: 0;
   gap: 10px;
   cursor: default;
@@ -664,12 +664,12 @@ body.dark-mode .budget-banner {
 }
 
 /* Stagger item animations */
-.grocery-list .item-card:nth-child(1) { animation-delay: .04s; }
-.grocery-list .item-card:nth-child(2) { animation-delay: .08s; }
-.grocery-list .item-card:nth-child(3) { animation-delay: .12s; }
-.grocery-list .item-card:nth-child(4) { animation-delay: .16s; }
-.grocery-list .item-card:nth-child(5) { animation-delay: .20s; }
-.grocery-list .item-card:nth-child(n+6) { animation-delay: .24s; }
+.grocery-list .item-card:nth-child(1) { animation-delay: .32s; }
+.grocery-list .item-card:nth-child(2) { animation-delay: .32s; }
+.grocery-list .item-card:nth-child(3) { animation-delay: .48s; }
+.grocery-list .item-card:nth-child(4) { animation-delay: .32s; }
+.grocery-list .item-card:nth-child(5) { animation-delay: .40s; }
+.grocery-list .item-card:nth-child(n+6) { animation-delay: .48s; }
 
 .item-content { flex: 1; min-width: 0; }
 
@@ -709,7 +709,7 @@ body.dark-mode .budget-banner {
   opacity: 0;
   transform: translateX(6px);
   transition:
-    opacity   0.18s var(--ease),
+    opacity   0.28s var(--ease),
     transform 0.22s var(--smooth);
 }
 
@@ -727,9 +727,9 @@ body.dark-mode .budget-banner {
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition:
-    transform    0.2s var(--spring),
-    background   0.18s var(--ease),
-    border-color 0.18s var(--ease),
+    transform    0.32s var(--spring),
+    background   0.26s var(--ease),
+    border-color 0.26s var(--ease),
     box-shadow   0.18s var(--ease);
 }
 
@@ -794,9 +794,9 @@ body.dark-mode .budget-banner {
   padding: 10px 16px;
   margin-bottom: 16px;
   transition:
-    border-color 0.2s var(--ease),
-    background   0.2s var(--ease),
-    box-shadow   0.2s var(--ease);
+    border-color 0.28s var(--ease),
+    background   0.28s var(--ease),
+    box-shadow   0.32s var(--ease);
 }
 
 .fridge-ai-box:focus-within {
@@ -846,10 +846,10 @@ body.dark-mode .budget-banner {
   cursor: pointer;
   flex-shrink: 0;
   transition:
-    transform    0.22s var(--spring),
-    background   0.18s var(--ease),
-    color        0.18s var(--ease),
-    border-color 0.18s var(--ease),
+    transform    0.34s var(--spring),
+    background   0.26s var(--ease),
+    color        0.26s var(--ease),
+    border-color 0.26s var(--ease),
     box-shadow   0.18s var(--ease);
 }
 
@@ -883,19 +883,19 @@ body.dark-mode .budget-banner {
   overflow: hidden;
   box-shadow: var(--shadow-xs);
   transition:
-    transform    0.28s var(--spring),
-    box-shadow   0.28s var(--ease),
+    transform    0.42s var(--spring),
+    box-shadow   0.42s var(--ease),
     border-color 0.28s var(--ease);
   cursor: pointer;
-  animation: fadeUp 0.38s var(--smooth) forwards;
+  animation: fadeUp 0.6s var(--smooth) forwards;
   opacity: 0;
 }
 
-.recipe-card:nth-child(1) { animation-delay: .04s; }
-.recipe-card:nth-child(2) { animation-delay: .09s; }
-.recipe-card:nth-child(3) { animation-delay: .14s; }
-.recipe-card:nth-child(4) { animation-delay: .19s; }
-.recipe-card:nth-child(n+5) { animation-delay: .24s; }
+.recipe-card:nth-child(1) { animation-delay: .32s; }
+.recipe-card:nth-child(2) { animation-delay: .18s; }
+.recipe-card:nth-child(3) { animation-delay: .28s; }
+.recipe-card:nth-child(4) { animation-delay: .38s; }
+.recipe-card:nth-child(n+5) { animation-delay: .48s; }
 
 .recipe-card:hover {
   border-color: var(--border-strong);
@@ -1030,22 +1030,22 @@ body.dark-mode .budget-banner {
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition:
-    transform    0.28s var(--spring),
-    box-shadow   0.28s var(--ease),
+    transform    0.42s var(--spring),
+    box-shadow   0.42s var(--ease),
     border-color 0.28s var(--ease),
-    background   0.2s var(--ease);
+    background   0.28s var(--ease);
   box-shadow: var(--shadow-xs);
-  animation: fadeUp 0.38s var(--smooth) forwards;
+  animation: fadeUp 0.6s var(--smooth) forwards;
   opacity: 0;
 }
 
-.offer-card:nth-child(1) { animation-delay: .04s; }
-.offer-card:nth-child(2) { animation-delay: .09s; }
-.offer-card:nth-child(3) { animation-delay: .14s; }
-.offer-card:nth-child(4) { animation-delay: .19s; }
-.offer-card:nth-child(5) { animation-delay: .24s; }
-.offer-card:nth-child(6) { animation-delay: .29s; }
-.offer-card:nth-child(7) { animation-delay: .34s; }
+.offer-card:nth-child(1) { animation-delay: .32s; }
+.offer-card:nth-child(2) { animation-delay: .18s; }
+.offer-card:nth-child(3) { animation-delay: .28s; }
+.offer-card:nth-child(4) { animation-delay: .38s; }
+.offer-card:nth-child(5) { animation-delay: .48s; }
+.offer-card:nth-child(6) { animation-delay: .56s; }
+.offer-card:nth-child(7) { animation-delay: .64s; }
 
 .offer-card:hover {
   transform: translateY(-6px) scale(1.02);
@@ -1143,7 +1143,7 @@ body.dark-mode .budget-banner {
   text-align: center;
   text-transform: uppercase;
   outline: none;
-  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+  transition: border-color 0.28s var(--ease), box-shadow 0.32s var(--ease), background 0.2s var(--ease);
   display: block;
   margin-bottom: 12px;
   -webkit-appearance: none;
@@ -1207,7 +1207,7 @@ body.dark-mode .budget-banner {
 
 /* ── KEYFRAMES ─────────────────────────────────────────── */
 @keyframes containerIn {
-  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  from { opacity: 0; transform: translateY(32px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 

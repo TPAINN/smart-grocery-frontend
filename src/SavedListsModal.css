@@ -10,7 +10,7 @@
   z-index: 10000;
   display: flex;
   justify-content: flex-end;
-  animation: overlayIn 0.25s var(--ease) forwards;
+  animation: overlayIn 0.35s var(--ease) forwards;
 }
 
 .lists-panel {
@@ -25,7 +25,7 @@
   box-shadow: -16px 0 60px rgba(0,0,0,.18), -4px 0 16px rgba(0,0,0,.08);
   display: flex;
   flex-direction: column;
-  animation: panelSlideIn 0.38s var(--smooth) forwards;
+  animation: panelSlideIn 0.55s var(--smooth) forwards;
   overflow: hidden;
 }
 
@@ -64,10 +64,10 @@ body.dark-mode .lists-panel {
   color: var(--text-secondary);
   cursor: pointer;
   transition:
-    transform    0.2s var(--spring),
-    background   0.18s var(--ease),
-    color        0.18s var(--ease),
-    box-shadow   0.18s var(--ease);
+    transform    0.34s var(--spring),
+    background   0.28s var(--ease),
+    color        0.28s var(--ease),
+    box-shadow   0.28s var(--ease);
 }
 
 .back-to-grid-btn:hover {
@@ -88,9 +88,9 @@ body.dark-mode .lists-panel {
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition:
-    transform    0.22s var(--spring),
-    background   0.18s var(--ease),
-    color        0.18s var(--ease);
+    transform    0.36s var(--spring),
+    background   0.28s var(--ease),
+    color        0.28s var(--ease);
 }
 
 .close-panel-btn:hover {
@@ -130,11 +130,11 @@ body.dark-mode .lists-panel {
   position: relative;
   cursor: pointer;
   transition:
-    transform    0.25s var(--spring),
-    box-shadow   0.25s var(--ease),
-    border-color 0.25s var(--ease),
-    background   0.2s var(--ease);
-  animation: cardIn 0.36s var(--smooth) forwards;
+    transform    0.4s var(--spring),
+    box-shadow   0.4s var(--ease),
+    border-color 0.4s var(--ease),
+    background   0.32s var(--ease);
+  animation: cardIn 0.55s var(--smooth) forwards;
   opacity: 0;
   overflow: hidden;
 }
@@ -148,16 +148,16 @@ body.dark-mode .lists-panel {
   background: linear-gradient(180deg, var(--accent) 0%, var(--success) 100%);
   border-radius: 0 0 0 var(--radius-xs);
   opacity: 0;
-  transition: opacity 0.2s var(--ease);
+  transition: opacity 0.32s var(--ease);
 }
 
 .list-card:hover::before { opacity: 1; }
-.list-card:nth-child(1) { animation-delay: .04s; }
-.list-card:nth-child(2) { animation-delay: .09s; }
-.list-card:nth-child(3) { animation-delay: .14s; }
-.list-card:nth-child(4) { animation-delay: .19s; }
-.list-card:nth-child(5) { animation-delay: .24s; }
-.list-card:nth-child(n+6) { animation-delay: .29s; }
+.list-card:nth-child(1) { animation-delay: .10s; }
+.list-card:nth-child(2) { animation-delay: .20s; }
+.list-card:nth-child(3) { animation-delay: .30s; }
+.list-card:nth-child(4) { animation-delay: .40s; }
+.list-card:nth-child(5) { animation-delay: .50s; }
+.list-card:nth-child(n+6) { animation-delay: .58s; }
 
 .list-card:hover {
   transform: translateY(-4px) translateX(2px);
@@ -180,9 +180,9 @@ body.dark-mode .lists-panel {
   opacity: 0;
   display: flex; align-items: center; justify-content: center;
   transition:
-    opacity      0.2s var(--ease),
-    transform    0.2s var(--spring),
-    background   0.18s var(--ease);
+    opacity      0.32s var(--ease),
+    transform    0.34s var(--spring),
+    background   0.28s var(--ease);
 }
 
 .list-card:hover .delete-list-btn { opacity: 1; }
@@ -232,13 +232,13 @@ body.dark-mode .lists-panel {
   height: 100%;
   background: linear-gradient(90deg, var(--success), #34d399);
   border-radius: 10px;
-  transition: width 0.6s var(--smooth);
+  transition: width 0.9s var(--smooth);
   box-shadow: 0 0 8px rgba(16,185,129,.3);
 }
 
 /* ── CHECKLIST VIEW ─────────────────────────────────────── */
 .checklist-view {
-  animation: fadeUp 0.3s var(--smooth) forwards;
+  animation: fadeUp 0.5s var(--smooth) forwards;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -271,20 +271,20 @@ body.dark-mode .lists-panel {
   border-radius: var(--radius-md);
   cursor: pointer;
   transition:
-    transform    0.2s var(--spring),
-    border-color 0.2s var(--ease),
-    background   0.2s var(--ease),
-    opacity      0.25s var(--ease);
-  animation: cardIn 0.3s var(--smooth) forwards;
+    transform    0.34s var(--spring),
+    border-color 0.32s var(--ease),
+    background   0.32s var(--ease),
+    opacity      0.4s var(--ease);
+  animation: cardIn 0.5s var(--smooth) forwards;
   opacity: 0;
 }
 
-.checklist-item:nth-child(1)  { animation-delay: .03s; }
-.checklist-item:nth-child(2)  { animation-delay: .06s; }
-.checklist-item:nth-child(3)  { animation-delay: .09s; }
-.checklist-item:nth-child(4)  { animation-delay: .12s; }
-.checklist-item:nth-child(5)  { animation-delay: .15s; }
-.checklist-item:nth-child(n+6){ animation-delay: .18s; }
+.checklist-item:nth-child(1)  { animation-delay: .07s; }
+.checklist-item:nth-child(2)  { animation-delay: .14s; }
+.checklist-item:nth-child(3)  { animation-delay: .20s; }
+.checklist-item:nth-child(4)  { animation-delay: .21s; }
+.checklist-item:nth-child(5)  { animation-delay: .28s; }
+.checklist-item:nth-child(n+6){ animation-delay: .35s; }
 
 .checklist-item:hover { border-color: var(--border-strong); transform: translateX(3px); }
 
@@ -306,10 +306,10 @@ body.dark-mode .lists-panel {
   font-weight: 800;
   flex-shrink: 0;
   transition:
-    transform    0.25s var(--spring),
-    background   0.2s var(--ease),
-    border-color 0.2s var(--ease),
-    box-shadow   0.2s var(--ease);
+    transform    0.4s var(--spring),
+    background   0.32s var(--ease),
+    border-color 0.32s var(--ease),
+    box-shadow   0.32s var(--ease);
 }
 
 .custom-checkbox.checked {
@@ -329,7 +329,7 @@ body.dark-mode .lists-panel {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: color 0.2s var(--ease), text-decoration 0.2s;
+  transition: color 0.32s var(--ease), text-decoration 0.2s;
 }
 
 .checklist-item.checked .checklist-item-name {

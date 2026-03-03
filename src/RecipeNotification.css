@@ -28,7 +28,7 @@
   gap: 13px;
   min-width: 290px;
   max-width: 440px;
-  animation: notifIn 0.44s var(--spring) forwards;
+  animation: notifIn 0.65s var(--spring) forwards;
   /* Shimmer on notification */
   position: relative;
   overflow: hidden;
@@ -80,9 +80,9 @@
   border-radius: var(--radius-xs);
   display: flex; align-items: center; justify-content: center;
   transition:
-    background  0.18s var(--ease),
-    color       0.18s var(--ease),
-    transform   0.2s var(--spring);
+    background  0.28s var(--ease),
+    color       0.28s var(--ease),
+    transform   0.34s var(--spring);
 }
 
 .close-notify-btn:hover {

@@ -122,7 +122,7 @@ body::before {
     radial-gradient(ellipse 900px 700px at 15% 8%,  rgba(37,99,235,.065)  0%, transparent 65%),
     radial-gradient(ellipse 700px 600px at 85% 85%, rgba(124,58,237,.045) 0%, transparent 65%),
     radial-gradient(ellipse 800px 500px at 50% 45%, rgba(16,185,129,.03)  0%, transparent 70%);
-  animation: meshDrift 22s ease-in-out infinite alternate;
+  animation: meshDrift 30s ease-in-out infinite alternate;
 }
 
 body.dark-mode::before {
