@@ -67,7 +67,28 @@ const CATEGORIES = [
 
 const getCategory = (name) =>
   CATEGORIES.find((c) => c.keywords.some((k) => normalizeText(name).includes(k)))?.name || '📦 Διάφορα Είδη';
-
+// 🟢 ΕΞΥΠΝΟΣ ΘΕΡΜΙΔΟΜΕΤΡΗΤΗΣ (OFFLINE NLP DICTIONARY)
+const getAdvancedCalories = (itemName) => {
+  const text = normalizeText(itemName);
+  const foodDB =[
+    { keywords:['λαδι', 'ελαιολαδο', 'σπορελαιο', 'βουτυρο', 'μαργαρινη', 'μαγιονεζα'], cals: 800 },
+    { keywords:['σοκολατα', 'μερεντα', 'μπισκοτα', 'κρουασαν', 'πατατακια', 'τσιπς', 'γαριδακια'], cals: 500 },
+    { keywords:['ζαχαρη', 'μελι', 'μαρμελαδα'], cals: 400 },
+    { keywords:['τυρι', 'φετα', 'γκουντα', 'κασπερι', 'παρμεζανα', 'γραβιερα'], cals: 350 },
+    { keywords:['ψωμι', 'μακαρονια', 'ρυζι', 'αλευρι', 'βρωμη', 'δημητριακα', 'φρυγανιες', 'πιτα'], cals: 350 },
+    { keywords:['αλλαντικα', 'ζαμπον', 'μπεικον', 'λουκανικο', 'σαλαμι'], cals: 300 },
+    { keywords:['κρεας', 'κοτοπουλο', 'μοσχαρι', 'κιμας', 'μπριζολα', 'ψαρι', 'σολομος'], cals: 200 },
+    { keywords:['αυγο', 'αυγα'], cals: 150 },
+    { keywords:['γαλα', 'γιαουρτι', 'κεφιρ'], cals: 80 },
+    { keywords:['μηλο', 'μπανανα', 'πορτοκαλι', 'φρουτ', 'χυμος'], cals: 60 },
+    { keywords:['ντοματα', 'πατατα', 'κρεμμυδι', 'σαλατα', 'λαχανικ', 'καροτο', 'μαρουλι'], cals: 25 },
+    { keywords:['νερο', 'σοδα', 'καφες', 'τσαι', 'αναψυκτικο zero'], cals: 0 }
+  ];
+  for (let category of foodDB) {
+    if (category.keywords.some(word => text.includes(word))) return category.cals;
+  }
+  return 120; // Fallback
+};
 const SUPERMARKET_LOGOS = {
   'Σκλαβενίτης':    'https://core-sa.com/wp-content/uploads/2019/10/sklavenitis.png',
   'ΑΒ Βασιλόπουλος':'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTl3QK3J91QWo9nDaOQxqXTMIwCRNMnJYazWw&s',
@@ -320,6 +341,19 @@ export default function App() {
 
   const totalCost = items.reduce((s, i) => s + (i.price > 0 ? i.price : 0), 0);
 
+  // 🟢 Υπολογισμός Θερμίδων
+  let totalCalories = 0;
+  items.forEach(item => { totalCalories += getAdvancedCalories(item.text); });
+
+  // 🟢 Συνάρτηση για COPY του Share Key
+  const handleCopyShareKey = () => {
+    if (user?.shareKey) {
+        navigator.clipboard.writeText(user.shareKey);
+        setNotification({ show: true, message: `📋 Αντιγράφηκε το Share Key: ${user.shareKey}` });
+        if(navigator.vibrate) navigator.vibrate(50);
+    }
+  };
+
   const filteredRecipes = recipes.filter((r) => {
     if (recipeFilter === 'budget' && !r.isBudget) return false;
     if (recipeFilter === 'healthy' && !r.isHealthy) return false;
@@ -448,14 +482,11 @@ export default function App() {
                         onClick={() => setShowProfileMenu(false)}
                       />
                       <div className="profile-dropdown">
-                        <div className="dropdown-info">
-                          <strong>{user.name}</strong>
-                          <div
-                            className="share-key-badge"
-                            onClick={() => navigator.clipboard?.writeText(user.shareKey)}
-                            title="Κλικ για αντιγραφή"
-                          >
-                            📋 {user.shareKey}
+                        <div className="dropdown-info" style={{padding: '15px', borderBottom: '1px solid var(--border-light)'}}>
+                          <strong style={{display: 'block', fontSize: '14px'}}>{user.name}</strong>
+                          <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px'}}>
+                             <span style={{color: 'var(--text-secondary)', fontSize: '12px'}}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
+                             <button onClick={handleCopyShareKey} style={{background: 'var(--bg-surface-hover)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', padding: '4px 8px', borderRadius: '6px'}}>📋</button>
                           </div>
                         </div>
                         <div
@@ -502,18 +533,22 @@ export default function App() {
         {/* ════════════════ LIST TAB ════════════════ */}
         {activeTab === 'list' && (
           <div className="tab-content list-tab">
-            {/* Budget Banner */}
-            {totalCost > 0 && (
-              <div className="budget-banner">
-                <div className="budget-info">
-                  <div>
-                    <div className="budget-label">Συνολικό Κόστος</div>
-                    <div className="budget-amount">{totalCost.toFixed(2)}€</div>
-                  </div>
-                  <div className="budget-actions">
-                    <button className="mass-clear-btn" onClick={handleMassClear} title="Καθαρισμός">🗑️</button>
-                    <button className="save-list-btn" onClick={saveCurrentList} title="Αποθήκευση">💾</button>
-                  </div>
+            {/* Budget Banner & Calories */}
+            {items.length > 0 && (
+              <div className="budget-banner" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)', padding: '15px', borderRadius: '12px', border: '1px solid var(--border-light)', marginBottom: '15px'}}>
+                <div style={{display: 'flex', gap: '20px'}}>
+                    <div>
+                        <div style={{fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase'}}>Κοστος</div>
+                        <div className="budget-amount" style={{fontSize: '20px', fontWeight: 'bold', color: 'var(--brand-primary)'}}>{totalCost.toFixed(2)}€</div>
+                    </div>
+                    <div style={{borderLeft: '1px solid var(--border-light)', paddingLeft: '20px'}}>
+                        <div style={{fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase'}}>Θερμιδες (Est.)</div>
+                        <div className="budget-amount" style={{fontSize: '20px', fontWeight: 'bold', color: '#f97316'}}>🔥 {totalCalories}</div>
+                    </div>
+                </div>
+                <div style={{display: 'flex', gap: '8px'}}>
+                    <button onClick={handleMassClear} className="mass-clear-btn" style={{background: 'rgba(239, 68, 68, 0.1)', color: 'var(--brand-danger)', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer'}} title="Αδειασμα">🗑️</button>
+                    <button onClick={saveCurrentList} className="save-list-btn" style={{background: 'var(--brand-success)', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold'}} title="Αποθήκευση">💾</button>
                 </div>
               </div>
             )}
