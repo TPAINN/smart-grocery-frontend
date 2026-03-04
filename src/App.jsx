@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import './App.css';
 import RecipeNotification from './RecipeNotification';
 import AuthModal from './AuthModal';
@@ -1013,7 +1014,7 @@ function RecipePopup({ recipe, onClose, onAddToList }) {
     setTimeout(() => onClose(), 350);
   };
 
-  return (
+  return createPortal(
     <div className={`recipe-popup-overlay ${isClosing ? 'closing' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && handleClose()}>
       <div className={`recipe-popup-card ${isClosing ? 'closing' : ''}`}>
         <button className="recipe-popup-close" onClick={handleClose}>✕</button>
@@ -1074,7 +1075,8 @@ function RecipePopup({ recipe, onClose, onAddToList }) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

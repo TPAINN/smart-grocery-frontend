@@ -1427,8 +1427,8 @@ body.dark-mode .budget-banner {
 
 /* ── KEYFRAMES ─────────────────────────────────────────── */
 @keyframes containerIn {
-  from { opacity: 0; transform: translateY(28px) scale(0.97); filter: blur(4px); }
-  to   { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0px); }
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
 @keyframes slideDown {
