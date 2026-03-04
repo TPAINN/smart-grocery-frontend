@@ -1730,16 +1730,36 @@ export default function App() {
                           </div>
                         </div>
                         {expandedRecipe === recipe._id && (
-                          <div className="recipe-details-expanded">
+                          <div className="recipe-details-expanded fade-in-item">
                             <button className="add-recipe-btn" onClick={(e) => { e.stopPropagation(); addRecipeToList(recipe); }}>
-                              🛒 Προσθήκη Υλικών στη Λίστα
+                              🛒 Προσθήκη όλων στη Λίστα
                             </button>
-                            <h5>Υλικά</h5>
-                            <ul className="ing-list">
-                              {(Array.isArray(recipe.ingredients) ? recipe.ingredients : []).map((ing, i) => (
-                                <li key={i}>• {ing}</li>
-                              ))}
-                            </ul>
+
+                            <div className="recipe-section">
+                              <h5 className="section-title">🥗 Υλικά</h5>
+                              <ul className="ing-list-pro">
+                                {recipe.ingredients.map((ing, i) => (
+                                  <li key={i} className="ing-item">
+                                    <input type="checkbox" id={`ing-${i}`} onClick={(e) => e.stopPropagation()} />
+                                    <label htmlFor={`ing-${i}`}>{ing}</label>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            {recipe.instructions && recipe.instructions.length > 0 && (
+                              <div className="recipe-section" style={{marginTop: '20px'}}>
+                                <h5 className="section-title">👨‍🍳 Εκτέλεση</h5>
+                                <div className="instructions-timeline">
+                                  {recipe.instructions.map((step, i) => (
+                                    <div key={i} className="step-row">
+                                      <span className="step-number">{i + 1}</span>
+                                      <p className="step-text">{step}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
