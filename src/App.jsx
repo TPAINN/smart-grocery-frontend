@@ -467,12 +467,14 @@ function SwipeableItem({ item, onDelete, onSend }) {
     if (isLocked.current === 'v') return;
     e.preventDefault();
     setSwiping(true);
-    setOffsetX(Math.min(0, Math.max(-160, dx)));
+    // Allow BOTH directions — clamp between -160 and +160
+    setOffsetX(Math.min(160, Math.max(-160, dx)));
   };
   const handleTouchEnd = () => {
     if (isLocked.current !== 'h') { setOffsetX(0); setSwiping(false); return; }
-    if (offsetX < -THRESHOLD) {
-      setOffsetX(-400);
+    if (Math.abs(offsetX) > THRESHOLD) {
+      // Fly out in swipe direction
+      setOffsetX(offsetX > 0 ? 500 : -500);
       setDismissed(true);
       setTimeout(() => onDelete(item.id), 320);
     } else {
@@ -481,16 +483,69 @@ function SwipeableItem({ item, onDelete, onSend }) {
     }
   };
 
+  // 0→1 reveal ratio (direction-agnostic)
   const revealPct = Math.min(1, Math.abs(offsetX) / THRESHOLD);
+  // Which side is the glow on
+  const swipeDir  = offsetX > 0 ? 'right' : 'left';
 
   return (
     <li className={`item-card-wrapper ${dismissed ? 'dismissed' : ''}`} style={{ '--reveal': revealPct }}>
-      <div className="swipe-delete-bg" style={{ opacity: revealPct }}>
-        <span className="swipe-delete-icon">🗑️</span>
+
+      {/* ── Red glow layer (behind the card, full width) ── */}
+      {swiping && revealPct > 0.05 && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 'var(--radius-md, 14px)',
+          // Glow follows swipe direction
+          background: swipeDir === 'left'
+            ? `linear-gradient(to left, transparent 0%, rgba(239,68,68,${0.12 + revealPct * 0.35}) 60%, rgba(239,68,68,${0.25 + revealPct * 0.5}) 100%)`
+            : `linear-gradient(to right, transparent 0%, rgba(239,68,68,${0.12 + revealPct * 0.35}) 60%, rgba(239,68,68,${0.25 + revealPct * 0.5}) 100%)`,
+          boxShadow: `
+            ${swipeDir === 'left' ? '-' : ''}${6 + revealPct * 20}px 0 ${16 + revealPct * 32}px rgba(239,68,68,${0.3 + revealPct * 0.55}),
+            0 0 ${8 + revealPct * 24}px rgba(239,68,68,${0.15 + revealPct * 0.35})
+          `,
+          transition: 'none',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
+      )}
+
+      {/* ── Trash icon — appears on the side being swiped toward ── */}
+      <div style={{
+        position: 'absolute',
+        top: 0, bottom: 0,
+        left:  swipeDir === 'right' ? 0 : 'auto',
+        right: swipeDir === 'left'  ? 0 : 'auto',
+        width: 60,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: revealPct,
+        transform: `scale(${0.6 + revealPct * 0.5})`,
+        transition: swiping ? 'none' : 'opacity 0.3s, transform 0.3s',
+        pointerEvents: 'none',
+        zIndex: 0,
+        filter: `drop-shadow(0 0 ${revealPct * 10}px rgba(239,68,68,0.9))`,
+      }}>
+        <span style={{ fontSize: 22 }}>🗑️</span>
       </div>
+
+      {/* ── The actual card ── */}
       <div
         className={`item-card ${swiping ? 'swiping' : ''}`}
-        style={{ transform: `translateX(${offsetX}px)` }}
+        style={{
+          transform: `translateX(${offsetX}px)`,
+          position: 'relative',
+          zIndex: 1,
+          // Red border tint as swipe progresses
+          borderColor: revealPct > 0.2
+            ? `rgba(239,68,68,${revealPct * 0.7})`
+            : undefined,
+          boxShadow: revealPct > 0.2
+            ? `0 0 0 1px rgba(239,68,68,${revealPct * 0.4}), inset 0 0 ${revealPct * 20}px rgba(239,68,68,${revealPct * 0.08})`
+            : undefined,
+        }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -583,30 +638,108 @@ function FriendPickerModal({ isOpen, friends, item, onSend, onClose }) {
   );
 }
 
-// ─── Add Friend Modal ─────────────────────────────────────────────────────────
+// ─── Email Verification Banner ────────────────────────────────────────────────
+function EmailVerificationBanner({ user, onResend }) {
+  const [sent, setSent]       = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  if (!user || user.isEmailVerified) return null;
+
+  const handleResend = async () => {
+    setLoading(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email }),
+      });
+      if (r.ok) setSent(true);
+    } catch {}
+    setLoading(false);
+  };
+
+  return (
+    <div style={{
+      display:'flex', alignItems:'center', gap:12,
+      background:'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,191,36,0.06))',
+      border:'1px solid rgba(245,158,11,0.3)',
+      borderRadius:14, padding:'12px 16px', marginBottom:14,
+      flexWrap:'wrap',
+    }}>
+      <span style={{ fontSize:20, flexShrink:0 }}>📧</span>
+      <div style={{ flex:1, minWidth:180 }}>
+        <div style={{ fontSize:13, fontWeight:700, color:'#f59e0b' }}>Επαλήθευση email εκκρεμεί</div>
+        <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop:2 }}>
+          Στάλθηκε στο {user.email}
+        </div>
+      </div>
+      {sent ? (
+        <div style={{ fontSize:12, color:'#10b981', fontWeight:700, flexShrink:0 }}>✅ Εστάλη!</div>
+      ) : (
+        <button
+          onClick={handleResend}
+          disabled={loading}
+          style={{
+            background:'rgba(245,158,11,0.15)', border:'1px solid rgba(245,158,11,0.3)',
+            color:'#f59e0b', borderRadius:10, padding:'7px 14px',
+            fontSize:12, fontWeight:700, cursor:'pointer', flexShrink:0,
+            transition:'background 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.25)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,158,11,0.15)'}
+        >
+          {loading ? '⏳' : '📤 Εκ νέου αποστολή'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+
 function AddFriendModal({ isOpen, onAdd, onClose }) {
   const [key, setKey]         = useState('');
   const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState(null); // { name, shareKey } or 'not_found'
+  const lookupTimeout         = useRef(null);
 
   if (!isOpen) return null;
 
-  const handleAdd = async () => {
-    if (!key.trim()) return;
+  const lookupKey = async (val) => {
+    if (val.length < 6) { setPreview(null); return; }
     setLoading(true);
+    setPreview(null);
     try {
-      const r = await fetch(`${API_BASE}/api/users/by-key/${key.trim().toUpperCase()}`);
-      const data = r.ok ? await r.json() : null;
-      onAdd({
-        shareKey: key.trim().toUpperCase(),
-        username: data?.name || data?.username || key.trim().toUpperCase(),
-        addedAt: Date.now(),
-      });
+      const r = await fetch(`${API_BASE}/api/auth/by-key/${val.trim().toUpperCase()}`);
+      if (r.ok) {
+        const data = await r.json();
+        setPreview({ name: data.name, shareKey: data.shareKey });
+      } else {
+        setPreview('not_found');
+      }
     } catch {
-      // Offline or no endpoint yet — use key as display name
-      onAdd({ shareKey: key.trim().toUpperCase(), username: key.trim().toUpperCase(), addedAt: Date.now() });
+      setPreview('offline');
     }
-    setKey('');
     setLoading(false);
+  };
+
+  const handleKeyChange = (e) => {
+    const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    setKey(val);
+    setPreview(null);
+    clearTimeout(lookupTimeout.current);
+    if (val.length >= 6) {
+      lookupTimeout.current = setTimeout(() => lookupKey(val), 500);
+    }
+  };
+
+  const handleAdd = () => {
+    if (!key.trim()) return;
+    const username = (preview && preview !== 'not_found' && preview !== 'offline')
+      ? preview.name
+      : key.trim().toUpperCase();
+    onAdd({ shareKey: key.trim().toUpperCase(), username, addedAt: Date.now() });
+    setKey('');
+    setPreview(null);
   };
 
   return (
@@ -615,31 +748,85 @@ function AddFriendModal({ isOpen, onAdd, onClose }) {
         <button className="close-btn" onClick={onClose}>✕</button>
         <div className="modal-header">
           <h2>➕ Προσθήκη Φίλου</h2>
-          <p>Βάλε το <strong>Share Key</strong> του φίλου σου για να συνδεθείτε στο κοινό καλάθι.</p>
+          <p>Βάλε το <strong>Share Key</strong> του φίλου σου.</p>
         </div>
         <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:10 }}>
           <input
             type="text"
             placeholder="Share Key (π.χ. AB12XY)"
             value={key}
-            onChange={(e) => setKey(e.target.value.toUpperCase())}
+            onChange={handleKeyChange}
             onKeyDown={(e) => e.key === 'Enter' && key.trim() && handleAdd()}
             autoFocus
+            maxLength={15}
             style={{
               padding:'14px 16px', borderRadius:'var(--radius-md)',
-              border:'1.5px solid var(--border)', background:'var(--bg-input)',
-              color:'var(--text-primary)', fontSize:14, fontFamily:'var(--font)',
-              outline:'none', width:'100%', letterSpacing:2, fontWeight:700, textTransform:'uppercase',
+              border:`1.5px solid ${preview && preview !== 'not_found' && preview !== 'offline' ? '#10b981' : 'var(--border)'}`,
+              background:'var(--bg-input)', color:'var(--text-primary)',
+              fontSize:16, fontFamily:'monospace',
+              outline:'none', width:'100%', letterSpacing:3,
+              fontWeight:800, textTransform:'uppercase',
+              transition:'border-color 0.2s',
             }}
           />
-          <div style={{ display:'flex', gap:8 }}>
-            <button className="submit-btn" style={{ flex:1 }} onClick={handleAdd} disabled={!key.trim() || loading}>
-              {loading ? '⏳ Ψάχνω...' : '🤝 Προσθήκη'}
+
+          {/* Preview area */}
+          {loading && (
+            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', background:'var(--bg-surface)', borderRadius:12, border:'1px solid var(--border-light)' }}>
+              <div className="skeleton" style={{ width:38, height:38, borderRadius:'50%', flexShrink:0 }} />
+              <div style={{ flex:1 }}>
+                <div className="skeleton" style={{ height:12, width:'60%', borderRadius:6, marginBottom:6 }} />
+                <div className="skeleton" style={{ height:10, width:'40%', borderRadius:6 }} />
+              </div>
+            </div>
+          )}
+
+          {!loading && preview && preview !== 'not_found' && preview !== 'offline' && (
+            <div style={{
+              display:'flex', alignItems:'center', gap:12,
+              padding:'12px 14px', background:'rgba(16,185,129,0.06)',
+              border:'1px solid rgba(16,185,129,0.25)', borderRadius:14,
+            }}>
+              <div style={{
+                width:40, height:40, borderRadius:'50%', flexShrink:0,
+                background: getAvatarColor(preview.shareKey),
+                display:'flex', alignItems:'center', justifyContent:'center',
+                color:'#fff', fontWeight:800, fontSize:15,
+              }}>
+                {getInitials(preview.name)}
+              </div>
+              <div>
+                <div style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)' }}>{preview.name}</div>
+                <div style={{ fontSize:11, color:'#10b981', marginTop:2 }}>✅ Βρέθηκε!</div>
+              </div>
+            </div>
+          )}
+
+          {!loading && preview === 'not_found' && (
+            <div style={{ padding:'10px 14px', background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, fontSize:13, color:'#ef4444' }}>
+              ❌ Δεν βρέθηκε χρήστης με αυτό το Share Key
+            </div>
+          )}
+
+          {!loading && preview === 'offline' && (
+            <div style={{ padding:'10px 14px', background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:12, fontSize:13, color:'#f59e0b' }}>
+              📡 Offline — θα προστεθεί χωρίς όνομα
+            </div>
+          )}
+
+          <div style={{ display:'flex', gap:8, marginTop:4 }}>
+            <button
+              className="submit-btn"
+              style={{ flex:1 }}
+              onClick={handleAdd}
+              disabled={!key.trim() || loading || preview === 'not_found'}
+            >
+              🤝 Προσθήκη
             </button>
             <button
               className="submit-btn"
               style={{ flex:1, background:'var(--bg-subtle)', color:'var(--text-primary)', backgroundImage:'none' }}
-              onClick={onClose}
+              onClick={() => { onClose(); setKey(''); setPreview(null); }}
             >
               Ακύρωση
             </button>
@@ -1423,6 +1610,7 @@ export default function App() {
             )}
 
             {items.length > 0 && <CalorieSummary items={items} />}
+            <EmailVerificationBanner user={user} />
             <ServerStatusBar isWakingUp={isServerWaking} />
 
             {/* Search */}
