@@ -979,16 +979,21 @@ body.dark-mode .budget-banner {
 /* ── RECIPE POPUP MODAL ────────────────────────────────── */
 .recipe-popup-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 10000;
-  padding: 16px;
+  z-index: 99999;
   animation: recipeOverlayIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* Safety resets */
+  transform: none !important;
+  filter: none !important;
 }
 
 .recipe-popup-overlay.closing {
@@ -996,17 +1001,23 @@ body.dark-mode .budget-banner {
 }
 
 .recipe-popup-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 24px;
-  width: 100%;
+  width: calc(100vw - 32px);
   max-width: 440px;
   max-height: 85vh;
+  max-height: 85dvh;
   overflow-y: auto;
   overflow-x: hidden;
   box-shadow: 0 24px 80px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.15);
   animation: recipeCardZoomIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  position: relative;
+  z-index: 100000;
+  margin: 0;
 }
 
 .recipe-popup-card.closing {
@@ -1170,13 +1181,13 @@ body.dark-mode .budget-banner {
 }
 
 @keyframes recipeCardZoomIn {
-  from { opacity: 0; transform: scale(0.7) translateY(40px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
 @keyframes recipeCardZoomOut {
-  from { opacity: 1; transform: scale(1) translateY(0); }
-  to   { opacity: 0; transform: scale(0.85) translateY(30px); }
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to   { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
 }
 
 .add-recipe-btn {
@@ -1437,34 +1448,34 @@ body.dark-mode .budget-banner {
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); filter: blur(2px); }
-  to   { opacity: 1; transform: translateY(0);    filter: blur(0px); }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes itemSlideIn {
-  from { opacity: 0; transform: translateX(-14px); filter: blur(1px); }
-  to   { opacity: 1; transform: translateX(0);     filter: blur(0px); }
+  from { opacity: 0; transform: translateX(-14px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes popIn {
-  from { opacity: 0; transform: scale(0.85) translateY(20px); filter: blur(4px); }
-  60%  { opacity: 1; transform: scale(1.02) translateY(-2px);  filter: blur(0px); }
-  to   { opacity: 1; transform: scale(1) translateY(0);        filter: blur(0px); }
+  from { opacity: 0; transform: scale(0.85) translateY(20px); }
+  60%  { opacity: 1; transform: scale(1.02) translateY(-2px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes overlayIn {
-  from { opacity: 0; backdrop-filter: blur(0px); }
-  to   { opacity: 1; backdrop-filter: blur(20px); }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes dropDownIn {
-  from { opacity: 0; transform: scale(0.92) translateY(-6px); filter: blur(2px); }
-  to   { opacity: 1; transform: scale(1) translateY(0);       filter: blur(0px); }
+  from { opacity: 0; transform: scale(0.92) translateY(-6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes dropdownIn {
-  from { opacity: 0; transform: translateY(-8px) scale(0.97); filter: blur(2px); }
-  to   { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0px); }
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
 @keyframes expandBody {
