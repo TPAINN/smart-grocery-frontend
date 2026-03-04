@@ -638,62 +638,6 @@ function FriendPickerModal({ isOpen, friends, item, onSend, onClose }) {
   );
 }
 
-// ─── Email Verification Banner ────────────────────────────────────────────────
-function EmailVerificationBanner({ user, onResend }) {
-  const [sent, setSent]       = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  if (!user || user.isEmailVerified) return null;
-
-  const handleResend = async () => {
-    setLoading(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/auth/resend-verification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email }),
-      });
-      if (r.ok) setSent(true);
-    } catch {}
-    setLoading(false);
-  };
-
-  return (
-    <div style={{
-      display:'flex', alignItems:'center', gap:12,
-      background:'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,191,36,0.06))',
-      border:'1px solid rgba(245,158,11,0.3)',
-      borderRadius:14, padding:'12px 16px', marginBottom:14,
-      flexWrap:'wrap',
-    }}>
-      <span style={{ fontSize:20, flexShrink:0 }}>📧</span>
-      <div style={{ flex:1, minWidth:180 }}>
-        <div style={{ fontSize:13, fontWeight:700, color:'#f59e0b' }}>Επαλήθευση email εκκρεμεί</div>
-        <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop:2 }}>
-          Στάλθηκε στο {user.email}
-        </div>
-      </div>
-      {sent ? (
-        <div style={{ fontSize:12, color:'#10b981', fontWeight:700, flexShrink:0 }}>✅ Εστάλη!</div>
-      ) : (
-        <button
-          onClick={handleResend}
-          disabled={loading}
-          style={{
-            background:'rgba(245,158,11,0.15)', border:'1px solid rgba(245,158,11,0.3)',
-            color:'#f59e0b', borderRadius:10, padding:'7px 14px',
-            fontSize:12, fontWeight:700, cursor:'pointer', flexShrink:0,
-            transition:'background 0.15s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,158,11,0.25)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,158,11,0.15)'}
-        >
-          {loading ? '⏳' : '📤 Εκ νέου αποστολή'}
-        </button>
-      )}
-    </div>
-  );
-}
 
 
 function AddFriendModal({ isOpen, onAdd, onClose }) {
@@ -1610,7 +1554,6 @@ export default function App() {
             )}
 
             {items.length > 0 && <CalorieSummary items={items} />}
-            <EmailVerificationBanner user={user} />
             <ServerStatusBar isWakingUp={isServerWaking} />
 
             {/* Search */}
