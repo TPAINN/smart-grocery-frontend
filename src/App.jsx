@@ -1105,23 +1105,35 @@ export default function App() {
   // ── Recipes ────────────────────────────────────────────────────────────────
   const fetchRecipes = useCallback(async () => {
     setRecipesLoading(true);
-    // Show cached instantly
+    
+    // 1. Έλεγχος Cache
     const ck = cacheGet('recipes');
-    if (ck && Array.isArray(ck.data) && ck.data.length > 0) {
-      setRecipes(ck.data);
-      setRecipesLoading(false);
-      if (!ck.stale) return;
+    if (ck) {
+      // Υποστήριξη και για παλιά (array) και για νέα (object) δομή cache
+      const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
+      if (cachedData.length > 0) {
+        setRecipes(cachedData);
+        setRecipesLoading(false);
+        if (!ck.stale) return;
+      }
     }
+
     try {
       const r = await fetch(`${API_BASE}/api/recipes`);
       if (r.ok) {
         const d = await r.json();
-        if (Array.isArray(d) && d.length > 0) {
-          cacheSet('recipes', d);
-          setRecipes(d);
+        
+        // 🟢 FIX: Παίρνουμε το array από το κλειδί "recipes" αν υπάρχει, αλλιώς το d
+        const actualRecipes = d.recipes || d; 
+
+        if (Array.isArray(actualRecipes) && actualRecipes.length > 0) {
+          cacheSet('recipes', actualRecipes);
+          setRecipes(actualRecipes);
         }
       }
-    } catch {}
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
     setRecipesLoading(false);
   }, []);
 
