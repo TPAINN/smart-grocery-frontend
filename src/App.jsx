@@ -7,7 +7,7 @@ import { io } from 'socket.io-client';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const API_BASE      = 'https://my-smart-grocery-api.onrender.com';
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_TTL_MS  = 10 * 60 * 1000; // 10 min
 
 // ─── Smart Cache (memory + localStorage, stale-while-revalidate) ──────────────
@@ -1071,7 +1071,9 @@ export default function App() {
     const onlineH = () => {
       setIsOnline(true);
       setTimeout(() => setWasOffline(false), 3000);
-      fetch(`${API_BASE}/api/recipes`).then(r => r.json()).then(d => setRecipes(Array.isArray(d) ? d : [])).catch(() => {});
+      fetch(`${API_BASE}/api/recipes`).then(r => r.json()).then(d => {
+        if (Array.isArray(d) && d.length > 0) { cacheSet('recipes', d); setRecipes(d); }
+      }).catch(() => {});
     };
     window.addEventListener('offline', offlineH);
     window.addEventListener('online', onlineH);
@@ -1102,24 +1104,44 @@ export default function App() {
     return () => clearInterval(t);
   }, []);
 
-  // ── Recipes (with cache + retry) ──────────────────────────────────────────
-  const fetchRecipes = useCallback(async () => {
+  // ── Recipes (cache + auto-retry while server wakes) ───────────────────────
+  const fetchRecipes = useCallback(async (attempt = 1) => {
     setRecipesLoading(true);
     try {
-      // Show cached instantly
+      // 1. Show cached data instantly if available
       const ck = cacheGet('recipes');
       if (ck && Array.isArray(ck.data) && ck.data.length > 0) {
         setRecipes(ck.data);
         setRecipesLoading(false);
-        if (!ck.stale) return;
+        if (!ck.stale) return; // fresh cache — no need to refetch
       }
-      const r = await fetch(`${API_BASE}/api/recipes`);
-      if (r.ok) {
-        const d = await r.json();
-        if (Array.isArray(d)) {
-          cacheSet('recipes', d);
-          setRecipes(d);
+
+      // 2. Fetch from API with timeout
+      const controller = new AbortController();
+      const timeoutId  = setTimeout(() => controller.abort(), 12000);
+      try {
+        const r = await fetch(`${API_BASE}/api/recipes`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (r.ok) {
+          const d = await r.json();
+          if (Array.isArray(d) && d.length > 0) {
+            cacheSet('recipes', d);
+            setRecipes(d);
+            setRecipesLoading(false);
+            return;
+          }
+          // API returned [] — DB might be empty or server still waking
         }
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        // Network error or timeout — server probably waking
+      }
+
+      // 3. Auto-retry (max 4 attempts) with increasing delays
+      if (attempt < 4) {
+        const delay = attempt * 4000; // 4s, 8s, 12s
+        setTimeout(() => fetchRecipes(attempt + 1), delay);
+        return; // keep loading spinner
       }
     } catch {}
     setRecipesLoading(false);
@@ -1634,8 +1656,7 @@ export default function App() {
         {/* ════ RECIPES TAB ════ */}
         {activeTab === 'recipes' && (
           <div className="tab-content recipes-tab">
-            {!user ? <LockedFeature label="Συνταγές" onUnlock={() => setShowAuthModal(true)} /> : (
-              <>
+            <>
                 {!isOnline && (
                   <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:10, fontSize:13 }}>
                     <span>📡</span>
@@ -1657,8 +1678,12 @@ export default function App() {
                 {/* ── Loading skeletons ── */}
                 {recipesLoading && recipes.length === 0 && (
                   <div className="recipes-grid">
+                    <div style={{ textAlign:'center', padding:'16px 0 8px', fontSize:13, color:'var(--text-secondary)', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                      <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--accent)', animation:'pulseDot 1.4s ease-in-out infinite' }} />
+                      {isServerWaking ? 'Ο server ξυπνάει (~15 δευτ.)...' : 'Φόρτωση συνταγών...'}
+                    </div>
                     {[1,2,3].map(i => (
-                      <div key={i} style={{ background:'var(--bg-surface)', borderRadius:16, border:'1px solid var(--border-light)', overflow:'hidden' }}>
+                      <div key={i} style={{ background:'var(--bg-card)', borderRadius:16, border:'1px solid var(--border)', overflow:'hidden' }}>
                         <div className="skeleton" style={{ height:160, borderRadius:0 }} />
                         <div style={{ padding:'14px 18px', display:'flex', flexDirection:'column', gap:8 }}>
                           <div className="skeleton" style={{ height:14, width:'70%', borderRadius:8 }} />
@@ -1731,8 +1756,7 @@ export default function App() {
                     ))}
                   </div>
                 )}
-              </>
-            )}
+            </>
           </div>
         )}
 
