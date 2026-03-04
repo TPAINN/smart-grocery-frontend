@@ -268,9 +268,9 @@ function ServerStatusBar({ isWakingUp }) {
         boxShadow: '0 0 8px #a78bfa',
       }} />
       <div>
-        <strong style={{ color: 'var(--text-primary)' }}>Ξυπνάω τον server...</strong>
+        <strong style={{ color: 'var(--text-primary)' }}>Γίνεται συγχονισμός με τον server...</strong>
         <span style={{ color: 'var(--text-secondary)', marginLeft: 6 }}>
-          (free plan — ~15 δευτ.) Τα cached αποτελέσματα εμφανίζονται κανονικά
+          (~15s) - Τα cached αποτελέσματα εμφανίζονται κανονικά
         </span>
       </div>
     </div>
