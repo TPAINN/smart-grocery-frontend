@@ -1071,9 +1071,7 @@ export default function App() {
     const onlineH = () => {
       setIsOnline(true);
       setTimeout(() => setWasOffline(false), 3000);
-      fetch(`${API_BASE}/api/recipes`).then(r => r.json()).then(d => {
-        if (Array.isArray(d) && d.length > 0) { cacheSet('recipes', d); setRecipes(d); }
-      }).catch(() => {});
+      fetchRecipes();
     };
     window.addEventListener('offline', offlineH);
     window.addEventListener('online', onlineH);
@@ -1104,44 +1102,24 @@ export default function App() {
     return () => clearInterval(t);
   }, []);
 
-  // ── Recipes (cache + auto-retry while server wakes) ───────────────────────
-  const fetchRecipes = useCallback(async (attempt = 1) => {
+  // ── Recipes ────────────────────────────────────────────────────────────────
+  const fetchRecipes = useCallback(async () => {
     setRecipesLoading(true);
+    // Show cached instantly
+    const ck = cacheGet('recipes');
+    if (ck && Array.isArray(ck.data) && ck.data.length > 0) {
+      setRecipes(ck.data);
+      setRecipesLoading(false);
+      if (!ck.stale) return;
+    }
     try {
-      // 1. Show cached data instantly if available
-      const ck = cacheGet('recipes');
-      if (ck && Array.isArray(ck.data) && ck.data.length > 0) {
-        setRecipes(ck.data);
-        setRecipesLoading(false);
-        if (!ck.stale) return; // fresh cache — no need to refetch
-      }
-
-      // 2. Fetch from API with timeout
-      const controller = new AbortController();
-      const timeoutId  = setTimeout(() => controller.abort(), 12000);
-      try {
-        const r = await fetch(`${API_BASE}/api/recipes`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        if (r.ok) {
-          const d = await r.json();
-          if (Array.isArray(d) && d.length > 0) {
-            cacheSet('recipes', d);
-            setRecipes(d);
-            setRecipesLoading(false);
-            return;
-          }
-          // API returned [] — DB might be empty or server still waking
+      const r = await fetch(`${API_BASE}/api/recipes`);
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d) && d.length > 0) {
+          cacheSet('recipes', d);
+          setRecipes(d);
         }
-      } catch (fetchErr) {
-        clearTimeout(timeoutId);
-        // Network error or timeout — server probably waking
-      }
-
-      // 3. Auto-retry (max 4 attempts) with increasing delays
-      if (attempt < 4) {
-        const delay = attempt * 4000; // 4s, 8s, 12s
-        setTimeout(() => fetchRecipes(attempt + 1), delay);
-        return; // keep loading spinner
       }
     } catch {}
     setRecipesLoading(false);
