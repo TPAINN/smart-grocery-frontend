@@ -994,6 +994,90 @@ function RecipeAddModal({ isOpen, recipeName, progress, total, onClose }) {
   );
 }
 
+// ─── Recipe Popup ────────────────────────────────────────────────────────────
+function RecipePopup({ recipe, onClose, onAddToList }) {
+  const [showDetails, setShowDetails] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowDetails(true), 500);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      clearTimeout(timer);
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => onClose(), 350);
+  };
+
+  return (
+    <div className={`recipe-popup-overlay ${isClosing ? 'closing' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && handleClose()}>
+      <div className={`recipe-popup-card ${isClosing ? 'closing' : ''}`}>
+        <button className="recipe-popup-close" onClick={handleClose}>✕</button>
+
+        {recipe.image && (
+          <div className="recipe-popup-hero" style={{ backgroundImage: `url(${recipe.image})` }}>
+            <div className="recipe-popup-hero-overlay">
+              <h2 className="recipe-popup-title">{recipe.title}</h2>
+              <p className="recipe-popup-chef">από {recipe.chef || 'Άγνωστος'}</p>
+            </div>
+          </div>
+        )}
+
+        {!recipe.image && (
+          <div className="recipe-popup-header-noimg">
+            <h2 className="recipe-popup-title">{recipe.title}</h2>
+            <p className="recipe-popup-chef">από {recipe.chef || 'Άγνωστος'}</p>
+          </div>
+        )}
+
+        <div className="recipe-popup-meta-bar">
+          {recipe.time && <span className="recipe-popup-chip">⏱️ {recipe.time} λεπτά</span>}
+          {recipe.cost != null && <span className="recipe-popup-chip">💰 ~{Number(recipe.cost).toFixed(1)}€</span>}
+          {recipe.calories && <span className="recipe-popup-chip">🔥 {recipe.calories} kcal</span>}
+        </div>
+
+        <div className="recipe-popup-body">
+          <button className="add-recipe-btn" onClick={(e) => { e.stopPropagation(); onAddToList(); }}>
+            🛒 Προσθήκη όλων στη Λίστα
+          </button>
+
+          <div className={`recipe-popup-details ${showDetails ? 'visible' : ''}`}>
+            <div className="recipe-section">
+              <h5 className="section-title">🥗 Υλικά</h5>
+              <ul className="ing-list-pro">
+                {recipe.ingredients.map((ing, i) => (
+                  <li key={i} className="ing-item-clean">
+                    <span className="ing-bullet" />
+                    <span>{ing}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {recipe.instructions && recipe.instructions.length > 0 && (
+              <div className="recipe-section" style={{ marginTop: 20 }}>
+                <h5 className="section-title">👨‍🍳 Εκτέλεση</h5>
+                <div className="instructions-timeline">
+                  {recipe.instructions.map((step, i) => (
+                    <div key={i} className="step-row">
+                      <span className="step-number">{i + 1}</span>
+                      <p className="step-text">{step}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   useKeepAlive(); // 🔑 keeps Render free-tier alive
@@ -1719,7 +1803,7 @@ export default function App() {
                 {filteredRecipes.length > 0 && (
                   <div className="recipes-grid">
                     {filteredRecipes.map(recipe => (
-                      <div key={recipe._id || recipe.title} className="recipe-card" onClick={() => setExpandedRecipe(expandedRecipe === recipe._id ? null : recipe._id)}>
+                      <div key={recipe._id || recipe.title} className="recipe-card" onClick={() => setExpandedRecipe(recipe._id)}>
                         {recipe.image && <div className="recipe-image" style={{ backgroundImage:`url(${recipe.image})` }} />}
                         <div className="recipe-info">
                           <h4>{recipe.title}</h4>
@@ -1729,43 +1813,23 @@ export default function App() {
                             {recipe.cost != null && <span>💰 ~{Number(recipe.cost).toFixed(1)}€</span>}
                           </div>
                         </div>
-                        {expandedRecipe === recipe._id && (
-                          <div className="recipe-details-expanded fade-in-item">
-                            <button className="add-recipe-btn" onClick={(e) => { e.stopPropagation(); addRecipeToList(recipe); }}>
-                              🛒 Προσθήκη όλων στη Λίστα
-                            </button>
-
-                            <div className="recipe-section">
-                              <h5 className="section-title">🥗 Υλικά</h5>
-                              <ul className="ing-list-pro">
-                                {recipe.ingredients.map((ing, i) => (
-                                  <li key={i} className="ing-item">
-                                    <input type="checkbox" id={`ing-${i}`} onClick={(e) => e.stopPropagation()} />
-                                    <label htmlFor={`ing-${i}`}>{ing}</label>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            {recipe.instructions && recipe.instructions.length > 0 && (
-                              <div className="recipe-section" style={{marginTop: '20px'}}>
-                                <h5 className="section-title">👨‍🍳 Εκτέλεση</h5>
-                                <div className="instructions-timeline">
-                                  {recipe.instructions.map((step, i) => (
-                                    <div key={i} className="step-row">
-                                      <span className="step-number">{i + 1}</span>
-                                      <p className="step-text">{step}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>
                 )}
+
+                {/* ── Recipe Popup Modal ── */}
+                {expandedRecipe && (() => {
+                  const recipe = recipes.find(r => r._id === expandedRecipe);
+                  if (!recipe) return null;
+                  return (
+                    <RecipePopup
+                      recipe={recipe}
+                      onClose={() => setExpandedRecipe(null)}
+                      onAddToList={() => addRecipeToList(recipe)}
+                    />
+                  );
+                })()}
             </>
           </div>
         )}
