@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { Html5Qrcode } from 'html5-qrcode';
 import './App.css';
 import RecipeNotification from './RecipeNotification';
 import AuthModal from './AuthModal';
@@ -1025,7 +1026,7 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
     <div className="welcome-overlay">
       <div className="welcome-box">
         <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
-        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Hub</span></h2>
+        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Grocery Hub</span></h2>
         <p className="welcome-subtitle">Το έξυπνο καλάθι αγορών που συγκρίνει τιμές από όλα τα σούπερ μάρκετ σε πραγματικό χρόνο.</p>
         <div className="welcome-features">
           {[
@@ -1082,6 +1083,369 @@ function RecipeAddModal({ isOpen, recipeName, progress, total, onClose }) {
         )}
       </div>
     </div>
+  );
+}
+
+// ─── Allergen Database ────────────────────────────────────────────────────────
+const ALLERGEN_LIST = [
+  { id:'en:gluten',       label:'Γλουτένη',       icon:'🌾' },
+  { id:'en:milk',         label:'Γάλα / Λακτόζη', icon:'🥛' },
+  { id:'en:eggs',         label:'Αυγά',           icon:'🥚' },
+  { id:'en:nuts',         label:'Ξηροί Καρποί',   icon:'🥜' },
+  { id:'en:peanuts',      label:'Φιστίκια',       icon:'🫘' },
+  { id:'en:soybeans',     label:'Σόγια',          icon:'🫛' },
+  { id:'en:fish',         label:'Ψάρι',           icon:'🐟' },
+  { id:'en:crustaceans',  label:'Καρκινοειδή',    icon:'🦐' },
+  { id:'en:molluscs',     label:'Μαλάκια',        icon:'🐚' },
+  { id:'en:celery',       label:'Σέλερι',         icon:'🥬' },
+  { id:'en:mustard',      label:'Μουστάρδα',      icon:'🟡' },
+  { id:'en:sesame-seeds', label:'Σουσάμι',        icon:'🟤' },
+  { id:'en:sulphur-dioxide', label:'Θειώδη',      icon:'⚗️' },
+  { id:'en:lupin',        label:'Λούπινα',        icon:'🌿' },
+];
+
+const getNutriScoreColor = (grade) => {
+  const c = { a:'#1e8f4e', b:'#60ac0e', c:'#eeae0e', d:'#e67e22', e:'#e63e11' };
+  return c[grade] || '#94a3b8';
+};
+
+const getNutrientLevel = (val, type) => {
+  const thresholds = {
+    fat:      { low:3,   high:17.5 },
+    saturated:{ low:1.5, high:5 },
+    sugars:   { low:5,   high:12.5 },
+    salt:     { low:0.3, high:1.5 },
+  };
+  const t = thresholds[type];
+  if (!t) return 'unknown';
+  if (val <= t.low) return 'low';
+  if (val >= t.high) return 'high';
+  return 'moderate';
+};
+
+// ─── Barcode Scanner Modal ───────────────────────────────────────────────────
+function BarcodeScannerModal({ isOpen, onClose }) {
+  const [activeView, setActiveView] = useState('scan');
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+  const [scanHistory, setScanHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sg_scan_history') || '[]'); } catch { return []; }
+  });
+  const [allergens, setAllergens] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sg_allergens') || '[]'); } catch { return []; }
+  });
+  const scannerRef = useRef(null);
+  const scannerDivId = 'barcode-scanner-area';
+
+  // Persist
+  useEffect(() => {
+    localStorage.setItem('sg_allergens', JSON.stringify(allergens));
+  }, [allergens]);
+  useEffect(() => {
+    localStorage.setItem('sg_scan_history', JSON.stringify(scanHistory));
+  }, [scanHistory]);
+
+  // Lock body scroll
+  useEffect(() => {
+    if (isOpen) { document.body.style.overflow = 'hidden'; }
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
+  // Start camera
+  useEffect(() => {
+    if (!isOpen || activeView !== 'scan' || product) return;
+    let html5Qr = null;
+    const startScanner = async () => {
+      try {
+        html5Qr = new Html5Qrcode(scannerDivId);
+        scannerRef.current = html5Qr;
+        await html5Qr.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.333 },
+          (text) => { html5Qr.stop().catch(() => {}); handleBarcodeScan(text); },
+          () => {}
+        );
+      } catch (err) {
+        setError('Δεν μπόρεσε να ανοίξει η κάμερα. Δώσε πρόσβαση.');
+      }
+    };
+    const timer = setTimeout(startScanner, 300);
+    return () => {
+      clearTimeout(timer);
+      if (html5Qr && html5Qr.isScanning) html5Qr.stop().catch(() => {});
+    };
+  }, [isOpen, activeView, product]);
+
+  const stopScanner = () => {
+    if (scannerRef.current && scannerRef.current.isScanning) {
+      scannerRef.current.stop().catch(() => {});
+    }
+  };
+
+  const handleBarcodeScan = async (barcode) => {
+    setLoading(true);
+    setError('');
+    try {
+      const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+      const data = await r.json();
+      if (data.status === 1 && data.product) {
+        const p = data.product;
+        const parsed = {
+          barcode,
+          name: p.product_name_el || p.product_name || 'Άγνωστο προϊόν',
+          brand: p.brands || '',
+          image: p.image_front_url || p.image_url || null,
+          nutriScore: p.nutriscore_grade || null,
+          novaGroup: p.nova_group || null,
+          kcal: p.nutriments?.['energy-kcal_100g'] || p.nutriments?.energy_100g || null,
+          fat: p.nutriments?.fat_100g || 0,
+          saturated: p.nutriments?.['saturated-fat_100g'] || 0,
+          sugars: p.nutriments?.sugars_100g || 0,
+          salt: p.nutriments?.salt_100g || 0,
+          proteins: p.nutriments?.proteins_100g || 0,
+          fiber: p.nutriments?.fiber_100g || 0,
+          allergenTags: [...(p.allergens_tags || []), ...(p.traces_tags || [])],
+          ingredients: p.ingredients_text_el || p.ingredients_text || '',
+          hasPalmOil: /palm/i.test(p.ingredients_text || '') || (p.ingredients_analysis_tags || []).some(t => t.includes('palm-oil')),
+          quantity: p.quantity || '',
+          scannedAt: new Date().toISOString(),
+        };
+        setProduct(parsed);
+
+        // Add to history (max 50, no duplicates at top)
+        setScanHistory(prev => {
+          const filtered = prev.filter(h => h.barcode !== barcode);
+          return [parsed, ...filtered].slice(0, 50);
+        });
+      } else {
+        setError(`Barcode ${barcode} — δεν βρέθηκε στη βάση Open Food Facts.`);
+      }
+    } catch {
+      setError('Σφάλμα σύνδεσης. Δοκίμασε ξανά.');
+    }
+    setLoading(false);
+  };
+
+  const handleClose = () => {
+    stopScanner();
+    setIsClosing(true);
+    setTimeout(() => { setIsClosing(false); setProduct(null); setError(''); setActiveView('scan'); onClose(); }, 350);
+  };
+
+  const handleScanAgain = () => {
+    setProduct(null);
+    setError('');
+    setActiveView('scan');
+  };
+
+  const toggleAllergen = (id) => {
+    setAllergens(prev => prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]);
+  };
+
+  const matchedAllergens = product
+    ? ALLERGEN_LIST.filter(a => allergens.includes(a.id) && product.allergenTags.some(t => t.includes(a.id.replace('en:', ''))))
+    : [];
+
+  const getWarnings = (p) => {
+    if (!p) return [];
+    const w = [];
+    if (getNutrientLevel(p.fat, 'fat') === 'high')            w.push({ icon:'🔴', text:'Υψηλά λιπαρά', detail:`${p.fat.toFixed(1)}g/100g` });
+    if (getNutrientLevel(p.saturated, 'saturated') === 'high') w.push({ icon:'🔴', text:'Υψηλά κορεσμένα', detail:`${p.saturated.toFixed(1)}g/100g` });
+    if (getNutrientLevel(p.sugars, 'sugars') === 'high')       w.push({ icon:'🔴', text:'Υψηλή ζάχαρη', detail:`${p.sugars.toFixed(1)}g/100g` });
+    if (getNutrientLevel(p.salt, 'salt') === 'high')           w.push({ icon:'🔴', text:'Υψηλό αλάτι', detail:`${p.salt.toFixed(1)}g/100g` });
+    if (p.hasPalmOil)                                           w.push({ icon:'🌴', text:'Περιέχει φοινικέλαιο', detail:'' });
+    if (p.novaGroup === 4)                                      w.push({ icon:'⚠️', text:'Ultra-processed (NOVA 4)', detail:'' });
+    if (getNutrientLevel(p.fat, 'fat') === 'low' && getNutrientLevel(p.sugars, 'sugars') === 'low') w.push({ icon:'✅', text:'Χαμηλά λιπαρά & ζάχαρη', detail:'' });
+    if (p.proteins >= 10) w.push({ icon:'💪', text:'Υψηλή πρωτεΐνη', detail:`${p.proteins.toFixed(1)}g/100g` });
+    if (p.fiber >= 5)     w.push({ icon:'🥦', text:'Πλούσιο σε φυτικές ίνες', detail:`${p.fiber.toFixed(1)}g/100g` });
+    return w;
+  };
+
+  if (!isOpen) return null;
+
+  return createPortal(
+    <div className={`scanner-overlay ${isClosing ? 'closing' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && handleClose()}>
+      <div className={`scanner-card ${isClosing ? 'closing' : ''}`}>
+        <button className="recipe-popup-close" onClick={handleClose}>✕</button>
+
+        {/* Tabs */}
+        <div className="scanner-tabs">
+          {[
+            { id:'scan',     label:'📷 Σάρωση' },
+            { id:'history',  label:`📜 Ιστορικό ${scanHistory.length > 0 ? `(${scanHistory.length})` : ''}` },
+            { id:'allergens', label:'⚠️ Αλλεργίες' },
+          ].map(t => (
+            <button key={t.id} className={`scanner-tab ${activeView === t.id ? 'active' : ''}`}
+              onClick={() => { if (activeView === 'scan') stopScanner(); setActiveView(t.id); }}
+            >{t.label}</button>
+          ))}
+        </div>
+
+        {/* ── SCAN VIEW ── */}
+        {activeView === 'scan' && !product && (
+          <div className="scanner-body">
+            {error ? (
+              <div className="scanner-error">
+                <span style={{ fontSize:40 }}>😕</span>
+                <p>{error}</p>
+                <button className="scanner-btn" onClick={handleScanAgain}>🔄 Δοκίμασε ξανά</button>
+              </div>
+            ) : loading ? (
+              <div className="scanner-loading">
+                <div className="scanner-spinner" />
+                <p>Αναζήτηση προϊόντος...</p>
+              </div>
+            ) : (
+              <>
+                <div className="scanner-viewfinder">
+                  <div id={scannerDivId} style={{ width:'100%' }} />
+                  <div className="scanner-frame">
+                    <div className="sf-corner sf-tl" /><div className="sf-corner sf-tr" />
+                    <div className="sf-corner sf-bl" /><div className="sf-corner sf-br" />
+                    <div className="sf-laser" />
+                  </div>
+                </div>
+                <p className="scanner-hint">Στόχευσε το barcode του προϊόντος</p>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── PRODUCT RESULT ── */}
+        {activeView === 'scan' && product && (
+          <div className="scanner-body scanner-result">
+            {/* Allergen Alert Banner */}
+            {matchedAllergens.length > 0 && (
+              <div className="allergen-alert-banner">
+                <span style={{ fontSize:22 }}>🚨</span>
+                <div>
+                  <strong>Προσοχή — Αλλεργιογόνα!</strong>
+                  <div className="allergen-alert-tags">
+                    {matchedAllergens.map(a => (
+                      <span key={a.id} className="allergen-alert-tag">{a.icon} {a.label}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Product Header */}
+            <div className="product-header">
+              {product.image && <img src={product.image} alt="" className="product-img" />}
+              <div className="product-title-area">
+                <h3 className="product-name">{product.name}</h3>
+                {product.brand && <p className="product-brand">{product.brand}</p>}
+                {product.quantity && <p className="product-qty">{product.quantity}</p>}
+              </div>
+              {product.nutriScore && (
+                <div className="nutri-badge" style={{ background: getNutriScoreColor(product.nutriScore) }}>
+                  {product.nutriScore.toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            {/* Nutrition Grid */}
+            {product.kcal != null && (
+              <div className="nutrition-grid">
+                {[
+                  { label:'Θερμίδες', val:`${Math.round(product.kcal)}`, unit:'kcal', color:'#f97316' },
+                  { label:'Λιπαρά',   val:product.fat.toFixed(1),   unit:'g', color: getNutrientLevel(product.fat,'fat')==='high'?'#ef4444':'#22c55e' },
+                  { label:'Ζάχαρη',   val:product.sugars.toFixed(1), unit:'g', color: getNutrientLevel(product.sugars,'sugars')==='high'?'#ef4444':'#22c55e' },
+                  { label:'Αλάτι',    val:product.salt.toFixed(1),  unit:'g', color: getNutrientLevel(product.salt,'salt')==='high'?'#ef4444':'#22c55e' },
+                  { label:'Πρωτεΐνη', val:product.proteins.toFixed(1), unit:'g', color:'#3b82f6' },
+                  { label:'Ίνες',     val:product.fiber.toFixed(1), unit:'g', color:'#22c55e' },
+                ].map((n,i) => (
+                  <div key={i} className="nutrition-cell" style={{ animationDelay:`${i * 0.06}s` }}>
+                    <div className="nutrition-val" style={{ color:n.color }}>{n.val}<span>{n.unit}</span></div>
+                    <div className="nutrition-label">{n.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Warnings */}
+            {getWarnings(product).length > 0 && (
+              <div className="product-warnings">
+                {getWarnings(product).map((w,i) => (
+                  <div key={i} className={`warning-chip ${w.icon === '✅' || w.icon === '💪' || w.icon === '🥦' ? 'good' : 'bad'}`}>
+                    <span>{w.icon}</span>
+                    <span>{w.text}</span>
+                    {w.detail && <span className="warning-detail">{w.detail}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Ingredients (collapsible) */}
+            {product.ingredients && (
+              <details className="ingredients-details">
+                <summary>📋 Συστατικά</summary>
+                <p>{product.ingredients}</p>
+              </details>
+            )}
+
+            <button className="scanner-btn" onClick={handleScanAgain} style={{ marginTop:16 }}>📷 Σάρωσε ξανά</button>
+          </div>
+        )}
+
+        {/* ── HISTORY VIEW ── */}
+        {activeView === 'history' && (
+          <div className="scanner-body">
+            {scanHistory.length === 0 ? (
+              <div className="scanner-empty">
+                <span style={{ fontSize:40 }}>📜</span>
+                <p>Δεν έχεις σαρώσει κάτι ακόμα</p>
+              </div>
+            ) : (
+              <div className="history-list">
+                {scanHistory.map((h, i) => (
+                  <div key={h.barcode + i} className="history-item" onClick={() => { setProduct(h); setActiveView('scan'); }}>
+                    {h.image && <img src={h.image} alt="" className="history-img" />}
+                    <div className="history-info">
+                      <div className="history-name">{h.name}</div>
+                      <div className="history-meta">
+                        {h.brand && <span>{h.brand}</span>}
+                        {h.nutriScore && (
+                          <span className="history-score" style={{ background: getNutriScoreColor(h.nutriScore) }}>
+                            {h.nutriScore.toUpperCase()}
+                          </span>
+                        )}
+                        <span className="history-date">{new Date(h.scannedAt).toLocaleDateString('el-GR')}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <button className="scanner-btn-outline" onClick={() => { setScanHistory([]); }} style={{ marginTop:12 }}>🗑️ Καθαρισμός ιστορικού</button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ALLERGENS VIEW ── */}
+        {activeView === 'allergens' && (
+          <div className="scanner-body">
+            <p className="allergen-subtitle">Ενεργοποίησε αλλεργιογόνα για να λαμβάνεις ειδοποίηση όταν σαρώνεις προϊόντα.</p>
+            <div className="allergen-grid">
+              {ALLERGEN_LIST.map(a => {
+                const active = allergens.includes(a.id);
+                return (
+                  <div key={a.id} className={`allergen-toggle ${active ? 'active' : ''}`} onClick={() => toggleAllergen(a.id)}>
+                    <span className="allergen-icon">{a.icon}</span>
+                    <span className="allergen-label">{a.label}</span>
+                    <div className={`allergen-switch ${active ? 'on' : ''}`}>
+                      <div className="allergen-switch-dot" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -1211,6 +1575,7 @@ export default function App() {
   const [recipeFilter, setRecipeFilter]   = useState('all');
   const [expandedRecipe, setExpandedRecipe] = useState(null);
   const [fridgeQuery, setFridgeQuery]     = useState('');
+  const [showScanner, setShowScanner]     = useState(false);
   const [currentTime, setCurrentTime]     = useState(new Date());
   const [isOnline, setIsOnline]           = useState(() => navigator.onLine);
   const [wasOffline, setWasOffline]       = useState(false);
@@ -1634,6 +1999,7 @@ export default function App() {
       <ConfirmModal isOpen={confirmModal.open} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={() => setConfirmModal({ open:false, message:'', onConfirm:null })} />
       <RecipeNotification show={notification.show} message={notification.message} onClose={() => setNotification({ show:false, message:'' })} />
       <RecipeAddModal isOpen={recipeAddModal.open} recipeName={recipeAddModal.recipeName} progress={recipeAddModal.progress} total={recipeAddModal.total} onClose={closeRecipeAddModal} />
+      <BarcodeScannerModal isOpen={showScanner} onClose={() => setShowScanner(false)} />
 
       {/* Friend modals & panel */}
       <FriendPickerModal isOpen={friendPicker.open} friends={friends} item={friendPicker.item} onSend={handlePickerSend} onClose={() => setFriendPicker({ open:false, item:null })} />
@@ -1673,6 +2039,13 @@ export default function App() {
               {!isOnline && (
                 <div style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:700, color:'#ef4444' }}>
                   📡 Offline
+                </div>
+              )}
+
+              {/* Barcode scanner button */}
+              {user && (
+                <div className="action-btn-new scanner-btn-header" onClick={() => setShowScanner(true)} title="Σάρωση Barcode">
+                  📷
                 </div>
               )}
 
@@ -1723,7 +2096,7 @@ export default function App() {
               )}
             </div>
           </div>
-          <h1>Smart Hub</h1>
+          <h1>Smart Grocery Hub</h1>
         </header>
 
         {/* ── Tabs ── */}
