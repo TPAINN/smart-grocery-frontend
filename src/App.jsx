@@ -941,8 +941,8 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
           {[
             { icon:'🔍', title:'Έξυπνη Αναζήτηση', sub:'Τιμές από ΑΒ, Σκλαβενίτη, MyMarket & άλλα', locked:true },
             { icon:'🍽️', title:'Συνταγές & Υλικά',  sub:'Προσθήκη υλικών απευθείας στη λίστα', locked:true },
+            { icon:'🤝', title:'Κοινό Καλάθι',       sub:'Μοιράσου τη λίστα με φίλους', locked:true },
             { icon:'📋', title:'Βασική Λίστα',       sub:'Δωρεάν για όλους', locked:false },
-            { icon:'🤝', title:'Κοινό Καλάθι',       sub:'Μοιράσου τη λίστα με φίλους', locked:false },
           ].map(({ icon, title, sub, locked }) => (
             <div key={title} className={`wf-row ${locked ? 'wf-locked' : ''}`}>
               <span className="wf-icon">{icon}</span>
