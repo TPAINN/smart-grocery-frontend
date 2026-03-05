@@ -582,18 +582,19 @@ function SwipeableItem({ item, onDelete, onSend, user }) {
     <li className={`item-card-wrapper ${dismissed ? 'dismissed' : ''}`} style={{ '--reveal': revealPct }}>
 
       {/* ── Red glow layer (behind the card, full width) ── */}
-      {swiping && revealPct > 0.05 && (
+      {swiping && revealPct > 0.02 && (
         <div style={{
           position: 'absolute',
           inset: 0,
           borderRadius: 'var(--radius-md, 14px)',
-          // Glow follows swipe direction
+          // Intense red glow follows swipe direction
           background: swipeDir === 'left'
-            ? `linear-gradient(to left, transparent 0%, rgba(239,68,68,${0.12 + revealPct * 0.35}) 60%, rgba(239,68,68,${0.25 + revealPct * 0.5}) 100%)`
-            : `linear-gradient(to right, transparent 0%, rgba(239,68,68,${0.12 + revealPct * 0.35}) 60%, rgba(239,68,68,${0.25 + revealPct * 0.5}) 100%)`,
+            ? `linear-gradient(to left, transparent 0%, rgba(239,68,68,${0.2 + revealPct * 0.5}) 50%, rgba(239,68,68,${0.4 + revealPct * 0.6}) 100%)`
+            : `linear-gradient(to right, transparent 0%, rgba(239,68,68,${0.2 + revealPct * 0.5}) 50%, rgba(239,68,68,${0.4 + revealPct * 0.6}) 100%)`,
           boxShadow: `
-            ${swipeDir === 'left' ? '-' : ''}${6 + revealPct * 20}px 0 ${16 + revealPct * 32}px rgba(239,68,68,${0.3 + revealPct * 0.55}),
-            0 0 ${8 + revealPct * 24}px rgba(239,68,68,${0.15 + revealPct * 0.35})
+            ${swipeDir === 'left' ? '-' : ''}${8 + revealPct * 28}px 0 ${20 + revealPct * 44}px rgba(239,68,68,${0.4 + revealPct * 0.6}),
+            0 0 ${12 + revealPct * 36}px rgba(239,68,68,${0.25 + revealPct * 0.5}),
+            inset 0 0 ${revealPct * 40}px rgba(239,68,68,${revealPct * 0.15})
           `,
           transition: 'none',
           pointerEvents: 'none',
@@ -611,12 +612,12 @@ function SwipeableItem({ item, onDelete, onSend, user }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: revealPct,
-        transform: `scale(${0.6 + revealPct * 0.5})`,
+        opacity: Math.min(1, revealPct * 1.4),
+        transform: `scale(${0.5 + revealPct * 0.6})`,
         transition: swiping ? 'none' : 'opacity 0.3s, transform 0.3s',
         pointerEvents: 'none',
         zIndex: 0,
-        filter: `drop-shadow(0 0 ${revealPct * 10}px rgba(239,68,68,0.9))`,
+        filter: `drop-shadow(0 0 ${revealPct * 16}px rgba(239,68,68,1)) drop-shadow(0 0 ${revealPct * 6}px rgba(239,68,68,0.8))`,
       }}>
         <span style={{ fontSize: 22 }}>🗑️</span>
       </div>
@@ -628,12 +629,12 @@ function SwipeableItem({ item, onDelete, onSend, user }) {
           transform: `translateX(${offsetX}px)`,
           position: 'relative',
           zIndex: 1,
-          // Red border tint as swipe progresses
-          borderColor: revealPct > 0.2
-            ? `rgba(239,68,68,${revealPct * 0.7})`
+          // Intense red border tint as swipe progresses
+          borderColor: revealPct > 0.1
+            ? `rgba(239,68,68,${revealPct * 0.9})`
             : undefined,
-          boxShadow: revealPct > 0.2
-            ? `0 0 0 1px rgba(239,68,68,${revealPct * 0.4}), inset 0 0 ${revealPct * 20}px rgba(239,68,68,${revealPct * 0.08})`
+          boxShadow: revealPct > 0.1
+            ? `0 0 0 ${1 + revealPct}px rgba(239,68,68,${revealPct * 0.6}), inset 0 0 ${revealPct * 30}px rgba(239,68,68,${revealPct * 0.12}), 0 0 ${revealPct * 20}px rgba(239,68,68,${revealPct * 0.25})`
             : undefined,
         }}
         onTouchStart={handleTouchStart}
@@ -1625,9 +1626,21 @@ export default function App() {
       setNotification({ show:true, message:'Αυτός ο φίλος υπάρχει ήδη!' });
       return;
     }
+    if (friend.shareKey === user?.shareKey) {
+      setNotification({ show:true, message:'Δεν μπορείς να προσθέσεις τον εαυτό σου!' });
+      return;
+    }
     setFriends(prev => [...prev, friend]);
     setShowAddFriendModal(false);
     setNotification({ show:true, message:`✅ ${friend.username} προστέθηκε στο κοινό καλάθι!` });
+
+    // Notify the other person so they auto-add us back (mutual friendship)
+    if (socketRef.current && user) {
+      socketRef.current.emit('friend_added', {
+        targetShareKey: friend.shareKey,
+        from: { shareKey: user.shareKey, username: user.name }
+      });
+    }
   };
 
   const removeFriend = (shareKey) => {
@@ -1661,11 +1674,24 @@ export default function App() {
   useEffect(() => {
     socketRef.current = io(API_BASE);
     if (user?.shareKey) socketRef.current.emit('join_cart', user.shareKey);
+
     socketRef.current.on('receive_item', (itemData) => {
       setItems(prev => [{ ...itemData, id: Date.now() + Math.random() }, ...prev]);
       setNotification({ show:true, message:`🔔 Νέο προϊόν από φίλο: ${itemData.text}` });
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     });
+
+    // Mutual friendship: when someone adds us, auto-add them back
+    socketRef.current.on('friend_added', (data) => {
+      if (!data?.from?.shareKey) return;
+      setFriends(prev => {
+        if (prev.some(f => f.shareKey === data.from.shareKey)) return prev; // already friends
+        setNotification({ show:true, message:`🤝 ${data.from.username} σε πρόσθεσε!` });
+        if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+        return [...prev, { shareKey: data.from.shareKey, username: data.from.username, addedAt: Date.now() }];
+      });
+    });
+
     return () => socketRef.current.disconnect();
   }, [user]);
 

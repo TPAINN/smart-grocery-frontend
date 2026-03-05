@@ -715,20 +715,12 @@ body.dark-mode .budget-banner {
   display: flex;
   gap: 6px;
   flex-shrink: 0;
-  opacity: 0;
-  transform: translateX(6px);
-  transition:
-    opacity   0.28s var(--ease),
-    transform 0.22s var(--smooth);
-}
-
-.item-card:hover .item-actions {
   opacity: 1;
   transform: translateX(0);
 }
 
 .send-friend-btn, .delete-btn {
-  width: 32px; height: 32px;
+  width: 34px; height: 34px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
@@ -2630,16 +2622,6 @@ body.dark-mode .welcome-box {
   .container {
     max-width: 520px;
     padding: 34px 30px 40px;
-  }
-
-  /* On desktop, show item actions always (no hover needed) */
-  .item-actions {
-    opacity: 1 !important;
-    transform: translateX(0) !important;
-  }
-
-  .send-friend-btn, .delete-btn {
-    opacity: 1 !important;
   }
 
   /* Larger touch targets on desktop aren't needed — use subtle hover */
