@@ -1625,7 +1625,7 @@ export default function App() {
         <div className="tabs-container">
           {['list','recipes','brochures'].map(tab => (
             <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'list' ? 'Λίστα' : tab === 'recipes' ? 'Συνταγές' : 'Φυλλάδια'}
+              {tab === 'list' ? 'Προιόντα' : tab === 'recipes' ? 'Συνταγές' : 'Φυλλάδια'}
             </button>
           ))}
         </div>
