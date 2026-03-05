@@ -440,7 +440,7 @@ function CalorieSummary({ items }) {
 }
 
 // ─── Swipeable Item ───────────────────────────────────────────────────────────
-function SwipeableItem({ item, onDelete, onSend }) {
+function SwipeableItem({ item, onDelete, onSend, user }) {
   const [offsetX, setOffsetX]     = useState(0);
   const [swiping, setSwiping]     = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -449,7 +449,7 @@ function SwipeableItem({ item, onDelete, onSend }) {
   const isLocked  = useRef(false);
   const THRESHOLD = 80;
 
-  const foodInfo = getFoodInfo(item.text);
+  const foodInfo = user ? getFoodInfo(item.text) : { calories: 0, isFood: false };
 
   const handleTouchStart = (e) => {
     startX.current   = e.touches[0].clientX;
@@ -561,9 +561,10 @@ function SwipeableItem({ item, onDelete, onSend }) {
               borderRadius:99, padding:'2px 8px', marginTop:2,
             }}>📖 {item.recipeSource}</span>
           )}
+          {user && (
           <div className="item-meta-row">
             <span className="item-price-tag">{item.price > 0 ? `${item.price.toFixed(2)}€` : '—'}</span>
-            <span className="item-store-tag">📍 {item.store}</span>
+            {item.store && item.store !== '—' && <span className="item-store-tag">📍 {item.store}</span>}
             {foodInfo.isFood && foodInfo.calories > 0 && (
               <span style={{
                 fontSize:10, fontWeight:700, color:calColor(foodInfo.calories),
@@ -571,9 +572,10 @@ function SwipeableItem({ item, onDelete, onSend }) {
               }}>🔥 {foodInfo.calories}</span>
             )}
           </div>
+          )}
         </div>
         <div className="item-actions">
-          <button className="send-friend-btn" onClick={() => onSend(item)} title="Στείλε σε φίλο">📤</button>
+          {user && <button className="send-friend-btn" onClick={() => onSend(item)} title="Στείλε σε φίλο">📤</button>}
           <button className="delete-btn" onClick={() => onDelete(item.id)} title="Διαγραφή">✕</button>
         </div>
       </div>
@@ -935,14 +937,14 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
     <div className="welcome-overlay">
       <div className="welcome-box">
         <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
-        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Grocery Hub!</span></h2>
+        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Grocery Hub</span></h2>
         <p className="welcome-subtitle">Το έξυπνο καλάθι αγορών που συγκρίνει τιμές από όλα τα σούπερ μάρκετ σε πραγματικό χρόνο.</p>
         <div className="welcome-features">
           {[
             { icon:'🔍', title:'Έξυπνη Αναζήτηση', sub:'Τιμές από ΑΒ, Σκλαβενίτη, MyMarket & άλλα', locked:true },
             { icon:'🍽️', title:'Συνταγές & Υλικά',  sub:'Προσθήκη υλικών απευθείας στη λίστα', locked:true },
-            { icon:'🤝', title:'Κοινό Καλάθι',       sub:'Μοιράσου τη λίστα με φίλους', locked:true },
             { icon:'📋', title:'Βασική Λίστα',       sub:'Δωρεάν για όλους', locked:false },
+            { icon:'🤝', title:'Κοινό Καλάθι',       sub:'Μοιράσου τη λίστα με φίλους', locked:true },
           ].map(({ icon, title, sub, locked }) => (
             <div key={title} className={`wf-row ${locked ? 'wf-locked' : ''}`}>
               <span className="wf-icon">{icon}</span>
@@ -1399,6 +1401,21 @@ export default function App() {
     if (navigator.vibrate) navigator.vibrate(30);
   };
 
+  // ── Plain add (no search, no price — for non-logged users) ─────────────────
+  const addPlainItem = () => {
+    const text = inputValue.trim();
+    if (!text) return;
+    setItems(prev => [{
+      id: Date.now() + Math.random(),
+      text,
+      category: getCategory(text),
+      price: 0,
+      store: '—',
+    }, ...prev]);
+    setInputValue('');
+    if (navigator.vibrate) navigator.vibrate(30);
+  };
+
   // ── Voice ──────────────────────────────────────────────────────────────────
   const handleVoiceClick = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1560,7 +1577,7 @@ export default function App() {
           <div className="header-top">
             <div className="datetime-display">
               <div className="current-date">{timeGreeting} {timeIcon}</div>
-              <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'long', day:'numeric', month:'long' })}</div>
+              <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'short', day:'numeric', month:'long' })}</div>
               <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit', second:'2-digit' })}</div>
             </div>
 
@@ -1625,7 +1642,7 @@ export default function App() {
         <div className="tabs-container">
           {['list','recipes','brochures'].map(tab => (
             <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'list' ? 'Προιόντα' : tab === 'recipes' ? 'Συνταγές' : 'Φυλλάδια'}
+              {tab === 'list' ? 'Λίστα' : tab === 'recipes' ? 'Συνταγές' : 'Φυλλάδια'}
             </button>
           ))}
         </div>
@@ -1640,22 +1657,23 @@ export default function App() {
                 display:'flex', justifyContent:'space-between', alignItems:'center',
               }}>
                 <div>
-                  <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>Κόστος</div>
-                  <div className="budget-amount" style={{ fontSize:'22px', fontWeight:'bold', color:'var(--brand-primary)' }}>{totalCost.toFixed(2)}€</div>
-                  <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop:2 }}>{items.length} προϊόντα</div>
+                  {user && <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>Κόστος</div>}
+                  {user && <div className="budget-amount" style={{ fontSize:'22px', fontWeight:'bold', color:'var(--brand-primary)' }}>{totalCost.toFixed(2)}€</div>}
+                  <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop: user ? 2 : 0 }}>{items.length} προϊόντα</div>
                 </div>
                 <div style={{ display:'flex', gap:'8px' }}>
                   <button onClick={handleMassClear} style={{ background:'rgba(239,68,68,0.1)', color:'var(--brand-danger)', border:'none', padding:'10px', borderRadius:'10px', cursor:'pointer', fontSize:18 }} title="Αδείασμα">🗑️</button>
-                  <button onClick={saveCurrentList} style={{ background:'linear-gradient(135deg,#059669,#10b981)', color:'white', border:'none', padding:'10px 16px', borderRadius:'10px', cursor:'pointer', fontWeight:'bold', fontSize:13 }} title="Αποθήκευση">💾 Αποθήκευση</button>
+                  {user && <button onClick={saveCurrentList} style={{ background:'linear-gradient(135deg,#059669,#10b981)', color:'white', border:'none', padding:'10px 16px', borderRadius:'10px', cursor:'pointer', fontWeight:'bold', fontSize:13 }} title="Αποθήκευση">💾 Αποθήκευση</button>}
                 </div>
               </div>
             )}
 
-            {items.length > 0 && <CalorieSummary items={items} />}
+            {user && items.length > 0 && <CalorieSummary items={items} />}
             <ServerStatusBar isWakingUp={isServerWaking} />
 
             {/* Search */}
             <div className="smart-search-wrapper">
+              {user && (
               <div className="store-filter-container">
                 {storeOptions.map(store => (
                   <button
@@ -1667,22 +1685,24 @@ export default function App() {
                   </button>
                 ))}
               </div>
+              )}
 
               <div className="input-section" style={{ position:'relative' }}>
                 <input
                   type="text"
-                  placeholder={!isOnline ? '📡 Offline — αναζήτηση μη διαθέσιμη' : user ? 'Αναζήτηση προϊόντος...' : '🔒 Σύνδεση για αναζήτηση τιμών...'}
+                  placeholder={!isOnline ? '📡 Offline — αναζήτηση μη διαθέσιμη' : user ? 'Αναζήτηση προϊόντος...' : 'Γράψε προϊόν...'}
                   value={inputValue}
-                  onChange={handleInputChange}
-                  onKeyDown={(e) => e.key === 'Enter' && triggerSearch(inputValue, selectedStore)}
-                  readOnly={!user || !isOnline}
-                  onClick={() => !user && setShowAuthModal(true)}
-                  style={(!user || !isOnline) ? { cursor:'pointer', opacity:0.7 } : {}}
+                  onChange={user ? handleInputChange : (e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { user ? triggerSearch(inputValue, selectedStore) : addPlainItem(); } }}
+                  readOnly={!isOnline}
+                  style={!isOnline ? { cursor:'not-allowed', opacity:0.7 } : {}}
                 />
-                <button className={`voice-btn ${isListening ? 'listening' : ''}`} onClick={handleVoiceClick} title="Φωνητική αναζήτηση">
-                  {isListening ? '🔴' : '🎤'}
-                </button>
-                <button className="add-btn" onClick={() => user ? triggerSearch(inputValue, selectedStore) : setShowAuthModal(true)} title="Αναζήτηση">+</button>
+                {user && (
+                  <button className={`voice-btn ${isListening ? 'listening' : ''}`} onClick={handleVoiceClick} title="Φωνητική αναζήτηση">
+                    {isListening ? '🔴' : '🎤'}
+                  </button>
+                )}
+                <button className="add-btn" onClick={() => user ? triggerSearch(inputValue, selectedStore) : addPlainItem()} title={user ? 'Αναζήτηση' : 'Προσθήκη'}>+</button>
               </div>
 
               {/* Skeleton while loading */}
@@ -1709,8 +1729,8 @@ export default function App() {
               <div className="empty-cart-state">
                 <span className="empty-cart-icon">🛒</span>
                 <h3>Η λίστα είναι άδεια</h3>
-                <p>Αναζήτησε προϊόντα παραπάνω ή πρόσθεσε υλικά από μια συνταγή.</p>
-                {!user && <button className="locked-unlock-btn" style={{ marginTop:'16px' }} onClick={() => setShowAuthModal(true)}>Σύνδεση για όλα τα features</button>}
+                <p>{user ? 'Αναζήτησε προϊόντα παραπάνω ή πρόσθεσε υλικά από μια συνταγή.' : 'Γράψε ό,τι χρειάζεσαι και πάτα + για να το προσθέσεις.'}</p>
+                {!user && <button className="locked-unlock-btn" style={{ marginTop:'16px' }} onClick={() => setShowAuthModal(true)}>Σύνδεση για τιμές, συνταγές & άλλα</button>}
               </div>
             ) : (
               <div className="categories-container">
@@ -1719,7 +1739,7 @@ export default function App() {
                     <h2 className="category-title">{cat}</h2>
                     <ul className="grocery-list">
                       {groupedItems[cat].map(item => (
-                        <SwipeableItem key={item.id} item={item} onDelete={deleteItem} onSend={handleSendToFriend} />
+                        <SwipeableItem key={item.id} item={item} onDelete={deleteItem} onSend={handleSendToFriend} user={user} />
                       ))}
                     </ul>
                   </div>
@@ -1732,6 +1752,9 @@ export default function App() {
         {/* ════ RECIPES TAB ════ */}
         {activeTab === 'recipes' && (
           <div className="tab-content recipes-tab">
+            {!user ? (
+              <LockedFeature label="Συνταγές" onUnlock={() => { setAuthInitMode('register'); setShowAuthModal(true); }} />
+            ) : (
             <>
                 {!isOnline && (
                   <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:10, fontSize:13 }}>
@@ -1833,6 +1856,7 @@ export default function App() {
                   );
                 })()}
             </>
+            )}
           </div>
         )}
 
