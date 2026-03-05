@@ -167,36 +167,132 @@ const NON_FOOD_KEYWORDS = [
 
 // ─── FOOD database (calories per 100g estimate) ────────────────────────────────
 const FOOD_CAL_DB = [
-  { keywords:['ελαιολαδ','λαδι','σπορελαι','βουτυρ','μαργαριν','μαγιονεζ','κρεμ γαλακτ'], cals:780 },
-  { keywords:['σοκολατ','μερεντ','φουντουκοκρεμ','nutella'], cals:540 },
-  { keywords:['μπισκοτ','κρουασαν','πιτα κεικ','κεικ','γλυκ','τσουρεκ','παξιμαδ'], cals:480 },
-  { keywords:['πατατακ','τσιπς','ποπ κορν','ξηρ καρπ','φιστικ','καρυδ','αμυγδαλ','κεσιου','πεκαν'], cals:560 },
-  { keywords:['γαριδακ','πρετζελ','κρακερ','στικ'], cals:440 },
-  { keywords:['ζαχαρ','μελ','μαρμελαδ','σιροπ','ζαχαροπλαστ'], cals:390 },
-  { keywords:['τυρ','φετ','γκουντ','κασερ','παρμεζαν','γραβιερ','μοτσαρελ','εμενταλ','ροκφορ','γουδα','ταλαγαν'], cals:360 },
-  { keywords:['ψωμ','μακαρον','σπαγετ','ζυμαρικ','ρυζ','αλευρ','βρωμ','δημητριακ','φρυγανι','πιτ ψωμ','τορτιγ'], cals:350 },
-  { keywords:['αλλαντικ','ζαμπον','μπεικον','λουκανικ','σαλαμ','κοπανιστ','πεπερον'], cals:310 },
-  { keywords:['κρεας','κοτοπουλ','μοσχαρ','χοιρ','κιμας','μπριζολ','φιλετ','στηθ','μπουτ','συκωτ'], cals:210 },
-  { keywords:['σολομ','τονοσ','τουν','ψαρ','σαρδελ','ρεγγ','γαριδ','καλαμαρ','μυδ','χταπ'], cals:160 },
-  { keywords:['αυγ'], cals:155 },
-  { keywords:['γαλ','γιαουρτ','κεφιρ','ρυζογαλ'], cals:75 },
-  { keywords:['χυμ','φρουτοχυμ','smoothie','nectar'], cals:55 },
-  { keywords:['μηλ','μπαναν','πορτοκαλ','σταφυλ','ροδακιν','αχλαδ','κερασ','φραουλ','ακτινιδ','ανανα','μανγκ','αβοκαντ','λεμον','μανταρ'], cals:55 },
-  { keywords:['ντοματ','πατατ','γλυκοπατατ','κολοκυθ','μελιτζαν','πιπερι','φρεσκ'], cals:30 },
-  { keywords:['μαρουλ','σπανακ','λαχαν','καροτ','κρεμμυδ','σκορδ','αγγουρ','σελιν','μαιντ','δυοσμ','ρεπαν','παντζαρ'], cals:22 },
-  { keywords:['αναψυκτικ','κολα','σπρ','φαντ','λεμοναδ','πορτοκαλαδ','ενεργει','energy drink','red bull'], cals:42 },
-  { keywords:['μπυρ','beer','μπιρ'], cals:43 },
-  { keywords:['κρασ','οινοσ','σαμπανι','prosecco','wine'], cals:80 },
-  { keywords:['ουισκ','βοτκ','ρουμ','τσιπουρ','ρακ','ούζ','ouzo','tsipouro'], cals:220 },
-  { keywords:['καφ','espresso','cappuccin','frappe'], cals:8 },
-  { keywords:['τσα','chamomile','herbal','χαμομηλ'], cals:2 },
-  { keywords:['νερ','μεταλλικ','σοδα','sparkling'], cals:0 },
-  { keywords:['ελι','ελιε','ελιτσ'], cals:145 },
-  { keywords:['ξυδ','μουσταρδ','κετσαπ','σαλτσ','pesto','μπεσαμελ','ταχιν','χουμ'], cals:100 },
-  { keywords:['αλατ','πιπερ','ριγαν','θυμαρ','κανελ','κυμιν','μπαχαρ','κουρκουμ','paprika'], cals:25 },
-  { keywords:['κομπ','παγωτ','sorbet','gelato'], cals:200 },
-  { keywords:['κρεπ','βαφλ','pancake','τηγανιτ'], cals:230 },
+  { keywords:['ελαιολαδ','λαδι','σπορελαι'], cals:820, defaultG:500 },
+  { keywords:['βουτυρ','μαργαριν'], cals:720, defaultG:250 },
+  { keywords:['μαγιονεζ'], cals:680, defaultG:450 },
+  { keywords:['κρεμ γαλακτ'], cals:340, defaultG:200 },
+  { keywords:['σοκολατ'], cals:540, defaultG:100 },
+  { keywords:['μερεντ','φουντουκοκρεμ','nutella'], cals:540, defaultG:400 },
+  { keywords:['μπισκοτ'], cals:480, defaultG:200 },
+  { keywords:['κρουασαν'], cals:400, defaultG:80 },
+  { keywords:['κεικ','τσουρεκ'], cals:380, defaultG:500 },
+  { keywords:['παξιμαδ','φρυγανι'], cals:420, defaultG:250 },
+  { keywords:['πατατακ','τσιπς'], cals:530, defaultG:130 },
+  { keywords:['ποπ κορν'], cals:380, defaultG:90 },
+  { keywords:['ξηρ καρπ','φιστικ','καρυδ','αμυγδαλ','κεσιου','πεκαν'], cals:600, defaultG:150 },
+  { keywords:['γαριδακ','πρετζελ','κρακερ','στικ'], cals:440, defaultG:120 },
+  { keywords:['ζαχαρ'], cals:400, defaultG:1000 },
+  { keywords:['μελ'], cals:320, defaultG:450 },
+  { keywords:['μαρμελαδ'], cals:250, defaultG:370 },
+  { keywords:['σιροπ','ζαχαροπλαστ'], cals:300, defaultG:250 },
+  { keywords:['φετ'], cals:260, defaultG:400 },
+  { keywords:['γκουντ','γουδα','εμενταλ'], cals:360, defaultG:300 },
+  { keywords:['κασερ','γραβιερ','παρμεζαν'], cals:390, defaultG:250 },
+  { keywords:['μοτσαρελ'], cals:280, defaultG:250 },
+  { keywords:['τυρ','ροκφορ','ταλαγαν'], cals:320, defaultG:200 },
+  { keywords:['ψωμ','πιτ ψωμ'], cals:250, defaultG:500 },
+  { keywords:['τορτιγ'], cals:310, defaultG:370 },
+  { keywords:['μακαρον','σπαγετ','ζυμαρικ'], cals:350, defaultG:500 },
+  { keywords:['ρυζ'], cals:350, defaultG:500 },
+  { keywords:['αλευρ'], cals:340, defaultG:1000 },
+  { keywords:['βρωμ','δημητριακ'], cals:370, defaultG:500 },
+  { keywords:['αλλαντικ','ζαμπον'], cals:130, defaultG:360 },
+  { keywords:['μπεικον'], cals:310, defaultG:140 },
+  { keywords:['λουκανικ'], cals:280, defaultG:400 },
+  { keywords:['σαλαμ','πεπερον','κοπανιστ'], cals:380, defaultG:150 },
+  { keywords:['κοτοπουλ','στηθ','μπουτ'], cals:170, defaultG:700 },
+  { keywords:['κρεας','μοσχαρ','χοιρ','μπριζολ','φιλετ'], cals:210, defaultG:500 },
+  { keywords:['κιμας'], cals:230, defaultG:500 },
+  { keywords:['συκωτ'], cals:140, defaultG:400 },
+  { keywords:['σολομ'], cals:210, defaultG:300 },
+  { keywords:['τονοσ','τουν'], cals:130, defaultG:160 },
+  { keywords:['ψαρ','σαρδελ','ρεγγ'], cals:150, defaultG:400 },
+  { keywords:['γαριδ','καλαμαρ','μυδ','χταπ'], cals:90, defaultG:400 },
+  { keywords:['αυγ'], cals:155, defaultG:360 },
+  { keywords:['γαλ'], cals:50, defaultG:1000 },
+  { keywords:['γιαουρτ','κεφιρ'], cals:65, defaultG:200 },
+  { keywords:['ρυζογαλ'], cals:100, defaultG:200 },
+  { keywords:['χυμ','φρουτοχυμ','smoothie','nectar'], cals:45, defaultG:1000 },
+  { keywords:['μηλ','μπαναν','πορτοκαλ','σταφυλ','ροδακιν','αχλαδ','κερασ','φραουλ','ακτινιδ','ανανα','μανγκ','λεμον','μανταρ'], cals:55, defaultG:500 },
+  { keywords:['αβοκαντ'], cals:160, defaultG:200 },
+  { keywords:['ντοματ','πατατ','γλυκοπατατ','κολοκυθ','μελιτζαν','πιπερι','φρεσκ'], cals:30, defaultG:500 },
+  { keywords:['μαρουλ','σπανακ','λαχαν','καροτ','κρεμμυδ','σκορδ','αγγουρ','σελιν','μαιντ','δυοσμ','ρεπαν','παντζαρ'], cals:22, defaultG:400 },
+  { keywords:['αναψυκτικ','κολα','σπρ','φαντ','λεμοναδ','πορτοκαλαδ'], cals:42, defaultG:330 },
+  { keywords:['ενεργει','energy drink','red bull'], cals:45, defaultG:250 },
+  { keywords:['μπυρ','beer','μπιρ'], cals:43, defaultG:500 },
+  { keywords:['κρασ','οινοσ','σαμπανι','prosecco','wine'], cals:80, defaultG:750 },
+  { keywords:['ουισκ','βοτκ','ρουμ'], cals:220, defaultG:700 },
+  { keywords:['τσιπουρ','ρακ','ούζ','ouzo','tsipouro'], cals:220, defaultG:200 },
+  { keywords:['καφ','espresso','cappuccin','frappe'], cals:8, defaultG:200 },
+  { keywords:['τσα','chamomile','herbal','χαμομηλ'], cals:2, defaultG:200 },
+  { keywords:['νερ','μεταλλικ','σοδα','sparkling'], cals:0, defaultG:1500 },
+  { keywords:['ελι','ελιε','ελιτσ'], cals:145, defaultG:250 },
+  { keywords:['κετσαπ'], cals:110, defaultG:500 },
+  { keywords:['μουσταρδ'], cals:65, defaultG:200 },
+  { keywords:['σαλτσ','pesto'], cals:80, defaultG:400 },
+  { keywords:['ξυδ'], cals:18, defaultG:500 },
+  { keywords:['μπεσαμελ'], cals:130, defaultG:250 },
+  { keywords:['ταχιν','χουμ'], cals:300, defaultG:300 },
+  { keywords:['αλατ','πιπερ','ριγαν','θυμαρ','κανελ','κυμιν','μπαχαρ','κουρκουμ','paprika'], cals:25, defaultG:100 },
+  { keywords:['παγωτ','sorbet','gelato'], cals:200, defaultG:500 },
+  { keywords:['κρεπ','βαφλ','pancake','τηγανιτ'], cals:230, defaultG:200 },
+  { keywords:['κομπ'], cals:250, defaultG:350 },
+  { keywords:['πιτα κεικ','γλυκ'], cals:350, defaultG:400 },
+  { keywords:['οσπρι','φακε','ρεβιθ','φασολ','φαβα'], cals:340, defaultG:500 },
+  { keywords:['ντολμα','σαρμα'], cals:150, defaultG:400 },
+  { keywords:['πιτσ','pizza'], cals:260, defaultG:400 },
+  { keywords:['χαλβ'], cals:470, defaultG:400 },
+  { keywords:['λουκουμ'], cals:320, defaultG:350 },
 ];
+
+// ─── Extract quantity in grams from product name ────────────────────────────
+const extractQuantityGrams = (name) => {
+  const t = name.toLowerCase().replace(/,/g, '.');
+
+  // "6x330ml", "4x1.5lt", "3x200g"
+  const multi = t.match(/(\d+)\s*[x×]\s*(\d+(?:\.\d+)?)\s*(ml|lt|l|g|gr|kg)/i);
+  if (multi) {
+    const count = parseInt(multi[1]);
+    const val = parseFloat(multi[2]);
+    const unit = multi[3].toLowerCase();
+    if (unit === 'kg') return count * val * 1000;
+    if (unit === 'lt' || unit === 'l') return count * val * 1000;
+    return count * val; // ml or g
+  }
+
+  // "1.5kg", "500g", "1lt", "330ml", "200gr"
+  const single = t.match(/(\d+(?:[.,]\d+)?)\s*(kg|lt|l|ml|g|gr)\b/i);
+  if (single) {
+    const val = parseFloat(single[1]);
+    const unit = single[2].toLowerCase();
+    if (unit === 'kg') return val * 1000;
+    if (unit === 'lt' || unit === 'l') return val * 1000;
+    return val; // ml or g
+  }
+
+  // "500 γρ", "1 κιλό", "1.5 λίτρο"
+  const gr = t.match(/(\d+(?:[.,]\d+)?)\s*(γρ|γραμ|κιλ|λιτρ|λίτρ)/i);
+  if (gr) {
+    const val = parseFloat(gr[1]);
+    const unit = gr[2].toLowerCase();
+    if (unit.startsWith('κιλ')) return val * 1000;
+    if (unit.startsWith('λιτ') || unit.startsWith('λίτ')) return val * 1000;
+    return val; // γραμμάρια
+  }
+
+  // "500 ml", "1000ml" (with space)
+  const spaced = t.match(/(\d+(?:[.,]\d+)?)\s+(ml|g|gr|kg|lt|l)\b/i);
+  if (spaced) {
+    const val = parseFloat(spaced[1]);
+    const unit = spaced[2].toLowerCase();
+    if (unit === 'kg') return val * 1000;
+    if (unit === 'lt' || unit === 'l') return val * 1000;
+    return val;
+  }
+
+  // "X τεμάχια" (pieces) — use default weight, return null
+  return null;
+};
 
 // Checks if a product name is food/drink (edible by humans)
 const getFoodInfo = (name) => {
@@ -204,21 +300,26 @@ const getFoodInfo = (name) => {
 
   // 1. Check non-food blacklist FIRST
   if (NON_FOOD_KEYWORDS.some(k => t.includes(k))) {
-    return { calories: 0, isFood: false };
+    return { calsPer100g: 0, totalCals: 0, quantity: 0, isFood: false };
   }
 
   // 2. Check food calorie DB
   for (let e of FOOD_CAL_DB) {
     if (e.keywords.some(k => t.includes(k))) {
-      return { calories: e.cals, isFood: true };
+      const detectedG = extractQuantityGrams(name);
+      const grams = detectedG || e.defaultG;
+      const totalCals = Math.round((e.cals / 100) * grams);
+      return { calsPer100g: e.cals, totalCals, quantity: grams, isFood: true, detected: !!detectedG };
     }
   }
 
-  // 3. Unknown → assume food (grocery app context)
-  return { calories: 120, isFood: true };
+  // 3. Unknown → assume food, ~120 kcal/100g, ~300g default
+  const detectedG = extractQuantityGrams(name);
+  const grams = detectedG || 300;
+  return { calsPer100g: 120, totalCals: Math.round((120 / 100) * grams), quantity: grams, isFood: true, detected: !!detectedG };
 };
 
-const calColor = (c) => c === 0 ? '#94a3b8' : c < 100 ? '#22c55e' : c < 300 ? '#f97316' : '#ef4444';
+const calColor = (c) => c === 0 ? '#94a3b8' : c < 200 ? '#22c55e' : c < 500 ? '#f97316' : '#ef4444';
 
 // ─── Brochures ────────────────────────────────────────────────────────────────
 const BROCHURE_LINKS = {
@@ -356,25 +457,12 @@ function CalorieSummary({ items }) {
   const nonFoodItems = items.filter(i => !getFoodInfo(i.text).isFood);
   if (!items.length) return null;
 
-  const totalCals = foodItems.reduce((s, i) => s + getFoodInfo(i.text).calories, 0);
+  const totalCals = foodItems.reduce((s, i) => s + getFoodInfo(i.text).totalCals, 0);
 
-  // Group calories by category bucket
-  const buckets = [
-    { label:'Λαχ/Φρούτα', max:50,  color:'#22c55e', icon:'🥦' },
-    { label:'Πρωτεΐνες',  max:250,  color:'#3b82f6', icon:'🥩' },
-    { label:'Γαλακτ.',    max:200,  color:'#a78bfa', icon:'🥛' },
-    { label:'Αμυλ.',      max:400,  color:'#f97316', icon:'🍞' },
-    { label:'Λιπαρά',     max:999,  color:'#ef4444', icon:'🧈' },
-  ];
-
-  // Build per-item sparkle color
-  const calColor = (c) =>
-    c === 0   ? '#64748b' :
-    c <= 50   ? '#22c55e' :
-    c <= 200  ? '#3b82f6' :
-    c <= 400  ? '#f97316' : '#ef4444';
-
-  const totalColor = calColor(totalCals / Math.max(foodItems.length, 1));
+  const totalColor =
+    totalCals === 0   ? '#64748b' :
+    totalCals < 2000  ? '#22c55e' :
+    totalCals < 5000  ? '#f97316' : '#ef4444';
 
   return (
     <div style={{
@@ -387,7 +475,7 @@ function CalorieSummary({ items }) {
           <span style={{ fontSize:20 }}>🔥</span>
           <div>
             <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>
-              Εκτιμώμενες Θερμίδες
+              Θερμίδες Καλαθιού
             </div>
             <div style={{ fontSize:24, fontWeight:800, color: totalColor, lineHeight:1.1 }}>
               {totalCals.toLocaleString('el-GR')}
@@ -411,17 +499,17 @@ function CalorieSummary({ items }) {
       {foodItems.length > 0 && (
         <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
           {foodItems.slice(0, 8).map((item, i) => {
-            const cals = getFoodInfo(item.text).calories;
+            const info = getFoodInfo(item.text);
             return (
               <div key={i} style={{
                 display:'flex', alignItems:'center', gap:4,
-                background:`${calColor(cals)}12`,
-                border:`1px solid ${calColor(cals)}30`,
+                background:`${calColor(info.totalCals)}12`,
+                border:`1px solid ${calColor(info.totalCals)}30`,
                 borderRadius:99, padding:'3px 8px',
-                fontSize:10, fontWeight:700, color: calColor(cals),
-                maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                fontSize:10, fontWeight:700, color: calColor(info.totalCals),
+                maxWidth:140, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
               }}>
-                {cals === 0 ? '~0' : cals} kcal
+                {info.totalCals} kcal
                 <span style={{ color:'var(--text-secondary)', fontWeight:400, overflow:'hidden', textOverflow:'ellipsis' }}>
                   {' '}{item.text.split(' ')[0]}
                 </span>
@@ -565,11 +653,11 @@ function SwipeableItem({ item, onDelete, onSend, user }) {
           <div className="item-meta-row">
             <span className="item-price-tag">{item.price > 0 ? `${item.price.toFixed(2)}€` : '—'}</span>
             {item.store && item.store !== '—' && <span className="item-store-tag">📍 {item.store}</span>}
-            {foodInfo.isFood && foodInfo.calories > 0 && (
+            {foodInfo.isFood && foodInfo.totalCals > 0 && (
               <span style={{
-                fontSize:10, fontWeight:700, color:calColor(foodInfo.calories),
-                background:`${calColor(foodInfo.calories)}18`, borderRadius:99, padding:'2px 7px',
-              }}>🔥 {foodInfo.calories}</span>
+                fontSize:10, fontWeight:700, color:calColor(foodInfo.totalCals),
+                background:`${calColor(foodInfo.totalCals)}18`, borderRadius:99, padding:'2px 7px',
+              }}>🔥 {foodInfo.totalCals}</span>
             )}
           </div>
           )}
@@ -937,7 +1025,7 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
     <div className="welcome-overlay">
       <div className="welcome-box">
         <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
-        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Grocery Hub</span></h2>
+        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Hub</span></h2>
         <p className="welcome-subtitle">Το έξυπνο καλάθι αγορών που συγκρίνει τιμές από όλα τα σούπερ μάρκετ σε πραγματικό χρόνο.</p>
         <div className="welcome-features">
           {[
@@ -1635,7 +1723,7 @@ export default function App() {
               )}
             </div>
           </div>
-          <h1>Smart Grocery Hub</h1>
+          <h1>Smart Hub</h1>
         </header>
 
         {/* ── Tabs ── */}
