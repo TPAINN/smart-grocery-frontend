@@ -935,7 +935,7 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
     <div className="welcome-overlay">
       <div className="welcome-box">
         <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
-        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Hub</span></h2>
+        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Grocery Hub!</span></h2>
         <p className="welcome-subtitle">Το έξυπνο καλάθι αγορών που συγκρίνει τιμές από όλα τα σούπερ μάρκετ σε πραγματικό χρόνο.</p>
         <div className="welcome-features">
           {[
@@ -1618,7 +1618,7 @@ export default function App() {
               )}
             </div>
           </div>
-          <h1>Smart Hub</h1>
+          <h1>Smart Grocery Hub</h1>
         </header>
 
         {/* ── Tabs ── */}
