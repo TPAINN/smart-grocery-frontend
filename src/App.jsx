@@ -1026,7 +1026,7 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
     <div className="welcome-overlay">
       <div className="welcome-box">
         <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
-        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Grocery Hub</span></h2>
+        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Hub</span></h2>
         <p className="welcome-subtitle">Το έξυπνο καλάθι αγορών που συγκρίνει τιμές από όλα τα σούπερ μάρκετ σε πραγματικό χρόνο.</p>
         <div className="welcome-features">
           {[
@@ -1130,6 +1130,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isClosing, setIsClosing] = useState(false);
+  const [scanKey, setScanKey] = useState(0);
   const [scanHistory, setScanHistory] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sg_scan_history') || '[]'); } catch { return []; }
   });
@@ -1155,32 +1156,48 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 
   // Start camera
   useEffect(() => {
-    if (!isOpen || activeView !== 'scan' || product) return;
+    if (!isOpen || activeView !== 'scan' || product || loading || error) return;
     let html5Qr = null;
+    let cancelled = false;
     const startScanner = async () => {
       try {
+        // Clear any leftover DOM from previous instance
+        const container = document.getElementById(scannerDivId);
+        if (container) container.innerHTML = '';
+
         html5Qr = new Html5Qrcode(scannerDivId);
         scannerRef.current = html5Qr;
+        if (cancelled) return;
         await html5Qr.start(
           { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.333 },
-          (text) => { html5Qr.stop().catch(() => {}); handleBarcodeScan(text); },
+          { fps: 10, qrbox: { width: 220, height: 120 }, aspectRatio: 1.333, disableFlip: false },
+          (text) => {
+            if (html5Qr.isScanning) html5Qr.stop().catch(() => {});
+            handleBarcodeScan(text);
+          },
           () => {}
         );
       } catch (err) {
-        setError('Δεν μπόρεσε να ανοίξει η κάμερα. Δώσε πρόσβαση.');
+        if (!cancelled) setError('Δεν μπόρεσε να ανοίξει η κάμερα. Δώσε πρόσβαση.');
       }
     };
-    const timer = setTimeout(startScanner, 300);
+    const timer = setTimeout(startScanner, 400);
     return () => {
+      cancelled = true;
       clearTimeout(timer);
-      if (html5Qr && html5Qr.isScanning) html5Qr.stop().catch(() => {});
+      if (html5Qr) {
+        try { if (html5Qr.isScanning) html5Qr.stop().catch(() => {}); } catch {}
+        try { html5Qr.clear(); } catch {}
+      }
+      scannerRef.current = null;
     };
-  }, [isOpen, activeView, product]);
+  }, [isOpen, activeView, product, scanKey]);
 
   const stopScanner = () => {
-    if (scannerRef.current && scannerRef.current.isScanning) {
-      scannerRef.current.stop().catch(() => {});
+    if (scannerRef.current) {
+      try { if (scannerRef.current.isScanning) scannerRef.current.stop().catch(() => {}); } catch {}
+      try { scannerRef.current.clear(); } catch {}
+      scannerRef.current = null;
     }
   };
 
@@ -1194,9 +1211,9 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         const p = data.product;
         const parsed = {
           barcode,
-          name: p.product_name_el || p.product_name || 'Άγνωστο προϊόν',
+          name: [p.product_name_el, p.product_name, p.product_name_en, p.product_name_fr, p.product_name_de, p.generic_name_el, p.generic_name, p.abbreviated_product_name].find(n => n && n.trim()) || (p.brands ? p.brands : 'Άγνωστο προϊόν'),
           brand: p.brands || '',
-          image: p.image_front_url || p.image_url || null,
+          image: p.image_front_small_url || p.image_front_url || p.image_url || p.image_small_url || null,
           nutriScore: p.nutriscore_grade || null,
           novaGroup: p.nova_group || null,
           kcal: p.nutriments?.['energy-kcal_100g'] || p.nutriments?.energy_100g || null,
@@ -1231,13 +1248,24 @@ function BarcodeScannerModal({ isOpen, onClose }) {
   const handleClose = () => {
     stopScanner();
     setIsClosing(true);
-    setTimeout(() => { setIsClosing(false); setProduct(null); setError(''); setActiveView('scan'); onClose(); }, 350);
+    setTimeout(() => {
+      setIsClosing(false);
+      setProduct(null);
+      setError('');
+      setLoading(false);
+      setActiveView('scan');
+      setScanKey(k => k + 1);
+      onClose();
+    }, 350);
   };
 
   const handleScanAgain = () => {
+    stopScanner();
     setProduct(null);
     setError('');
+    setLoading(false);
     setActiveView('scan');
+    setScanKey(k => k + 1); // Force fresh camera mount
   };
 
   const toggleAllergen = (id) => {
@@ -1278,7 +1306,11 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             { id:'allergens', label:'⚠️ Αλλεργίες' },
           ].map(t => (
             <button key={t.id} className={`scanner-tab ${activeView === t.id ? 'active' : ''}`}
-              onClick={() => { if (activeView === 'scan') stopScanner(); setActiveView(t.id); }}
+              onClick={() => {
+                if (activeView === 'scan') stopScanner();
+                setActiveView(t.id);
+                if (t.id === 'scan' && !product) setScanKey(k => k + 1);
+              }}
             >{t.label}</button>
           ))}
         </div>
@@ -1300,7 +1332,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             ) : (
               <>
                 <div className="scanner-viewfinder">
-                  <div id={scannerDivId} style={{ width:'100%' }} />
+                  <div id={scannerDivId} key={scanKey} style={{ width:'100%' }} />
                   <div className="scanner-frame">
                     <div className="sf-corner sf-tl" /><div className="sf-corner sf-tr" />
                     <div className="sf-corner sf-bl" /><div className="sf-corner sf-br" />
@@ -2031,8 +2063,8 @@ export default function App() {
           <div className="header-top">
             <div className="datetime-display">
               <div className="current-date">{timeGreeting} {timeIcon}</div>
-              <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'long', day:'numeric', month:'long' })}</div>
-              <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit'})}</div>
+              <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'short', day:'numeric', month:'long' })}</div>
+              <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit', second:'2-digit' })}</div>
             </div>
 
             <div className="header-actions">
@@ -2096,7 +2128,7 @@ export default function App() {
               )}
             </div>
           </div>
-          <h1>Smart Grocery Hub</h1>
+          <h1>Smart Hub</h1>
         </header>
 
         {/* ── Tabs ── */}
