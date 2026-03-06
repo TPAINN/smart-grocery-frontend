@@ -1304,16 +1304,36 @@ body.dark-mode .budget-banner {
   box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 0 60px rgba(0,0,0,0.5);
   animation: viewfinderIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 0.15s;
+  /* ΠΡΟΣΘΗΚΗ για τέλειο κεντράρισμα: */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 @keyframes viewfinderIn {
   from { opacity: 0; transform: scale(0.9); border-radius: 40px; }
   to   { opacity: 1; transform: scale(1); border-radius: 20px; }
 }
-.scanner-viewfinder video { border-radius: 20px; }
+
+/* ΠΡΟΣΘΗΚΗ: Κάνουμε το video να γεμίζει σωστά και να κεντράρεται */
+.scanner-viewfinder video { 
+  border-radius: 20px; 
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+}
 
 /* Hide ALL html5-qrcode built-in UI — we use our own green corners */
-#barcode-scanner-area { position: relative; }
-#barcode-scanner-area > div:first-child { border-radius: 20px !important; overflow: hidden !important; }
+#barcode-scanner-area { 
+  width: 100% !important; 
+  height: 100% !important; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+}
+#barcode-scanner-area > div:first-child { border-radius: 20px !important; overflow: hidden !important; width: 100% !important; height: 100% !important; }
 /* Kill the shaded overlay + white scanning region corners */
 #qr-shaded-region { border: none !important; box-shadow: none !important; outline: none !important; }
 #qr-shaded-region > div { display: none !important; }
