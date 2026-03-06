@@ -1027,7 +1027,7 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
     <div className="welcome-overlay">
       <div className="welcome-box">
         <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
-        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Hub</span></h2>
+        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Grocery Hub</span></h2>
         <p className="welcome-subtitle">Το έξυπνο καλάθι αγορών που συγκρίνει τιμές από όλα τα σούπερ μάρκετ σε πραγματικό χρόνο.</p>
         <div className="welcome-features">
           {[
@@ -1178,6 +1178,26 @@ function BarcodeScannerModal({ isOpen, onClose }) {
           },
           () => {}
         );
+
+        // Remove library's built-in white scanning box corners
+        if (!cancelled) {
+          const el = document.getElementById(scannerDivId);
+          if (el) {
+            el.querySelectorAll('div[style]').forEach(d => {
+              const s = d.getAttribute('style') || '';
+              if ((s.includes('border') && s.includes('position: absolute')) || s.includes('border-width')) {
+                d.style.display = 'none';
+              }
+            });
+            // Also hide the shaded region children
+            const shaded = el.querySelector('#qr-shaded-region');
+            if (shaded) {
+              shaded.style.border = 'none';
+              shaded.style.boxShadow = 'none';
+              Array.from(shaded.children).forEach(c => c.style.display = 'none');
+            }
+          }
+        }
       } catch (err) {
         if (!cancelled) setError('Δεν μπόρεσε να ανοίξει η κάμερα. Δώσε πρόσβαση.');
       }
@@ -2089,7 +2109,7 @@ export default function App() {
           <div className="header-top">
             <div className="datetime-display">
               <div className="current-date">{timeGreeting} {timeIcon}</div>
-              <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'short', day:'numeric', month:'long' })}</div>
+              <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'long', day:'numeric', month:'long' })}</div>
               <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit', second:'2-digit' })}</div>
             </div>
 
@@ -2154,7 +2174,7 @@ export default function App() {
               )}
             </div>
           </div>
-          <h1>Smart Hub</h1>
+          <h1>Smart Grocery Hub</h1>
         </header>
 
         {/* ── Tabs ── */}
