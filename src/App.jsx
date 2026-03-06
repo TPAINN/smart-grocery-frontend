@@ -1225,40 +1225,48 @@ function BarcodeScannerModal({ isOpen, onClose }) {
   const handleBarcodeScan = async (barcode) => {
     setLoading(true);
     setError('');
+    // Ήχος Beep (Supermarket feel)
+    try { new Audio('data:audio/mp3;base64,//MkxAAQhEBEFmACAAAI0HqAgIICuS39R/4AAAABh//MkxAAYS15QAAwYyAAwAQA4B5///wAAC////wAAA//MkxAAQgAAAAAQQAAAwAAAwD///wAAAP///wAAA//MkxAARQAAAAAQQAAAwAAAwD///wAAAP///wAAA').play().catch(()=>{}); } catch(e){}
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Haptic feedback
+
     try {
       const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
       const data = await r.json();
+      
       if (data.status === 1 && data.product) {
         const p = data.product;
+        // Έξυπνο parsing ονόματος - αν δεν βρει απολύτως τίποτα, βάζει το Barcode
+        const fallbackName = `Προϊόν (${barcode})`;
+        const parsedName =[p.product_name_el, p.product_name, p.product_name_en, p.generic_name_el].find(n => n && n.trim()) || fallbackName;
+        
         const parsed = {
           barcode,
-          name: [p.product_name_el, p.product_name, p.product_name_en, p.product_name_fr, p.product_name_de, p.generic_name_el, p.generic_name, p.abbreviated_product_name].find(n => n && n.trim()) || (p.brands ? p.brands : 'Άγνωστο προϊόν'),
-          brand: p.brands || '',
-          image: p.image_front_small_url || p.image_front_url || p.image_url || p.image_small_url || null,
+          name: parsedName,
+          brand: p.brands ? p.brands.split(',')[0] : null, // Κρατάμε μόνο την 1η μάρκα, αν δεν υπάρχει null (όχι 'Unknown')
+          image: p.image_front_small_url || p.image_front_url || p.image_url || null,
           nutriScore: p.nutriscore_grade || null,
           novaGroup: p.nova_group || null,
-          kcal: p.nutriments?.['energy-kcal_100g'] || p.nutriments?.energy_100g || null,
-          fat: p.nutriments?.fat_100g || 0,
-          saturated: p.nutriments?.['saturated-fat_100g'] || 0,
-          sugars: p.nutriments?.sugars_100g || 0,
-          salt: p.nutriments?.salt_100g || 0,
-          proteins: p.nutriments?.proteins_100g || 0,
-          fiber: p.nutriments?.fiber_100g || 0,
-          allergenTags: [...(p.allergens_tags || []), ...(p.traces_tags || [])],
+          kcal: p.nutriments?.['energy-kcal_100g'] ?? p.nutriments?.energy_100g ?? null,
+          fat: p.nutriments?.fat_100g ?? null,
+          saturated: p.nutriments?.['saturated-fat_100g'] ?? null,
+          sugars: p.nutriments?.sugars_100g ?? null,
+          salt: p.nutriments?.salt_100g ?? null,
+          proteins: p.nutriments?.proteins_100g ?? null,
+          fiber: p.nutriments?.fiber_100g ?? null,
+          allergenTags: [...(p.allergens_tags || []), ...(p.traces_tags ||[])],
           ingredients: p.ingredients_text_el || p.ingredients_text || '',
-          hasPalmOil: /palm/i.test(p.ingredients_text || '') || (p.ingredients_analysis_tags || []).some(t => t.includes('palm-oil')),
+          hasPalmOil: /palm/i.test(p.ingredients_text || '') || (p.ingredients_analysis_tags ||[]).some(t => t.includes('palm-oil')),
           quantity: p.quantity || '',
           scannedAt: new Date().toISOString(),
         };
         setProduct(parsed);
 
-        // Add to history (max 50, no duplicates at top)
         setScanHistory(prev => {
           const filtered = prev.filter(h => h.barcode !== barcode);
           return [parsed, ...filtered].slice(0, 50);
         });
       } else {
-        setError(`Barcode ${barcode} — δεν βρέθηκε στη βάση Open Food Facts.`);
+        setError(`Δεν βρέθηκε στη βάση (Barcode: ${barcode})`);
       }
     } catch {
       setError('Σφάλμα σύνδεσης. Δοκίμασε ξανά.');
@@ -1400,23 +1408,21 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             </div>
 
             {/* Nutrition Grid */}
-            {product.kcal != null && (
-              <div className="nutrition-grid">
-                {[
-                  { label:'Θερμίδες', val:`${Math.round(product.kcal)}`, unit:'kcal', color:'#f97316' },
-                  { label:'Λιπαρά',   val:product.fat.toFixed(1),   unit:'g', color: getNutrientLevel(product.fat,'fat')==='high'?'#ef4444':'#22c55e' },
-                  { label:'Ζάχαρη',   val:product.sugars.toFixed(1), unit:'g', color: getNutrientLevel(product.sugars,'sugars')==='high'?'#ef4444':'#22c55e' },
-                  { label:'Αλάτι',    val:product.salt.toFixed(1),  unit:'g', color: getNutrientLevel(product.salt,'salt')==='high'?'#ef4444':'#22c55e' },
-                  { label:'Πρωτεΐνη', val:product.proteins.toFixed(1), unit:'g', color:'#3b82f6' },
-                  { label:'Ίνες',     val:product.fiber.toFixed(1), unit:'g', color:'#22c55e' },
-                ].map((n,i) => (
-                  <div key={i} className="nutrition-cell" style={{ animationDelay:`${i * 0.06}s` }}>
-                    <div className="nutrition-val" style={{ color:n.color }}>{n.val}<span>{n.unit}</span></div>
-                    <div className="nutrition-label">{n.label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="nutrition-grid">
+              {[
+                { label:'Θερμίδες', val: product.kcal != null ? Math.round(product.kcal) : '-', unit: product.kcal != null ? 'kcal' : '', color: product.kcal != null ? '#f97316' : '#94a3b8' },
+                { label:'Λιπαρά',   val: product.fat != null ? product.fat.toFixed(1) : '-', unit: product.fat != null ? 'g' : '', color: product.fat == null ? '#94a3b8' : getNutrientLevel(product.fat,'fat')==='high' ? '#ef4444' : '#22c55e' },
+                { label:'Ζάχαρη',   val: product.sugars != null ? product.sugars.toFixed(1) : '-', unit: product.sugars != null ? 'g' : '', color: product.sugars == null ? '#94a3b8' : getNutrientLevel(product.sugars,'sugars')==='high' ? '#ef4444' : '#22c55e' },
+                { label:'Αλάτι',    val: product.salt != null ? product.salt.toFixed(1) : '-', unit: product.salt != null ? 'g' : '', color: product.salt == null ? '#94a3b8' : getNutrientLevel(product.salt,'salt')==='high' ? '#ef4444' : '#22c55e' },
+                { label:'Πρωτεΐνη', val: product.proteins != null ? product.proteins.toFixed(1) : '-', unit: product.proteins != null ? 'g' : '', color: product.proteins != null ? '#3b82f6' : '#94a3b8' },
+                { label:'Ίνες',     val: product.fiber != null ? product.fiber.toFixed(1) : '-', unit: product.fiber != null ? 'g' : '', color: product.fiber != null ? '#22c55e' : '#94a3b8' },
+              ].map((n,i) => (
+                <div key={i} className="nutrition-cell" style={{ animationDelay:`${i * 0.06}s` }}>
+                  <div className="nutrition-val" style={{ color:n.color }}>{n.val}<span>{n.unit}</span></div>
+                  <div className="nutrition-label">{n.label}</div>
+                </div>
+              ))}
+            </div>
 
             {/* Warnings */}
             {getWarnings(product).length > 0 && (
@@ -1438,7 +1444,24 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                 <p>{product.ingredients}</p>
               </details>
             )}
-
+            {/* ΝΕΟ: Κουμπί Προσθήκης στη Λίστα */}
+            <button 
+              className="submit-btn" 
+              style={{ width: '100%', padding: '16px', fontSize: '15px', marginBottom: '12px', marginTop: '8px' }}
+              onClick={() => {
+                setItems(prev =>[{
+                  id: Date.now() + Math.random(),
+                  text: product.name,
+                  category: getCategory(product.name),
+                  price: 0, 
+                  store: '—'
+                }, ...prev]);
+                handleClose(); // Κλείνει το scanner
+                setNotification({ show: true, message: `🛒 Προστέθηκε: ${product.name}` });
+              }}
+            >
+              ➕ Προσθήκη στη Λίστα
+            </button>
             <button className="scanner-btn" onClick={handleScanAgain} style={{ marginTop:16 }}>📷 Σάρωσε ξανά</button>
           </div>
         )}
