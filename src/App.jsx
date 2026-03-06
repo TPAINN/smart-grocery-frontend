@@ -2083,10 +2083,14 @@ export default function App() {
   const filteredRecipes = recipes
     .filter(r => r && r.title) 
     .filter(r => {
-      // Τώρα χρησιμοποιούμε τα ΠΡΑΓΜΑΤΙΚΑ δεδομένα της βάσης!
-      if (recipeFilter === 'protein' && (!r.protein || r.protein < 25)) return false; 
-      if (recipeFilter === 'clean' && (!r.calories || r.calories > 500)) return false;
-      if (recipeFilter === 'fast' && (r.time > 30)) return false;
+      // Προσθέσαμε το || 0 για ασφάλεια αν λείπει το πεδίο
+      const protein = r.protein || 0;
+      const calories = r.calories || 0;
+      const time = r.time || 30;
+
+      if (recipeFilter === 'protein' && protein < 25) return false; 
+      if (recipeFilter === 'clean' && calories > 500) return false;
+      if (recipeFilter === 'fast' && time > 30) return false;
       
       if (fridgeQuery.trim()) {
         const q = greeklishToGreek(normalizeText(fridgeQuery));
