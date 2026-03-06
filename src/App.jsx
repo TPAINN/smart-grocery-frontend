@@ -2110,7 +2110,7 @@ export default function App() {
             <div className="datetime-display">
               <div className="current-date">{timeGreeting} {timeIcon}</div>
               <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'long', day:'numeric', month:'long' })}</div>
-              <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit', second:'2-digit' })}</div>
+              <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit' })}</div>
             </div>
 
             <div className="header-actions">
