@@ -1527,17 +1527,14 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 
 // ─── Recipe Popup ────────────────────────────────────────────────────────────
 function RecipePopup({ recipe, onClose, onAddToList }) {
-  const [showDetails, setShowDetails] = useState(false);
+  const[showDetails, setShowDetails] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowDetails(true), 500);
     document.body.style.overflow = 'hidden';
-    return () => {
-      clearTimeout(timer);
-      document.body.style.overflow = '';
-    };
-  }, []);
+    return () => { clearTimeout(timer); document.body.style.overflow = ''; };
+  },[]);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -1549,38 +1546,50 @@ function RecipePopup({ recipe, onClose, onAddToList }) {
       <div className={`recipe-popup-card ${isClosing ? 'closing' : ''}`}>
         <button className="recipe-popup-close" onClick={handleClose}>✕</button>
 
-        {recipe.image && (
+        {recipe.image ? (
           <div className="recipe-popup-hero" style={{ backgroundImage: `url(${recipe.image})` }}>
             <div className="recipe-popup-hero-overlay">
               <h2 className="recipe-popup-title">{recipe.title}</h2>
-              <p className="recipe-popup-chef">από {recipe.chef || 'Άγνωστος'}</p>
+              <p className="recipe-popup-chef">{recipe.time || 30}' λεπτά • Clean Diet</p>
             </div>
           </div>
-        )}
-
-        {!recipe.image && (
+        ) : (
           <div className="recipe-popup-header-noimg">
             <h2 className="recipe-popup-title">{recipe.title}</h2>
-            <p className="recipe-popup-chef">από {recipe.chef || 'Άγνωστος'}</p>
+            <p className="recipe-popup-chef">{recipe.time || 30}' λεπτά • Clean Diet</p>
           </div>
         )}
 
-        <div className="recipe-popup-meta-bar">
-          {recipe.time && <span className="recipe-popup-chip">⏱️ {recipe.time} λεπτά</span>}
-          {recipe.cost != null && <span className="recipe-popup-chip">💰 ~{Number(recipe.cost).toFixed(1)}€</span>}
-          {recipe.calories && <span className="recipe-popup-chip">🔥 {recipe.calories} kcal</span>}
-        </div>
-
         <div className="recipe-popup-body">
+          {/* Real Nutrition Dashboard */}
+          <div className="recipe-nutri-dashboard">
+            <div className="nutri-circle">
+              <div className="nutri-circle-val" style={{color:'#f97316'}}>{recipe.calories || '-'}</div>
+              <div className="nutri-circle-label">Θερμίδες</div>
+            </div>
+            <div className="nutri-circle">
+              <div className="nutri-circle-val" style={{color:'#10b981'}}>{recipe.protein || '-'}<span>g</span></div>
+              <div className="nutri-circle-label">Πρωτεΐνη</div>
+            </div>
+            <div className="nutri-circle">
+              <div className="nutri-circle-val" style={{color:'#3b82f6'}}>{recipe.carbs || '-'}<span>g</span></div>
+              <div className="nutri-circle-label">Υδατάνθ.</div>
+            </div>
+            <div className="nutri-circle">
+              <div className="nutri-circle-val" style={{color:'#eab308'}}>{recipe.fat || '-'}<span>g</span></div>
+              <div className="nutri-circle-label">Λιπαρά</div>
+            </div>
+          </div>
+
           <button className="add-recipe-btn" onClick={(e) => { e.stopPropagation(); onAddToList(); }}>
-            🛒 Προσθήκη όλων στη Λίστα
+            🛒 Προσθήκη Υλικών στη Λίστα
           </button>
 
           <div className={`recipe-popup-details ${showDetails ? 'visible' : ''}`}>
             <div className="recipe-section">
               <h5 className="section-title">🥗 Υλικά</h5>
               <ul className="ing-list-pro">
-                {recipe.ingredients.map((ing, i) => (
+                {recipe.ingredients && recipe.ingredients.map((ing, i) => (
                   <li key={i} className="ing-item-clean">
                     <span className="ing-bullet" />
                     <span>{ing}</span>
@@ -2072,13 +2081,16 @@ export default function App() {
   const handleCopyShareKey = () => { if (user?.shareKey) { navigator.clipboard.writeText(user.shareKey); setNotification({ show:true, message:`📋 Αντιγράφηκε: ${user.shareKey}` }); } };
 
   const filteredRecipes = recipes
-    .filter(r => r && r.title) // skip malformed entries
+    .filter(r => r && r.title) 
     .filter(r => {
-      if (recipeFilter === 'budget' && !r.isBudget) return false;
-      if (recipeFilter === 'fast'   && r.time > 30)  return false;
+      // Τώρα χρησιμοποιούμε τα ΠΡΑΓΜΑΤΙΚΑ δεδομένα της βάσης!
+      if (recipeFilter === 'protein' && (!r.protein || r.protein < 25)) return false; 
+      if (recipeFilter === 'clean' && (!r.calories || r.calories > 500)) return false;
+      if (recipeFilter === 'fast' && (r.time > 30)) return false;
+      
       if (fridgeQuery.trim()) {
         const q = greeklishToGreek(normalizeText(fridgeQuery));
-        const ings = Array.isArray(r.ingredients) ? r.ingredients : [];
+        const ings = Array.isArray(r.ingredients) ? r.ingredients :[];
         return ings.some(ing => greeklishToGreek(normalizeText(String(ing))).includes(q));
       }
       return true;
@@ -2386,18 +2398,25 @@ export default function App() {
                   </div>
                 )}
 
-                {/* ── Recipes grid ── */}
+                {/* ── Real Recipes grid ── */}
                 {filteredRecipes.length > 0 && (
                   <div className="recipes-grid">
                     {filteredRecipes.map(recipe => (
                       <div key={recipe._id || recipe.title} className="recipe-card" onClick={() => setExpandedRecipe(recipe._id)}>
-                        {recipe.image && <div className="recipe-image" style={{ backgroundImage:`url(${recipe.image})` }} />}
+                        {recipe.image && (
+                          <div className="recipe-image" style={{ backgroundImage:`url(${recipe.image})` }}>
+                            <span style={{ position:'absolute', top:8, right:8, background:'rgba(0,0,0,0.65)', color:'white', padding:'4px 8px', borderRadius:8, fontSize:10, fontWeight:700, backdropFilter:'blur(4px)'}}>
+                              ⏱️ {recipe.time || 30}'
+                            </span>
+                          </div>
+                        )}
                         <div className="recipe-info">
                           <h4>{recipe.title}</h4>
-                          <p className="recipe-chef">από {recipe.chef || 'Άγνωστος'}</p>
-                          <div className="recipe-meta">
-                            {recipe.time && <span>⏱️ {recipe.time}'</span>}
-                            {recipe.cost != null && <span>💰 ~{Number(recipe.cost).toFixed(1)}€</span>}
+                          <p className="recipe-chef" style={{marginTop: 4, marginBottom: 10}}>{recipe.ingredients?.length || 0} υλικά • Clean Diet</p>
+                          
+                          <div style={{ display:'flex', gap:6, marginTop:'auto', flexWrap:'wrap' }}>
+                            {recipe.calories && <span className="macro-badge kcal">🔥 {recipe.calories} kcal</span>}
+                            {recipe.protein && <span className="macro-badge protein">💪 {recipe.protein}g Πρωτεΐνη</span>}
                           </div>
                         </div>
                       </div>
