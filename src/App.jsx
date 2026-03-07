@@ -1239,12 +1239,12 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         const fallbackName = `Προϊόν (${barcode})`;
         const parsedName =[p.product_name_el, p.product_name, p.product_name_en, p.generic_name_el].find(n => n && n.trim()) || fallbackName;
         
+        const additives = (p.additives_tags ||[]).map(a => a.replace('en:', '').toUpperCase());
         const parsed = {
           barcode,
           name: parsedName,
-          brand: p.brands ? p.brands.split(',')[0] : null, // Κρατάμε μόνο την 1η μάρκα, αν δεν υπάρχει null (όχι 'Unknown')
+          brand: p.brands ? p.brands.split(',')[0] : null, 
           image: p.image_front_small_url || p.image_front_url || p.image_url || null,
-          nutriScore: p.nutriscore_grade || null,
           novaGroup: p.nova_group || null,
           kcal: p.nutriments?.['energy-kcal_100g'] ?? p.nutriments?.energy_100g ?? null,
           fat: p.nutriments?.fat_100g ?? null,
@@ -1253,7 +1253,8 @@ function BarcodeScannerModal({ isOpen, onClose }) {
           salt: p.nutriments?.salt_100g ?? null,
           proteins: p.nutriments?.proteins_100g ?? null,
           fiber: p.nutriments?.fiber_100g ?? null,
-          allergenTags: [...(p.allergens_tags || []), ...(p.traces_tags ||[])],
+          allergenTags:[...(p.allergens_tags || []), ...(p.traces_tags ||[])],
+          additives: additives, // ΝΕΟ: Συντηρητικά
           ingredients: p.ingredients_text_el || p.ingredients_text || '',
           hasPalmOil: /palm/i.test(p.ingredients_text || '') || (p.ingredients_analysis_tags ||[]).some(t => t.includes('palm-oil')),
           quantity: p.quantity || '',
@@ -1306,18 +1307,27 @@ function BarcodeScannerModal({ isOpen, onClose }) {
     : [];
 
   const getWarnings = (p) => {
-    if (!p) return [];
-    const w = [];
-    if (getNutrientLevel(p.fat, 'fat') === 'high')            w.push({ icon:'🔴', text:'Υψηλά λιπαρά', detail:`${p.fat.toFixed(1)}g/100g` });
-    if (getNutrientLevel(p.saturated, 'saturated') === 'high') w.push({ icon:'🔴', text:'Υψηλά κορεσμένα', detail:`${p.saturated.toFixed(1)}g/100g` });
-    if (getNutrientLevel(p.sugars, 'sugars') === 'high')       w.push({ icon:'🔴', text:'Υψηλή ζάχαρη', detail:`${p.sugars.toFixed(1)}g/100g` });
-    if (getNutrientLevel(p.salt, 'salt') === 'high')           w.push({ icon:'🔴', text:'Υψηλό αλάτι', detail:`${p.salt.toFixed(1)}g/100g` });
-    if (p.hasPalmOil)                                           w.push({ icon:'🌴', text:'Περιέχει φοινικέλαιο', detail:'' });
-    if (p.novaGroup === 4)                                      w.push({ icon:'⚠️', text:'Ultra-processed (NOVA 4)', detail:'' });
-    if (getNutrientLevel(p.fat, 'fat') === 'low' && getNutrientLevel(p.sugars, 'sugars') === 'low') w.push({ icon:'✅', text:'Χαμηλά λιπαρά & ζάχαρη', detail:'' });
-    if (p.proteins >= 10) w.push({ icon:'💪', text:'Υψηλή πρωτεΐνη', detail:`${p.proteins.toFixed(1)}g/100g` });
-    if (p.fiber >= 5)     w.push({ icon:'🥦', text:'Πλούσιο σε φυτικές ίνες', detail:`${p.fiber.toFixed(1)}g/100g` });
-    return w;
+    if (!p) return[];
+    const w =[];
+    
+    if (p.fat != null && getNutrientLevel(p.fat, 'fat') === 'high') w.push({ icon:'🔴', text:'Υψηλά λιπαρά', detail:`${p.fat.toFixed(1)}g`, type: 'bad' });
+    if (p.saturated != null && getNutrientLevel(p.saturated, 'saturated') === 'high') w.push({ icon:'🔴', text:'Υψηλά κορεσμένα', detail:`${p.saturated.toFixed(1)}g`, type: 'bad' });
+    if (p.sugars != null && getNutrientLevel(p.sugars, 'sugars') === 'high') w.push({ icon:'🔴', text:'Υψηλή ζάχαρη', detail:`${p.sugars.toFixed(1)}g`, type: 'bad' });
+    if (p.salt != null && getNutrientLevel(p.salt, 'salt') === 'high') w.push({ icon:'🔴', text:'Υψηλό αλάτι', detail:`${p.salt.toFixed(1)}g`, type: 'bad' });
+    if (p.hasPalmOil) w.push({ icon:'🌴', text:'Περιέχει φοινικέλαιο', detail:'', type: 'bad' });
+    if (p.novaGroup === 4) w.push({ icon:'⚠️', text:'Ultra-processed', detail:'NOVA 4', type: 'bad' });
+    
+    // ΝΕΟ: Εμφάνιση συντηρητικών!
+    if (p.additives && p.additives.length > 0) {
+        w.push({ icon:'🧪', text:`Περιέχει ${p.additives.length} συντηρητικά`, detail: p.additives.slice(0,3).join(', ') + (p.additives.length > 3 ? '...' : ''), type: 'bad' });
+    }
+
+    if (p.fat != null && p.sugars != null && getNutrientLevel(p.fat, 'fat') === 'low' && getNutrientLevel(p.sugars, 'sugars') === 'low') w.push({ icon:'✅', text:'Χαμηλά λιπαρά & ζάχαρη', detail:'', type: 'good' });
+    if (p.proteins != null && p.proteins >= 10) w.push({ icon:'💪', text:'Υψηλή πρωτεΐνη', detail:`${p.proteins.toFixed(1)}g`, type: 'good' });
+    if (p.fiber != null && p.fiber >= 5) w.push({ icon:'🥦', text:'Πλούσιες φυτικές ίνες', detail:`${p.fiber.toFixed(1)}g`, type: 'good' });
+        
+    // Ταξινόμηση: Τα Κακά πρώτα, τα Καλά μετά!
+    return w.sort((a, b) => (a.type === 'bad' ? -1 : 1));
   };
 
   if (!isOpen) return null;
@@ -1400,11 +1410,6 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                 {product.brand && <p className="product-brand">{product.brand}</p>}
                 {product.quantity && <p className="product-qty">{product.quantity}</p>}
               </div>
-              {product.nutriScore && (
-                <div className="nutri-badge" style={{ background: getNutriScoreColor(product.nutriScore) }}>
-                  {product.nutriScore.toUpperCase()}
-                </div>
-              )}
             </div>
 
             {/* Nutrition Grid */}
@@ -2134,14 +2139,17 @@ export default function App() {
   const filteredRecipes = recipes
     .filter(r => r && r.title) 
     .filter(r => {
-      // Προσθέσαμε το || 0 για ασφάλεια αν λείπει το πεδίο
       const protein = r.protein || 0;
-      const calories = r.calories || 0;
+      const carbs = r.carbs || 0;
       const time = r.time || 30;
+      const tags = r.tags ||[];
 
       if (recipeFilter === 'protein' && protein < 25) return false; 
-      if (recipeFilter === 'clean' && calories > 500) return false;
+      if (recipeFilter === 'nosugar' && carbs > 15) return false;
       if (recipeFilter === 'fast' && time > 30) return false;
+      if (recipeFilter === 'budget' && (r.ingredients?.length || 0) > 6) return false;
+      if (recipeFilter === 'breakfast' && !tags.includes('breakfast')) return false;
+      if (recipeFilter === 'snack' && !tags.includes('snack')) return false;
       
       if (fridgeQuery.trim()) {
         const q = greeklishToGreek(normalizeText(fridgeQuery));
@@ -2462,7 +2470,15 @@ export default function App() {
                 </div>
 
                 <div className="recipe-filters">
-                  {[{id:'all',label:'Όλες'},{id:'budget',label:'€ Φθηνές'},{id:'fast',label:'⏱️ Γρήγορες'}].map(f => (
+                  {[
+                    {id:'all', label:'🍽️ Όλες'},
+                    {id:'protein', label:'💪 High Protein'},
+                    {id:'nosugar', label:'🚫 No Sugar'},
+                    {id:'fast', label:'⏱️ Γρήγορες'},
+                    {id:'breakfast', label:'🍳 Πρωινό'},
+                    {id:'snack', label:'🍏 Σνακ'},
+                    {id:'budget', label:'💰 Οικονομικές'}
+                  ].map(f => (
                     <button key={f.id} className={`filter-btn ${recipeFilter === f.id ? 'active' : ''}`} onClick={() => setRecipeFilter(f.id)}>{f.label}</button>
                   ))}
                 </div>
