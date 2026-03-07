@@ -2188,6 +2188,57 @@ export default function App() {
           />
         </>
       )}
+      {/* ── Chat Panel ── */}
+      {showChatPanel && (
+        <>
+          <div style={{ position:'fixed', inset:0, zIndex:299, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }} onClick={() => setShowChatPanel(false)} />
+          <div style={{
+            position:'fixed', top:0, right:0, bottom:0, zIndex:300, width:'min(340px, 92vw)',
+            background:'var(--bg-main, #0f0f1a)', borderLeft:'1px solid var(--border-light)',
+            boxShadow:'-12px 0 40px rgba(0,0,0,0.3)', display:'flex', flexDirection:'column',
+            animation:'slideInRight 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+          }}>
+            <div style={{ padding:'20px 20px 16px', borderBottom:'1px solid var(--border-light)', display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--bg-surface)' }}>
+              <div>
+                <h3 style={{ margin:0, fontSize:16, fontWeight:800 }}>💬 Chat Καλαθιού</h3>
+                <p style={{ margin:'4px 0 0', fontSize:11, color:'var(--text-secondary)' }}>Μηνύματα διαγράφονται σε 24 ώρες</p>
+              </div>
+              <button onClick={() => setShowChatPanel(false)} style={{ background:'var(--bg-subtle)', border:'1px solid var(--border-light)', borderRadius:10, padding:'8px 10px', cursor:'pointer', color:'var(--text-primary)' }}>✕</button>
+            </div>
+            
+            <div style={{ flex:1, overflowY:'auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' }}>
+              {chatMessages.length === 0 ? (
+                <div style={{ textAlign:'center', marginTop:'40px', color:'var(--text-secondary)', fontSize:'13px' }}>Στείλε το πρώτο μήνυμα!</div>
+              ) : (
+                chatMessages.map((m, i) => {
+                  const isMine = m.senderName === user.name;
+                  return (
+                    <div key={i} style={{ display:'flex', flexDirection:'column', width:'100%' }}>
+                      <div className={`chat-bubble ${isMine ? 'chat-mine' : 'chat-other'}`}>
+                        <div className="chat-sender">{isMine ? 'Εγώ' : m.senderName}</div>
+                        <div>{m.text}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            <div style={{ padding:'16px', borderTop:'1px solid var(--border-light)', background:'var(--bg-surface)' }}>
+              <form onSubmit={handleSendMessage} style={{ display:'flex', gap:'8px' }}>
+                <input 
+                  type="text" placeholder="Γράψε μήνυμα..." value={chatInput} onChange={e => setChatInput(e.target.value)}
+                  style={{ flex:1, padding:'12px 16px', borderRadius:'14px', border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text-primary)', outline:'none' }}
+                />
+                <button type="submit" disabled={!chatInput.trim()} style={{ background:'var(--accent)', color:'white', border:'none', borderRadius:'14px', width:'46px', cursor: chatInput.trim() ? 'pointer' : 'not-allowed', opacity: chatInput.trim() ? 1 : 0.5 }}>
+                  ➤
+                </button>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="container" style={!isOnline ? { marginTop: 64 } : {}}>
         {isScraping && (
@@ -2234,6 +2285,19 @@ export default function App() {
                   }}>{friends.length}</span>
                 )}
               </div>
+              {/* Chat Button */}
+              {user && friends.length > 0 && (
+                <div className="action-btn-new" style={{ position:'relative' }} onClick={() => setShowChatPanel(true)} title="Chat Καλαθιού">
+                  💬
+                  {unreadChat > 0 && (
+                    <span style={{
+                      position:'absolute', top:-4, right:-4, background:'#ef4444', color:'#fff', borderRadius:'50%',
+                      width:16, height:16, fontSize:9, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center',
+                      animation: 'badgePop 0.3s spring'
+                    }}>{unreadChat}</span>
+                  )}
+                </div>
+              )}
 
               <div className="action-btn-new" onClick={() => { if (!user) return setShowAuthModal(true); setShowListsModal(true); }} title="Λίστες μου">
                 📝{savedLists.length > 0 && <span className="list-badge">{savedLists.length}</span>}
