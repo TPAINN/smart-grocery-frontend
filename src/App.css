@@ -2950,3 +2950,34 @@ body.dark-mode .welcome-box {
   color: var(--text-muted);
   letter-spacing: 0.5px;
 }
+/* ════ CHAT PANEL ════ */
+.chat-bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  max-width: 80%;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+.chat-mine {
+  background: var(--accent);
+  color: white;
+  border-bottom-right-radius: 4px;
+  align-self: flex-end;
+}
+.chat-other {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+  align-self: flex-start;
+}
+.chat-sender {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.chat-mine .chat-sender {
+  text-align: right;
+  color: rgba(255,255,255,0.7);
+}

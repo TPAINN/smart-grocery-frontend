@@ -1636,6 +1636,12 @@ export default function App() {
   const [nameModalValue, setNameModalValue]   = useState('');
   const [confirmModal, setConfirmModal]       = useState({ open:false, message:'', onConfirm:null });
   const [recipeAddModal, setRecipeAddModal]   = useState({ open:false, recipeName:'', progress:0, total:0 });
+// ── Chat Messages ──────────────────────────────────────────────────────────
+  const [chatMessages, setChatMessages] = useState([]);
+  const [showChatPanel, setShowChatPanel] = useState(false);
+  const[unreadChat, setUnreadChat] = useState(0);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef(null);
 
   // ── Friends state ──────────────────────────────────────────────────────────
   const [friends, setFriends]                 = useState(() => JSON.parse(localStorage.getItem('sg_friends') || '[]'));
@@ -1733,6 +1739,14 @@ export default function App() {
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     });
 
+    socketRef.current.on('receive_message', (msg) => {
+      setChatMessages(prev => [...prev, msg]);
+      if (!showChatPanel) {
+        setUnreadChat(prev => prev + 1);
+        if (navigator.vibrate) navigator.vibrate([50, 50]); // Διπλή μικρή δόνηση
+      }
+    });
+
     // Mutual friendship: when someone adds us, auto-add them back
     socketRef.current.on('friend_added', (data) => {
       if (!data?.from?.shareKey) return;
@@ -1746,6 +1760,24 @@ export default function App() {
 
     return () => socketRef.current.disconnect();
   }, [user]);
+
+  // Φόρτωση ιστορικού Chat
+  useEffect(() => {
+    if (user?.shareKey) {
+      fetch(`${API_BASE}/api/chat/${user.shareKey}`)
+        .then(res => res.json())
+        .then(data => { if(Array.isArray(data)) setChatMessages(data); })
+        .catch(()=>{});
+    }
+  }, [user]);
+
+  // Scroll to bottom στο chat
+  useEffect(() => {
+    if (showChatPanel && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      setUnreadChat(0); // Αν ανοίξεις το chat, μηδενίζουν τα unread
+    }
+  },[chatMessages, showChatPanel]);
 
   // ── Clock ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -2079,6 +2111,25 @@ export default function App() {
 
   const handleLogout       = () => { localStorage.removeItem('smart_grocery_token'); localStorage.removeItem('smart_grocery_user'); setUser(null); setSavedLists([]); setShowProfileMenu(false); };
   const handleCopyShareKey = () => { if (user?.shareKey) { navigator.clipboard.writeText(user.shareKey); setNotification({ show:true, message:`📋 Αντιγράφηκε: ${user.shareKey}` }); } };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !user) return;
+    
+    const msgData = {
+      shareKey: user.shareKey,
+      senderName: user.name,
+      text: chatInput.trim(),
+      createdAt: new Date()
+    };
+
+    // Στέλνουμε στο socket
+    socketRef.current.emit('send_message', msgData);
+    
+    // Το προσθέτουμε κατευθείαν στην οθόνη μας
+    setChatMessages(prev =>[...prev, msgData]);
+    setChatInput('');
+  };
 
   const filteredRecipes = recipes
     .filter(r => r && r.title) 
