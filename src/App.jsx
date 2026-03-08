@@ -880,7 +880,7 @@ function FriendsPanel({ friends, myShareKey, onCopyKey, onAddFriend, onRemoveFri
     <div style={{
       position:'fixed', top:0, right:0, bottom:0, zIndex:300,
       width:'min(320px, 92vw)',
-      background:'var(--bg-main, #0f0f1a)',
+      background:'var(--bg-card)',
       borderLeft:'1px solid var(--border-light)',
       boxShadow:'-12px 0 40px rgba(0,0,0,0.3)',
       display:'flex', flexDirection:'column',
@@ -1124,6 +1124,80 @@ const getNutrientLevel = (val, type) => {
   return 'moderate';
 };
 
+// ─── Additive / Ingredient Info Database ──────────────────────────────────────
+const ADDITIVE_DB = {
+  'E100': { name:'Κουρκουμίνη', safety:'ok', desc:'Φυσική χρωστική από κουρκούμα. Θεωρείται ασφαλής.' },
+  'E101': { name:'Ριβοφλαβίνη (Β2)', safety:'ok', desc:'Βιταμίνη Β2 που χρησιμοποιείται ως χρωστική. Φυσική και ασφαλής.' },
+  'E102': { name:'Ταρτραζίνη', safety:'caution', desc:'Τεχνητή κίτρινη χρωστική. Μπορεί να προκαλέσει αλλεργίες σε ευαίσθητα άτομα.' },
+  'E110': { name:'Κίτρινο Ηλιοβασιλέματος', safety:'caution', desc:'Τεχνητή χρωστική. Συνδέεται με υπερκινητικότητα σε παιδιά.' },
+  'E120': { name:'Κοχενίλλη (E120)', safety:'caution', desc:'Κόκκινη χρωστική από έντομα. Μπορεί να προκαλέσει αλλεργίες.' },
+  'E122': { name:'Αζορουμπίνη', safety:'caution', desc:'Τεχνητή κόκκινη χρωστική. Αποφύγετε σε παιδιά.' },
+  'E124': { name:'Ερυθρό Πονσό 4R', safety:'caution', desc:'Τεχνητή χρωστική. Συνδέεται με υπερκινητικότητα.' },
+  'E129': { name:'Ερυθρό Allura AC', safety:'caution', desc:'Τεχνητή κόκκινη χρωστική. Αμφιλεγόμενη χρήση σε παιδιά.' },
+  'E200': { name:'Σορβικό οξύ', safety:'ok', desc:'Φυσικό συντηρητικό. Γενικά ασφαλές.' },
+  'E202': { name:'Σορβικό κάλιο', safety:'ok', desc:'Κοινό συντηρητικό για τυριά και κρασί. Ασφαλές.' },
+  'E210': { name:'Βενζοϊκό οξύ', safety:'caution', desc:'Συντηρητικό. Σε συνδυασμό με βιταμίνη C μπορεί να σχηματίσει βενζόλιο.' },
+  'E211': { name:'Βενζοϊκό νάτριο', safety:'caution', desc:'Κοινό συντηρητικό. Αποφύγετε σε συνδυασμό με ασκορβικό οξύ.' },
+  'E220': { name:'Διοξείδιο θείου (SO2)', safety:'caution', desc:'Συντηρητικό σε κρασί & αποξηραμένα φρούτα. Μπορεί να προκαλέσει άσθμα.' },
+  'E250': { name:'Νιτρώδες νάτριο', safety:'bad', desc:'Χρησιμοποιείται σε αλλαντικά. Σε υψηλές θερμοκρασίες σχηματίζει νιτροζαμίνες (καρκινογόνα).' },
+  'E251': { name:'Νιτρικό νάτριο', safety:'bad', desc:'Συντηρητικό σε επεξεργασμένα κρέατα. Αμφιλεγόμενο για υγεία.' },
+  'E270': { name:'Γαλακτικό οξύ', safety:'ok', desc:'Φυσικό οξύ από ζύμωση. Πολύ ασφαλές.' },
+  'E300': { name:'Ασκορβικό οξύ (Vit.C)', safety:'ok', desc:'Βιταμίνη C ως αντιοξειδωτικό. Εξαιρετικά ασφαλές.' },
+  'E306': { name:'Τοκοφερόλη (Vit.E)', safety:'ok', desc:'Φυσικό αντιοξειδωτικό. Ασφαλές.' },
+  'E320': { name:'BHA', safety:'bad', desc:'Τεχνητό αντιοξειδωτικό. Πιθανώς καρκινογόνο σε μεγάλες δόσεις.' },
+  'E321': { name:'BHT', safety:'caution', desc:'Τεχνητό αντιοξειδωτικό. Αμφιλεγόμενο.' },
+  'E330': { name:'Κιτρικό οξύ', safety:'ok', desc:'Φυσικό οξύ. Πολύ κοινό και ασφαλές.' },
+  'E407': { name:'Καραγενάνη', safety:'caution', desc:'Πηκτικό από θαλάσσια φύκια. Μπορεί να προκαλέσει φλεγμονή.' },
+  'E420': { name:'Σορβιτόλη', safety:'ok', desc:'Φυσικό γλυκαντικό. Ασφαλές, αλλά μπορεί να προκαλέσει πεπτικά σε μεγάλες ποσότητες.' },
+  'E421': { name:'Μαννιτόλη', safety:'ok', desc:'Φυσικό γλυκαντικό. Γενικά ασφαλές.' },
+  'E450': { name:'Διφωσφορικά', safety:'caution', desc:'Χρησιμοποιείται ως διογκωτικό. Υψηλή πρόσληψη φωσφόρου σχετίζεται με οστεοπόρωση.' },
+  'E471': { name:'Μονογλυκερίδια', safety:'ok', desc:'Γαλακτωματοποιητής από λίπος. Γενικά ασφαλής.' },
+  'E472': { name:'Εστέρες μονογλυκεριδίων', safety:'ok', desc:'Γαλακτωματοποιητής. Ασφαλής.' },
+  'E476': { name:'Πολυγλυκερόλη', safety:'ok', desc:'Γαλακτωματοποιητής σε σοκολάτα. Ασφαλής.' },
+  'E500': { name:'Ανθρακικά άλατα νατρίου', safety:'ok', desc:'Κοινό διογκωτικό. Πλήρως ασφαλές.' },
+  'E621': { name:'Γλουταμινικό μονονάτριο (MSG)', safety:'caution', desc:'Ενισχυτικό γεύσης. Ασφαλές για τους περισσότερους, αλλά μπορεί να προκαλέσει ευαισθησία.' },
+  'E950': { name:'Ακεσουλφάμη Κ', safety:'caution', desc:'Τεχνητό γλυκαντικό. Αμφιλεγόμενο - μελέτες σε πειραματόζωα έδειξαν ανησυχίες.' },
+  'E951': { name:'Ασπαρτάμη', safety:'caution', desc:'Τεχνητό γλυκαντικό. Αποφύγετε αν έχετε φαινυλκετονουρία.' },
+  'E954': { name:'Σακχαρίνη', safety:'caution', desc:'Τεχνητό γλυκαντικό. Παλαιότερα θεωρήθηκε επικίνδυνη - σήμερα εγκεκριμένη.' },
+  'E955': { name:'Σουκραλόζη', safety:'ok', desc:'Τεχνητό γλυκαντικό από ζάχαρη. Γενικά ασφαλές.' },
+};
+
+const getAdditiveInfo = (code) => {
+  const clean = code.replace(/[^A-Z0-9]/g, '');
+  return ADDITIVE_DB[clean] || { name: code, safety:'unknown', desc:'Δεν υπάρχουν αρκετές πληροφορίες για αυτό το πρόσθετο.' };
+};
+
+// ─── Ingredient Detail Modal (for tapping warnings/additives) ─────────────────
+function IngredientDetailModal({ item, onClose }) {
+  if (!item) return null;
+  const safetyColors = {
+    ok:      { bg:'rgba(34,197,94,0.08)',  border:'rgba(34,197,94,0.3)',  color:'#22c55e', label:'Ασφαλές' },
+    caution: { bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.3)', color:'#f59e0b', label:'Προσοχή' },
+    bad:     { bg:'rgba(239,68,68,0.08)',  border:'rgba(239,68,68,0.3)',  color:'#ef4444', label:'Αποφύγετε' },
+    unknown: { bg:'rgba(148,163,184,0.08)',border:'rgba(148,163,184,0.3)',color:'#94a3b8', label:'Άγνωστο' },
+  };
+  const c = safetyColors[item.safety] || safetyColors.unknown;
+  return createPortal(
+    <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && onClose()} style={{ zIndex:110000 }}>
+      <div className="modal-content" style={{ maxWidth:340, animation:'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both' }} onClick={e => e.stopPropagation()}>
+        <button className="close-btn" onClick={onClose}>✕</button>
+        <div style={{ textAlign:'center', padding:'8px 0 16px' }}>
+          <div style={{ fontSize:40, marginBottom:8 }}>🧪</div>
+          <div style={{
+            display:'inline-block', padding:'4px 14px', borderRadius:99,
+            background: c.bg, border:`1px solid ${c.border}`, color: c.color,
+            fontSize:11, fontWeight:800, letterSpacing:0.5, marginBottom:12
+          }}>{c.label}</div>
+          <h3 style={{ margin:'0 0 6px', fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>{item.name}</h3>
+          {item.code && <div style={{ fontSize:12, color:'var(--text-muted)', fontWeight:700, marginBottom:12 }}>{item.code}</div>}
+          <p style={{ fontSize:14, color:'var(--text-secondary)', lineHeight:1.6, margin:0 }}>{item.desc}</p>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 // ─── Barcode Scanner Modal ───────────────────────────────────────────────────
 function BarcodeScannerModal({ isOpen, onClose }) {
   const [activeView, setActiveView] = useState('scan');
@@ -1132,6 +1206,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
   const [error, setError] = useState('');
   const [isClosing, setIsClosing] = useState(false);
   const [scanKey, setScanKey] = useState(0);
+  const [ingredientDetail, setIngredientDetail] = useState(null);
   const [scanHistory, setScanHistory] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sg_scan_history') || '[]'); } catch { return []; }
   });
@@ -1157,7 +1232,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 
   // Start camera
   useEffect(() => {
-    if (!isOpen || activeView !== 'scan' || product || loading || error) return;
+    if (!isOpen || activeView !== 'scan' || product || loading) return;
     let html5Qr = null;
     let cancelled = false;
     const startScanner = async () => {
@@ -1202,7 +1277,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         if (!cancelled) setError('Δεν μπόρεσε να ανοίξει η κάμερα. Δώσε πρόσβαση.');
       }
     };
-    const timer = setTimeout(startScanner, 400);
+    const timer = setTimeout(startScanner, 300);
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -1225,39 +1300,60 @@ function BarcodeScannerModal({ isOpen, onClose }) {
   const handleBarcodeScan = async (barcode) => {
     setLoading(true);
     setError('');
-    // Ήχος Beep (Supermarket feel)
     try { new Audio('data:audio/mp3;base64,//MkxAAQhEBEFmACAAAI0HqAgIICuS39R/4AAAABh//MkxAAYS15QAAwYyAAwAQA4B5///wAAC////wAAA//MkxAAQgAAAAAQQAAAwAAAwD///wAAAP///wAAA//MkxAARQAAAAAQQAAAwAAAwD///wAAAP///wAAA').play().catch(()=>{}); } catch(e){}
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Haptic feedback
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
     try {
-      const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json`);
+      const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=product_name,product_name_el,product_name_en,generic_name,generic_name_el,brands,image_front_small_url,image_front_url,image_url,nova_group,nutriscore_grade,nutriments,allergens_tags,traces_tags,additives_tags,additives_original_tags,ingredients_text,ingredients_text_el,ingredients_analysis_tags,quantity,packaging,categories,labels,manufacturing_places,origins,stores,countries`);
       const data = await r.json();
       
       if (data.status === 1 && data.product) {
         const p = data.product;
-        // Έξυπνο parsing ονόματος - αν δεν βρει απολύτως τίποτα, βάζει το Barcode
         const fallbackName = `Προϊόν (${barcode})`;
-        const parsedName =[p.product_name_el, p.product_name, p.product_name_en, p.generic_name_el].find(n => n && n.trim()) || fallbackName;
+        const parsedName = [p.product_name_el, p.product_name, p.product_name_en, p.generic_name_el, p.generic_name].find(n => n && n.trim()) || fallbackName;
         
-        const additives = (p.additives_tags ||[]).map(a => a.replace('en:', '').toUpperCase());
+        // Parse additives with friendly names
+        const additivesTags = p.additives_original_tags || p.additives_tags || [];
+        const additives = additivesTags.map(a => {
+          const code = a.replace(/^en:/, '').toUpperCase();
+          return code;
+        }).filter(Boolean);
+
+        // Detect palm oil more accurately
+        const ingredientsText = p.ingredients_text_el || p.ingredients_text || '';
+        const hasPalmOil = /palm/i.test(ingredientsText) || (p.ingredients_analysis_tags || []).some(t => t.includes('palm-oil'));
+        
+        // Get vegan/vegetarian from analysis tags
+        const analysisTags = p.ingredients_analysis_tags || [];
+        const isVegan = analysisTags.some(t => t === 'en:vegan');
+        const isVegetarian = analysisTags.some(t => t === 'en:vegetarian' || t === 'en:vegan');
+
         const parsed = {
           barcode,
           name: parsedName,
-          brand: p.brands ? p.brands.split(',')[0] : null, 
+          brand: p.brands ? p.brands.split(',')[0].trim() : null,
           image: p.image_front_small_url || p.image_front_url || p.image_url || null,
           novaGroup: p.nova_group || null,
-          kcal: p.nutriments?.['energy-kcal_100g'] ?? p.nutriments?.energy_100g ?? null,
+          nutriScore: p.nutriscore_grade || null,
+          kcal: p.nutriments?.['energy-kcal_100g'] ?? p.nutriments?.['energy-kcal'] ?? null,
           fat: p.nutriments?.fat_100g ?? null,
           saturated: p.nutriments?.['saturated-fat_100g'] ?? null,
           sugars: p.nutriments?.sugars_100g ?? null,
           salt: p.nutriments?.salt_100g ?? null,
           proteins: p.nutriments?.proteins_100g ?? null,
           fiber: p.nutriments?.fiber_100g ?? null,
-          allergenTags:[...(p.allergens_tags || []), ...(p.traces_tags ||[])],
-          additives: additives, // ΝΕΟ: Συντηρητικά
-          ingredients: p.ingredients_text_el || p.ingredients_text || '',
-          hasPalmOil: /palm/i.test(p.ingredients_text || '') || (p.ingredients_analysis_tags ||[]).some(t => t.includes('palm-oil')),
+          carbs: p.nutriments?.carbohydrates_100g ?? null,
+          sodium: p.nutriments?.sodium_100g ?? null,
+          allergenTags: [...(p.allergens_tags || []), ...(p.traces_tags || [])],
+          additives,
+          ingredients: ingredientsText,
+          hasPalmOil,
+          isVegan,
+          isVegetarian,
           quantity: p.quantity || '',
+          categories: p.categories ? p.categories.split(',').slice(0, 3).map(c => c.trim()).filter(c => c.length < 30) : [],
+          labels: p.labels ? p.labels.split(',').slice(0, 4).map(l => l.trim()).filter(l => l.length < 25) : [],
+          origin: p.origins || p.manufacturing_places || null,
           scannedAt: new Date().toISOString(),
         };
         setProduct(parsed);
@@ -1310,23 +1406,17 @@ function BarcodeScannerModal({ isOpen, onClose }) {
     if (!p) return[];
     const w =[];
     
-    if (p.fat != null && getNutrientLevel(p.fat, 'fat') === 'high') w.push({ icon:'🔴', text:'Υψηλά λιπαρά', detail:`${p.fat.toFixed(1)}g`, type: 'bad' });
-    if (p.saturated != null && getNutrientLevel(p.saturated, 'saturated') === 'high') w.push({ icon:'🔴', text:'Υψηλά κορεσμένα', detail:`${p.saturated.toFixed(1)}g`, type: 'bad' });
-    if (p.sugars != null && getNutrientLevel(p.sugars, 'sugars') === 'high') w.push({ icon:'🔴', text:'Υψηλή ζάχαρη', detail:`${p.sugars.toFixed(1)}g`, type: 'bad' });
-    if (p.salt != null && getNutrientLevel(p.salt, 'salt') === 'high') w.push({ icon:'🔴', text:'Υψηλό αλάτι', detail:`${p.salt.toFixed(1)}g`, type: 'bad' });
-    if (p.hasPalmOil) w.push({ icon:'🌴', text:'Περιέχει φοινικέλαιο', detail:'', type: 'bad' });
-    if (p.novaGroup === 4) w.push({ icon:'⚠️', text:'Ultra-processed', detail:'NOVA 4', type: 'bad' });
+    if (p.fat != null && getNutrientLevel(p.fat, 'fat') === 'high') w.push({ icon:'🔴', text:'Υψηλά λιπαρά', detail:`${p.fat.toFixed(1)}g/100g`, type:'bad', clickable:true, desc:`Το προϊόν περιέχει ${p.fat.toFixed(1)}g λιπαρών ανά 100g. Ο ΠΟΥ συνιστά <30% ημερήσιων θερμίδων από λιπαρά.` });
+    if (p.saturated != null && getNutrientLevel(p.saturated, 'saturated') === 'high') w.push({ icon:'🔴', text:'Υψηλά κορεσμένα λιπαρά', detail:`${p.saturated.toFixed(1)}g`, type:'bad', clickable:true, desc:`Κορεσμένα λιπαρά: ${p.saturated.toFixed(1)}g/100g. Υψηλή πρόσληψη αυξάνει τον κίνδυνο καρδιαγγειακών νοσημάτων.` });
+    if (p.sugars != null && getNutrientLevel(p.sugars, 'sugars') === 'high') w.push({ icon:'🔴', text:'Υψηλή ζάχαρη', detail:`${p.sugars.toFixed(1)}g`, type:'bad', clickable:true, desc:`Ζάχαρη: ${p.sugars.toFixed(1)}g/100g. Ο ΠΟΥ συνιστά <10% ημερήσιων θερμίδων από ελεύθερα σάκχαρα.` });
+    if (p.salt != null && getNutrientLevel(p.salt, 'salt') === 'high') w.push({ icon:'🔴', text:'Υψηλό αλάτι', detail:`${p.salt.toFixed(1)}g`, type:'bad', clickable:true, desc:`Αλάτι: ${p.salt.toFixed(1)}g/100g. Η υπερκατανάλωση αλατιού συνδέεται με υπέρταση.` });
+    if (p.hasPalmOil) w.push({ icon:'🌴', text:'Περιέχει φοινικέλαιο', detail:'', type:'bad', clickable:true, desc:'Το φοινικέλαιο είναι πλούσιο σε κορεσμένα λιπαρά οξέα και η παραγωγή του συνδέεται με αποψίλωση δασών.' });
+    if (p.novaGroup === 4) w.push({ icon:'⚠️', text:'Ultra-processed food', detail:'NOVA 4', type:'bad', clickable:true, desc:'Τα τρόφιμα NOVA 4 έχουν υποστεί βιομηχανική επεξεργασία και περιέχουν πολλά πρόσθετα. Συνδέονται με αυξημένο κίνδυνο παχυσαρκίας και χρόνιων παθήσεων.' });
     
-    // ΝΕΟ: Εμφάνιση συντηρητικών!
-    if (p.additives && p.additives.length > 0) {
-        w.push({ icon:'🧪', text:`Περιέχει ${p.additives.length} συντηρητικά`, detail: p.additives.slice(0,3).join(', ') + (p.additives.length > 3 ? '...' : ''), type: 'bad' });
-    }
-
     if (p.fat != null && p.sugars != null && getNutrientLevel(p.fat, 'fat') === 'low' && getNutrientLevel(p.sugars, 'sugars') === 'low') w.push({ icon:'✅', text:'Χαμηλά λιπαρά & ζάχαρη', detail:'', type: 'good' });
-    if (p.proteins != null && p.proteins >= 10) w.push({ icon:'💪', text:'Υψηλή πρωτεΐνη', detail:`${p.proteins.toFixed(1)}g`, type: 'good' });
-    if (p.fiber != null && p.fiber >= 5) w.push({ icon:'🥦', text:'Πλούσιες φυτικές ίνες', detail:`${p.fiber.toFixed(1)}g`, type: 'good' });
+    if (p.proteins != null && p.proteins >= 10) w.push({ icon:'💪', text:'Υψηλή πρωτεΐνη', detail:`${p.proteins.toFixed(1)}g`, type: 'good', clickable:true, desc:`Πρωτεΐνη: ${p.proteins.toFixed(1)}g/100g. Άριστη πηγή πρωτεΐνης για μυϊκή ανάπτυξη και κορεσμό.` });
+    if (p.fiber != null && p.fiber >= 5) w.push({ icon:'🥦', text:'Πλούσιες φυτικές ίνες', detail:`${p.fiber.toFixed(1)}g`, type: 'good', clickable:true, desc:`Φυτικές ίνες: ${p.fiber.toFixed(1)}g/100g. Συμβάλλουν στη σωστή λειτουργία του πεπτικού συστήματος.` });
         
-    // Ταξινόμηση: Τα Κακά πρώτα, τα Καλά μετά!
     return w.sort((a, b) => (a.type === 'bad' ? -1 : 1));
   };
 
@@ -1336,6 +1426,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
     <div className={`scanner-overlay ${isClosing ? 'closing' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && handleClose()}>
       <div className={`scanner-card ${isClosing ? 'closing' : ''}`}>
         <button className="recipe-popup-close" onClick={handleClose}>✕</button>
+        {ingredientDetail && <IngredientDetailModal item={ingredientDetail} onClose={() => setIngredientDetail(null)} />}
 
         {/* Tabs */}
         <div className="scanner-tabs">
@@ -1433,12 +1524,82 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             {getWarnings(product).length > 0 && (
               <div className="product-warnings">
                 {getWarnings(product).map((w,i) => (
-                  <div key={i} className={`warning-chip ${w.icon === '✅' || w.icon === '💪' || w.icon === '🥦' ? 'good' : 'bad'}`}>
+                  <div key={i} className={`warning-chip ${w.icon === '✅' || w.icon === '💪' || w.icon === '🥦' ? 'good' : 'bad'}`}
+                    style={{ cursor: w.clickable ? 'pointer' : 'default' }}
+                    onClick={() => w.clickable && setIngredientDetail({ name: w.text, code: w.detail, desc: w.desc, safety: w.type === 'bad' ? 'bad' : 'ok' })}
+                  >
                     <span>{w.icon}</span>
                     <span>{w.text}</span>
                     {w.detail && <span className="warning-detail">{w.detail}</span>}
+                    {w.clickable && <span style={{ marginLeft:'auto', fontSize:10, color:'var(--text-muted)' }}>ℹ️</span>}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* NutriScore + Labels Row */}
+            {(product.nutriScore || product.isVegan || product.isVegetarian || product.novaGroup) && (
+              <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:14, alignItems:'center' }}>
+                {product.nutriScore && (
+                  <div style={{
+                    display:'flex', alignItems:'center', gap:5,
+                    background: getNutriScoreColor(product.nutriScore),
+                    color:'white', borderRadius:10, padding:'5px 11px',
+                    fontSize:12, fontWeight:900, letterSpacing:0.5,
+                    boxShadow:`0 3px 10px ${getNutriScoreColor(product.nutriScore)}55`
+                  }}>
+                    <span>Nutri</span><span style={{ opacity:0.7 }}>-</span><span>Score</span>
+                    <span style={{ fontSize:16, marginLeft:4 }}>{product.nutriScore.toUpperCase()}</span>
+                  </div>
+                )}
+                {product.novaGroup && (
+                  <div style={{
+                    display:'flex', alignItems:'center', gap:4,
+                    background: product.novaGroup <= 2 ? 'rgba(34,197,94,0.1)' : product.novaGroup === 3 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
+                    border: `1px solid ${product.novaGroup <= 2 ? 'rgba(34,197,94,0.3)' : product.novaGroup === 3 ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                    color: product.novaGroup <= 2 ? '#22c55e' : product.novaGroup === 3 ? '#f59e0b' : '#ef4444',
+                    borderRadius:10, padding:'5px 10px', fontSize:11, fontWeight:700
+                  }}>
+                    NOVA {product.novaGroup} {product.novaGroup === 4 ? '⚠️' : product.novaGroup <= 2 ? '✅' : ''}
+                  </div>
+                )}
+                {product.isVegan && <span style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', color:'#22c55e', borderRadius:10, padding:'5px 10px', fontSize:11, fontWeight:700 }}>🌱 Vegan</span>}
+                {!product.isVegan && product.isVegetarian && <span style={{ background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.25)', color:'#22c55e', borderRadius:10, padding:'5px 10px', fontSize:11, fontWeight:700 }}>🥗 Vegetarian</span>}
+              </div>
+            )}
+
+            {/* Additives tappable list */}
+            {product.additives && product.additives.length > 0 && (
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>
+                  🧪 Πρόσθετα ({product.additives.length})
+                  <span style={{ fontSize:10, fontWeight:500, textTransform:'none', marginLeft:6, color:'var(--text-muted)' }}>Πάτα για πληροφορίες</span>
+                </div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                  {product.additives.map((add, i) => {
+                    const info = getAdditiveInfo(add);
+                    const safetyBg = info.safety === 'ok' ? 'rgba(34,197,94,0.08)' : info.safety === 'bad' ? 'rgba(239,68,68,0.1)' : 'rgba(245,158,11,0.08)';
+                    const safetyCo = info.safety === 'ok' ? '#22c55e' : info.safety === 'bad' ? '#ef4444' : '#f59e0b';
+                    const safetyBo = info.safety === 'ok' ? 'rgba(34,197,94,0.25)' : info.safety === 'bad' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.25)';
+                    return (
+                      <button key={i}
+                        onClick={() => setIngredientDetail({ name: info.name, code: add, desc: info.desc, safety: info.safety })}
+                        style={{
+                          display:'flex', alignItems:'center', gap:5,
+                          background: safetyBg, border:`1px solid ${safetyBo}`,
+                          color: safetyCo, borderRadius:20, padding:'5px 12px',
+                          fontSize:11, fontWeight:700, cursor:'pointer',
+                          fontFamily:'var(--font)',
+                          transition:'transform 0.2s, box-shadow 0.2s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform='scale(1.05)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform=''; }}
+                      >
+                        {add} ℹ️
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -1449,25 +1610,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                 <p>{product.ingredients}</p>
               </details>
             )}
-            {/* ΝΕΟ: Κουμπί Προσθήκης στη Λίστα */}
-            <button 
-              className="submit-btn" 
-              style={{ width: '100%', padding: '16px', fontSize: '15px', marginBottom: '12px', marginTop: '8px' }}
-              onClick={() => {
-                setItems(prev =>[{
-                  id: Date.now() + Math.random(),
-                  text: product.name,
-                  category: getCategory(product.name),
-                  price: 0, 
-                  store: '—'
-                }, ...prev]);
-                handleClose(); // Κλείνει το scanner
-                setNotification({ show: true, message: `🛒 Προστέθηκε: ${product.name}` });
-              }}
-            >
-              ➕ Προσθήκη στη Λίστα
-            </button>
-            <button className="scanner-btn" onClick={handleScanAgain} style={{ marginTop:16 }}>📷 Σάρωσε ξανά</button>
+            <button className="scanner-btn" onClick={handleScanAgain} style={{ marginTop:8 }}>📷 Σάρωσε ξανά</button>
           </div>
         )}
 
@@ -1631,7 +1774,9 @@ export default function App() {
   const [isDarkMode, setIsDarkMode]           = useState(() => localStorage.getItem('theme') === 'dark');
   const socketRef = useRef(null);
 
-  const [showWelcome, setShowWelcome]         = useState(() => !localStorage.getItem('sg_welcomed'));
+  const [showWelcome, setShowWelcome]         = useState(() => {
+    try { return !localStorage.getItem('sg_welcomed_v2'); } catch { return true; }
+  });
   const [savedLists, setSavedLists]           = useState([]);
   const [showListsModal, setShowListsModal]   = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -2103,9 +2248,9 @@ export default function App() {
 
   const deleteItem = useCallback((id) => setItems(prev => prev.filter(i => i.id !== id)), []);
 
-  const handleWelcomeLogin    = () => { setShowWelcome(false); localStorage.setItem('sg_welcomed','1'); setAuthInitMode('login');    setShowAuthModal(true); };
-  const handleWelcomeRegister = () => { setShowWelcome(false); localStorage.setItem('sg_welcomed','1'); setAuthInitMode('register'); setShowAuthModal(true); };
-  const handleWelcomeSkip     = () => { setShowWelcome(false); localStorage.setItem('sg_welcomed','1'); };
+  const handleWelcomeLogin    = () => { setShowWelcome(false); localStorage.setItem('sg_welcomed_v2','1'); setAuthInitMode('login');    setShowAuthModal(true); };
+  const handleWelcomeRegister = () => { setShowWelcome(false); localStorage.setItem('sg_welcomed_v2','1'); setAuthInitMode('register'); setShowAuthModal(true); };
+  const handleWelcomeSkip     = () => { setShowWelcome(false); localStorage.setItem('sg_welcomed_v2','1'); };
 
   const groupedItems = items.reduce((acc, item) => {
     if (!acc[item.category]) acc[item.category] = [];
@@ -2202,9 +2347,10 @@ export default function App() {
           <div style={{ position:'fixed', inset:0, zIndex:299, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }} onClick={() => setShowChatPanel(false)} />
           <div style={{
             position:'fixed', top:0, right:0, bottom:0, zIndex:300, width:'min(340px, 92vw)',
-            background:'var(--bg-main, #0f0f1a)', borderLeft:'1px solid var(--border-light)',
-            boxShadow:'-12px 0 40px rgba(0,0,0,0.3)', display:'flex', flexDirection:'column',
-            animation:'slideInRight 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+            background:'var(--bg-card)', borderLeft:'1px solid var(--border)',
+            boxShadow:'-12px 0 48px rgba(0,0,0,0.2)', display:'flex', flexDirection:'column',
+            animation:'slideInRight 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+            backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
           }}>
             <div style={{ padding:'20px 20px 16px', borderBottom:'1px solid var(--border-light)', display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--bg-surface)' }}>
               <div>

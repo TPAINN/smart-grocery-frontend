@@ -16,8 +16,8 @@
 
 .container {
   background: var(--bg-container);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(40px) saturate(180%) brightness(1.02);
+  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(1.02);
   padding: 28px 22px 32px;
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
@@ -29,7 +29,7 @@
   /* Subtle inner highlight on top edge */
   background-image: linear-gradient(
     180deg,
-    rgba(255,255,255,0.06) 0px,
+    rgba(255,255,255,0.07) 0px,
     transparent 60px
   );
 }
@@ -1220,6 +1220,8 @@ body.dark-mode .budget-banner {
 /* ── Card ── */
 .scanner-card {
   background: var(--bg-card);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
   border: 1px solid var(--border);
   border-radius: 28px;
   width: 100%;
@@ -1227,10 +1229,10 @@ body.dark-mode .budget-banner {
   max-height: 88vh; max-height: 88dvh;
   overflow-y: auto; overflow-x: hidden;
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.05),
-    0 24px 80px rgba(0,0,0,0.4),
-    0 8px 24px rgba(0,0,0,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 32px 80px rgba(0,0,0,0.35),
+    0 8px 24px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.08);
   animation: scannerCardIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   z-index: 100000;
   flex-shrink: 0;
@@ -2744,11 +2746,13 @@ body.dark-mode .welcome-box {
 
 .modal-content {
   background: var(--bg-card);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl, 20px);
   padding: 28px 24px;
   width: 100%;
-  box-shadow: 0 24px 64px rgba(0,0,0,0.2), 0 8px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18), 0 8px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.08);
   animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   position: relative;
 }
@@ -2982,4 +2986,143 @@ body.dark-mode .welcome-box {
 .chat-mine .chat-sender {
   text-align: right;
   color: rgba(255,255,255,0.7);
+}
+
+/* ════════════════════════════════════════════════════════
+   LIGHT MODE FIXES & OVERRIDES
+   ════════════════════════════════════════════════════════ */
+
+/* Friends Panel — ensure it always uses CSS vars (never hardcoded dark) */
+body:not(.dark-mode) .friends-panel-overlay {
+  background: rgba(0,0,0,0.35) !important;
+}
+
+/* Fix any hardcoded dark bg on slide-in panels in light mode */
+body:not(.dark-mode) [style*="background:'var(--bg-main"] {
+  background: var(--bg-card) !important;
+}
+
+/* Scanner overlay — more transparent in light mode */
+body:not(.dark-mode) .scanner-overlay {
+  background: rgba(0,0,0,0.45) !important;
+}
+
+/* Modal overlay — slightly less opaque in light mode */
+body:not(.dark-mode) .modal-overlay {
+  background: rgba(0,0,0,0.4) !important;
+}
+
+/* Recipe popup overlay */
+body:not(.dark-mode) .recipe-popup-overlay {
+  background: rgba(0,0,0,0.5) !important;
+}
+
+/* Welcome box — ensure light mode looks polished */
+body:not(.dark-mode) .welcome-box {
+  background: rgba(255,255,255,0.97) !important;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,1) !important;
+}
+
+/* ════════════════════════════════════════════════════════
+   ENHANCED GLASS MORPHISM
+   ════════════════════════════════════════════════════════ */
+
+/* Suggestions dropdown — enhanced glass */
+.suggestions-dropdown {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+/* Profile dropdown — enhanced glass */
+.profile-dropdown {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+
+/* ════════════════════════════════════════════════════════
+   SMOOTH MICRO-ANIMATIONS REFINEMENT
+   ════════════════════════════════════════════════════════ */
+
+/* Tab buttons — smoother active indicator */
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--accent);
+  opacity: 0.7;
+}
+
+/* Warning chips — cursor pointer on clickable */
+.warning-chip[style*="pointer"] {
+  transition: transform 0.25s var(--spring), background 0.2s, box-shadow 0.2s !important;
+}
+.warning-chip[style*="pointer"]:hover {
+  transform: translateX(6px) scale(1.02) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+}
+
+/* Nutrition cell — enhanced hover in light mode */
+body:not(.dark-mode) .nutrition-cell:hover {
+  background: rgba(37,99,235,0.04) !important;
+  border-color: rgba(37,99,235,0.15) !important;
+}
+
+/* Budget banner in light mode */
+body:not(.dark-mode) .budget-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
+}
+
+/* ing-item-clean style */
+.ing-item-clean {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-light, rgba(0,0,0,0.06));
+  line-height: 1.5;
+}
+.ing-bullet {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-top: 6px;
+  opacity: 0.6;
+}
+
+/* ════════════════════════════════════════════════════════
+   NOTIFICATION TOAST — REFINED
+   ════════════════════════════════════════════════════════ */
+.notification-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  z-index: 999999;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 11px 22px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.notification-toast.show {
+  transform: translateX(-50%) translateY(0);
 }
