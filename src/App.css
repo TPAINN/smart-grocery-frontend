@@ -3126,3 +3126,37 @@ body:not(.dark-mode) .budget-banner {
 .notification-toast.show {
   transform: translateX(-50%) translateY(0);
 }
+/* ── Νέο Layout Header ──────────────────────────────── */
+.header-clock-center {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.header-clock-center .datetime-display {
+  text-align: center;
+  max-width: 220px;
+  background: transparent; /* Πιο καθαρό look */
+  border: none;
+}
+
+.header-actions-row {
+  display: flex;
+  justify-content: center; /* Κεντράρισμα των κουμπιών */
+  align-items: center;
+  background: var(--bg-card);
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+
+.header-actions { 
+  display: flex; 
+  justify-content: center; /* Αυτό κεντράρει τα κουμπιά */
+  flex-wrap: wrap;         /* Αν δεν χωράνε, πάνε κάτω */
+  gap: 10px; 
+  align-items: center; 
+  margin-top: 15px;        /* Απόσταση από τον τίτλο */
+}

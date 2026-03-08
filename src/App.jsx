@@ -2861,8 +2861,8 @@ export default function App() {
               <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'long', day:'numeric', month:'long' })}</div>
               <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit' })}</div>
             </div>
-
-            <div className="header-actions">
+          </div>
+          <div className="header-actions">
               {!isOnline && (
                 <div style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:700, color:'#ef4444' }}>
                   📡 Offline
@@ -2940,9 +2940,10 @@ export default function App() {
                 <div className="action-btn-new" onClick={() => setShowAuthModal(true)} title="Σύνδεση">🔒</div>
               )}
             </div>
-          </div>
-          <h1>Smart Grocery Hub</h1>
+            <h1>___</h1>
+            <h1>Smart Grocery Hub</h1>
         </header>
+        
 
         {/* ── Tabs ── */}
         <div className="tabs-container">
