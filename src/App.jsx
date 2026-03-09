@@ -6,6 +6,18 @@ import RecipeNotification from './RecipeNotification';
 import AuthModal from './AuthModal';
 import SavedListsModal from './SavedListsModal';
 import { io } from 'socket.io-client';
+import {
+  IconShoppingCart, IconQrcode, IconUsers, IconMessage,
+  IconCreditCard, IconNotes, IconUser, IconLogout,
+  IconSun, IconMoon, IconSearch, IconPlus, IconTrash,
+  IconStar, IconStarFilled, IconChefHat, IconBook2,
+  IconBuildingStore, IconScan, IconWifi, IconWifiOff,
+  IconClipboard, IconCheck, IconX, IconChevronRight,
+  IconArrowRight, IconSparkles, IconBrain, IconShield,
+  IconLock, IconFingerprint, IconRefresh, IconHistory,
+  IconEdit, IconBell, IconHome, IconBookmark, IconTag,
+  IconCoin, IconTrendingDown, IconAlertTriangle,
+} from '@tabler/icons-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const API_BASE      = 'https://my-smart-grocery-api.onrender.com';
@@ -733,11 +745,12 @@ function FriendPickerModal({ isOpen, friends, item, onSend, onClose }) {
 
 
 
-function AddFriendModal({ isOpen, onAdd, onClose }) {
-  const [key, setKey]         = useState('');
-  const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState(null); // { name, shareKey } or 'not_found'
-  const lookupTimeout         = useRef(null);
+function AddFriendModal({ isOpen, onAdd, onClose, existingFriends = [] }) {
+  const [key, setKey]           = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [preview, setPreview]   = useState(null);
+  const [copied, setCopied]     = useState(false);
+  const lookupTimeout           = useRef(null);
 
   if (!isOpen) return null;
 
@@ -746,10 +759,12 @@ function AddFriendModal({ isOpen, onAdd, onClose }) {
     setLoading(true);
     setPreview(null);
     try {
+      // FIX: try both name and shareKey in response
       const r = await fetch(`${API_BASE}/api/auth/by-key/${val.trim().toUpperCase()}`);
       if (r.ok) {
         const data = await r.json();
-        setPreview({ name: data.name, shareKey: data.shareKey });
+        // Backend returns { name, shareKey } — 'name' is the display name
+        setPreview({ name: data.name || data.username, shareKey: data.shareKey });
       } else {
         setPreview('not_found');
       }
@@ -769,105 +784,109 @@ function AddFriendModal({ isOpen, onAdd, onClose }) {
     }
   };
 
-  const handleAdd = () => {
-    if (!key.trim()) return;
-    const username = (preview && preview !== 'not_found' && preview !== 'offline')
-      ? preview.name
-      : key.trim().toUpperCase();
-    onAdd({ shareKey: key.trim().toUpperCase(), username, addedAt: Date.now() });
+  const handleAdd = (friendData) => {
+    const target = friendData || (
+      preview && preview !== 'not_found' && preview !== 'offline'
+        ? { shareKey: preview.shareKey, username: preview.name, addedAt: Date.now() }
+        : key.trim() ? { shareKey: key.trim().toUpperCase(), username: key.trim().toUpperCase(), addedAt: Date.now() } : null
+    );
+    if (!target) return;
+    onAdd(target);
     setKey('');
     setPreview(null);
   };
 
+  const alreadyAdded = (sk) => existingFriends.some(f => f.shareKey === sk);
+
   return (
     <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-content" style={{ maxWidth: 360 }} onClick={(e) => e.stopPropagation()}>
-        <button className="close-btn" onClick={onClose}>✕</button>
-        <div className="modal-header">
-          <h2>➕ Προσθήκη Φίλου</h2>
-          <p>Βάλε το <strong>Share Key</strong> του φίλου σου.</p>
+      <div className="modal-content" style={{ maxWidth:400, padding:0, overflow:'hidden' }} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ padding:'20px 20px 16px', background:'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))', borderBottom:'1px solid var(--border-light)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ width:40, height:40, borderRadius:11, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <IconUsers size={20} color="#fff" stroke={2} />
+            </div>
+            <div>
+              <div style={{ fontWeight:800, fontSize:16, color:'var(--text-primary)' }}>Προσθήκη Φίλου</div>
+              <div style={{ fontSize:11, color:'var(--text-secondary)' }}>Μοιραστείτε το ίδιο καλάθι</div>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background:'var(--bg-surface)', border:'none', borderRadius:9, width:32, height:32, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
+            <IconX size={16} />
+          </button>
         </div>
-        <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:10 }}>
-          <input
-            type="text"
-            placeholder="Share Key (π.χ. AB12XY)"
-            value={key}
-            onChange={handleKeyChange}
-            onKeyDown={(e) => e.key === 'Enter' && key.trim() && handleAdd()}
-            autoFocus
-            maxLength={15}
-            style={{
-              padding:'14px 16px', borderRadius:'var(--radius-md)',
-              border:`1.5px solid ${preview && preview !== 'not_found' && preview !== 'offline' ? '#10b981' : 'var(--border)'}`,
-              background:'var(--bg-input)', color:'var(--text-primary)',
-              fontSize:16, fontFamily:'monospace',
-              outline:'none', width:'100%', letterSpacing:3,
-              fontWeight:800, textTransform:'uppercase',
-              transition:'border-color 0.2s',
-            }}
-          />
+
+        <div style={{ padding:'16px 20px 20px' }}>
+          {/* Search input */}
+          <div style={{ position:'relative', marginBottom:12 }}>
+            <div style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-secondary)', pointerEvents:'none' }}>
+              <IconSearch size={16} />
+            </div>
+            <input
+              type="text"
+              placeholder="Share Key του φίλου (π.χ. AB12XY)"
+              value={key}
+              onChange={handleKeyChange}
+              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+              autoFocus
+              maxLength={15}
+              style={{
+                padding:'12px 14px 12px 38px', borderRadius:11,
+                border:`1.5px solid ${preview && preview !== 'not_found' && preview !== 'offline' ? '#10b981' : 'var(--border)'}`,
+                background:'var(--bg-input)', color:'var(--text-primary)',
+                fontSize:15, fontFamily:'monospace',
+                outline:'none', width:'100%', letterSpacing:2,
+                fontWeight:700, textTransform:'uppercase',
+                transition:'border-color 0.2s', boxSizing:'border-box',
+              }}
+            />
+            {key && <button onClick={() => { setKey(''); setPreview(null); }} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-secondary)', display:'flex' }}><IconX size={14}/></button>}
+          </div>
 
           {/* Preview area */}
           {loading && (
-            <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', background:'var(--bg-surface)', borderRadius:12, border:'1px solid var(--border-light)' }}>
-              <div className="skeleton" style={{ width:38, height:38, borderRadius:'50%', flexShrink:0 }} />
+            <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'var(--bg-surface)', borderRadius:11, border:'1px solid var(--border-light)', marginBottom:12 }}>
+              <div className="skeleton" style={{ width:38, height:38, borderRadius:10, flexShrink:0 }} />
               <div style={{ flex:1 }}>
-                <div className="skeleton" style={{ height:12, width:'60%', borderRadius:6, marginBottom:6 }} />
-                <div className="skeleton" style={{ height:10, width:'40%', borderRadius:6 }} />
+                <div className="skeleton" style={{ height:12, width:'55%', borderRadius:6, marginBottom:6 }} />
+                <div className="skeleton" style={{ height:10, width:'35%', borderRadius:6 }} />
               </div>
             </div>
           )}
-
           {!loading && preview && preview !== 'not_found' && preview !== 'offline' && (
-            <div style={{
-              display:'flex', alignItems:'center', gap:12,
-              padding:'12px 14px', background:'rgba(16,185,129,0.06)',
-              border:'1px solid rgba(16,185,129,0.25)', borderRadius:14,
-            }}>
-              <div style={{
-                width:40, height:40, borderRadius:'50%', flexShrink:0,
-                background: getAvatarColor(preview.shareKey),
-                display:'flex', alignItems:'center', justifyContent:'center',
-                color:'#fff', fontWeight:800, fontSize:15,
-              }}>
-                {getInitials(preview.name)}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, padding:'12px 14px', background:'rgba(16,185,129,0.06)', border:'1.5px solid rgba(16,185,129,0.25)', borderRadius:12, marginBottom:12 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ width:40, height:40, borderRadius:11, flexShrink:0, background:getAvatarColor(preview.shareKey), display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontSize:15 }}>
+                  {getInitials(preview.name)}
+                </div>
+                <div>
+                  <div style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)' }}>{preview.name}</div>
+                  <div style={{ fontSize:11, color:'#10b981', display:'flex', alignItems:'center', gap:4 }}><IconCheck size={12}/> Βρέθηκε!</div>
+                </div>
               </div>
-              <div>
-                <div style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)' }}>{preview.name}</div>
-                <div style={{ fontSize:11, color:'#10b981', marginTop:2 }}>✅ Βρέθηκε!</div>
-              </div>
+              <button onClick={() => handleAdd()} style={{ background:'#10b981', color:'#fff', border:'none', borderRadius:9, padding:'8px 14px', fontWeight:700, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+                <IconPlus size={14}/> Προσθήκη
+              </button>
             </div>
           )}
-
           {!loading && preview === 'not_found' && (
-            <div style={{ padding:'10px 14px', background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, fontSize:13, color:'#ef4444' }}>
-              ❌ Δεν βρέθηκε χρήστης με αυτό το Share Key
+            <div style={{ padding:'10px 14px', background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:11, fontSize:13, color:'#ef4444', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
+              <IconAlertTriangle size={14}/> Δεν βρέθηκε χρήστης με αυτό το Share Key
             </div>
           )}
-
           {!loading && preview === 'offline' && (
-            <div style={{ padding:'10px 14px', background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:12, fontSize:13, color:'#f59e0b' }}>
-              📡 Offline — θα προστεθεί χωρίς όνομα
+            <div style={{ padding:'10px 14px', background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:11, fontSize:13, color:'#f59e0b', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
+              <IconWifi size={14}/> Offline — θα προστεθεί χωρίς όνομα
             </div>
           )}
 
-          <div style={{ display:'flex', gap:8, marginTop:4 }}>
-            <button
-              className="submit-btn"
-              style={{ flex:1 }}
-              onClick={handleAdd}
-              disabled={!key.trim() || loading || preview === 'not_found'}
-            >
-              🤝 Προσθήκη
+          {/* Main Add button (when no preview yet) */}
+          {!preview && (
+            <button onClick={() => handleAdd()} disabled={!key.trim() || loading} style={{ width:'100%', padding:'12px', background: key.trim()?'linear-gradient(135deg,#6366f1,#8b5cf6)':'var(--bg-surface)', color:key.trim()?'#fff':'var(--text-secondary)', border:'none', borderRadius:11, fontWeight:700, fontSize:14, cursor:key.trim()?'pointer':'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:7, transition:'all 0.2s' }}>
+              <IconUsers size={16}/> Προσθήκη Φίλου
             </button>
-            <button
-              className="submit-btn"
-              style={{ flex:1, background:'var(--bg-subtle)', color:'var(--text-primary)', backgroundImage:'none' }}
-              onClick={() => { onClose(); setKey(''); setPreview(null); }}
-            >
-              Ακύρωση
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -889,7 +908,7 @@ function FriendsPanel({ friends, myShareKey, onCopyKey, onAddFriend, onRemoveFri
       {/* Header */}
       <div style={{ padding:'20px 20px 16px', borderBottom:'1px solid var(--border-light)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div>
-          <h3 style={{ margin:0, fontSize:16, fontWeight:800 }}>🤝 Κοινό Καλάθι</h3>
+          <h3 style={{ margin:0, fontSize:16, fontWeight:800 }}>Κοινό Καλάθι</h3>
           <p style={{ margin:'4px 0 0', fontSize:11, color:'var(--text-secondary)' }}>{friends.length} συνδεδεμένοι φίλοι</p>
         </div>
         <button onClick={onClose} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-light)', borderRadius:10, padding:'8px 10px', cursor:'pointer', fontSize:16, color:'var(--text-primary)' }}>✕</button>
@@ -1846,7 +1865,7 @@ export default function App() {
     localStorage.setItem('sg_friends', JSON.stringify(friends));
   }, [friends]);
 
-  const addFriend = (friend) => {
+  const addFriend = async (friend) => {
     if (friends.some(f => f.shareKey === friend.shareKey)) {
       setNotification({ show:true, message:'Αυτός ο φίλος υπάρχει ήδη!' });
       return;
@@ -1855,16 +1874,39 @@ export default function App() {
       setNotification({ show:true, message:'Δεν μπορείς να προσθέσεις τον εαυτό σου!' });
       return;
     }
-    setFriends(prev => [...prev, friend]);
+    // Add locally with the correct name field (backend returns 'name', UI stores as 'username')
+    const normalizedFriend = { 
+      shareKey: friend.shareKey,
+      username: friend.username || friend.name || friend.shareKey,
+      addedAt: friend.addedAt || Date.now()
+    };
+    setFriends(prev => [...prev, normalizedFriend]);
     setShowAddFriendModal(false);
-    setNotification({ show:true, message:`✅ ${friend.username} προστέθηκε στο κοινό καλάθι!` });
+    setNotification({ show:true, message:`✅ ${normalizedFriend.username} προστέθηκε στο κοινό καλάθι!` });
 
-    // Notify the other person so they auto-add us back (mutual friendship)
+    // 1. Real-time: notify via socket (for online users)
     if (socketRef.current && user) {
+      // Join their room immediately so we receive their messages & items
+      socketRef.current.emit('join_cart', normalizedFriend.shareKey);
+      // Notify the other person (they join our room on their end)
       socketRef.current.emit('friend_added', {
-        targetShareKey: friend.shareKey,
+        targetShareKey: normalizedFriend.shareKey,
         from: { shareKey: user.shareKey, username: user.name }
       });
+    }
+
+    // 2. Persistent: notify via backend so they see us even when offline
+    if (user) {
+      try {
+        await fetch(`${API_BASE}/api/auth/notify-friend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeader() },
+          body: JSON.stringify({ 
+            targetShareKey: friend.shareKey,
+            from: { shareKey: user.shareKey, username: user.name, name: user.name }
+          }),
+        });
+      } catch {} // Non-critical — socket handles real-time
     }
   };
 
@@ -1897,8 +1939,18 @@ export default function App() {
 
   // ── WebSocket ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    socketRef.current = io(API_BASE);
-    if (user?.shareKey) socketRef.current.emit('join_cart', user.shareKey);
+    socketRef.current = io(API_BASE, { transports: ['websocket', 'polling'] });
+
+    if (user?.shareKey) {
+      // Join own room (for item/message receive from others)
+      socketRef.current.emit('join_cart', user.shareKey);
+      // Join personal notification room (for friend_added events)
+      socketRef.current.emit('join_user_room', user.shareKey);
+      // Also join all existing friends' rooms so we receive their messages
+      friends.forEach(f => {
+        if (f?.shareKey) socketRef.current.emit('join_cart', f.shareKey);
+      });
+    }
 
     socketRef.current.on('receive_item', (itemData) => {
       setItems(prev => [{ ...itemData, id: Date.now() + Math.random() }, ...prev]);
@@ -1907,36 +1959,53 @@ export default function App() {
     });
 
     socketRef.current.on('receive_message', (msg) => {
-      setChatMessages(prev => [...prev, msg]);
+      setChatMessages(prev => {
+        // Avoid duplicate if we already have this exact _id
+        if (msg._id && prev.some(m => m._id === msg._id)) return prev;
+        return [...prev, msg];
+      });
       if (!showChatPanel) {
         setUnreadChat(prev => prev + 1);
-        if (navigator.vibrate) navigator.vibrate([50, 50]); // Διπλή μικρή δόνηση
+        if (navigator.vibrate) navigator.vibrate([50, 50]);
       }
     });
 
-    // Mutual friendship: when someone adds us, auto-add them back
+    // Mutual friendship: when someone adds us, auto-add them back + join their room
     socketRef.current.on('friend_added', (data) => {
       if (!data?.from?.shareKey) return;
       setFriends(prev => {
         if (prev.some(f => f.shareKey === data.from.shareKey)) return prev; // already friends
-        setNotification({ show:true, message:`🤝 ${data.from.username} σε πρόσθεσε!` });
+        // Join their cart room immediately so messages flow
+        socketRef.current.emit('join_cart', data.from.shareKey);
+        setNotification({ show:true, message:`🤝 ${data.from.username || data.from.name} σε πρόσθεσε στο καλάθι!` });
         if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
-        return [...prev, { shareKey: data.from.shareKey, username: data.from.username, addedAt: Date.now() }];
+        const newFriend = { shareKey: data.from.shareKey, username: data.from.username || data.from.name, addedAt: Date.now() };
+        // Reload chat to include their messages
+        setTimeout(() => loadGroupChat([...prev, newFriend]), 300);
+        return [...prev, newFriend];
       });
     });
 
     return () => socketRef.current.disconnect();
   }, [user]);
 
-  // Φόρτωση ιστορικού Chat
-  useEffect(() => {
-    if (user?.shareKey) {
-      fetch(`${API_BASE}/api/chat/${user.shareKey}`)
-        .then(res => res.json())
-        .then(data => { if(Array.isArray(data)) setChatMessages(data); })
-        .catch(()=>{});
-    }
-  }, [user]);
+  // Load group chat (own + all friends messages merged & sorted by time)
+  const loadGroupChat = useCallback((friendList) => {
+    const currentFriends = friendList !== undefined ? friendList : friends;
+    if (!user?.shareKey) return;
+    const allKeys = [user.shareKey, ...currentFriends.map(f => f.shareKey)].filter(Boolean);
+    fetch(`${API_BASE}/api/chat/group?keys=${encodeURIComponent(allKeys.join(','))}`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setChatMessages(data); })
+      .catch(() => {
+        fetch(`${API_BASE}/api/chat/${user.shareKey}`)
+          .then(r => r.json())
+          .then(data => { if (Array.isArray(data)) setChatMessages(data); })
+          .catch(() => {});
+      });
+  }, [user, friends]);
+
+  useEffect(() => { loadGroupChat(); }, [user, friends.length]);
 
   // Scroll to bottom στο chat
   useEffect(() => {
@@ -2281,20 +2350,16 @@ export default function App() {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!chatInput.trim() || !user) return;
-    
+    if (!chatInput.trim() || !user || !socketRef.current) return;
     const msgData = {
-      shareKey: user.shareKey,
-      senderName: user.name,
-      text: chatInput.trim(),
-      createdAt: new Date()
+      shareKey:        user.shareKey,
+      senderName:      user.name,
+      text:            chatInput.trim(),
+      createdAt:       new Date(),
+      friendShareKeys: friends.map(f => f.shareKey).filter(Boolean),
     };
-
-    // Στέλνουμε στο socket
     socketRef.current.emit('send_message', msgData);
-    
-    // Το προσθέτουμε κατευθείαν στην οθόνη μας
-    setChatMessages(prev =>[...prev, msgData]);
+    setChatMessages(prev => [...prev, { ...msgData, _id: 'local_' + Date.now() }]);
     setChatInput('');
   };
 
@@ -2723,42 +2788,126 @@ export default function App() {
     );
   };
 
-  // ─── Add Starred Partner Modal ────────────────────────────────────────────
-  const AddPartnerModal = () => createPortal(
-    <div style={{ position:'fixed', inset:0, zIndex:10000, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.7)', backdropFilter:'blur(8px)', padding:'0 16px' }}
-      onClick={e=>{if(e.target===e.currentTarget)setShowAddPartnerModal(false);}}>
-      <div style={{ width:'100%', maxWidth:400, background:'var(--bg-card)', borderRadius:20, padding:24, boxShadow:'0 20px 60px rgba(0,0,0,0.5)' }}>
-        <div style={{ fontWeight:800, fontSize:18, color:'var(--text-primary)', marginBottom:4 }}>⭐ Νέος Starred Partner</div>
-        <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:18 }}>Σύνδεσε με έναν χρήστη για αυτόματο split bill</div>
+  // ─── Add Starred Partner Modal (shows friends as quick-select) ─────────────
+  const AddPartnerModal = () => {
+    // Auto-populate from friends list, filter out already-starred
+    const starredIds = starredPartners.map(p => p.partnerName);
+    const friendSuggestions = friends.filter(f => !starredIds.includes(f.username));
 
-        <input value={addPartnerUsername} onChange={e=>setAddPartnerUsername(e.target.value)} placeholder="Username χρήστη..."
-          style={{ width:'100%', padding:'11px 14px', background:'var(--bg-surface)', border:'1.5px solid var(--border-light)', borderRadius:10, color:'var(--text-primary)', fontSize:14, marginBottom:10, boxSizing:'border-box', outline:'none' }} />
-        <input value={addPartnerNickname} onChange={e=>setAddPartnerNickname(e.target.value)} placeholder='Nickname (π.χ. "Σύντροφος", "Φίλος")...'
-          style={{ width:'100%', padding:'11px 14px', background:'var(--bg-surface)', border:'1.5px solid var(--border-light)', borderRadius:10, color:'var(--text-primary)', fontSize:14, marginBottom:14, boxSizing:'border-box', outline:'none' }} />
+    const selectFriend = (f) => {
+      setAddPartnerUsername(f.username);
+      // Auto-set nickname as username if empty
+      if (!addPartnerNickname) setAddPartnerNickname(f.username);
+    };
 
-        <div style={{ marginBottom:18 }}>
-          <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:8 }}>
-            Προεπιλεγμένο split: <strong style={{ color:'#6366f1' }}>Εσύ {addPartnerSplit}% / Partner {100-addPartnerSplit}%</strong>
+    return createPortal(
+      <div style={{ position:'fixed', inset:0, zIndex:10000, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.7)', backdropFilter:'blur(8px)' }}
+        onClick={e=>{if(e.target===e.currentTarget)setShowAddPartnerModal(false);}}>
+        <div style={{ width:'100%', maxWidth:480, background:'var(--bg-card)', borderRadius:'24px 24px 0 0', padding:'0 0 32px', boxShadow:'0 -8px 40px rgba(0,0,0,0.4)' }}>
+          {/* Drag handle */}
+          <div style={{ display:'flex', justifyContent:'center', padding:'12px 0 0' }}>
+            <div style={{ width:36, height:4, borderRadius:4, background:'var(--border-light)' }} />
           </div>
-          <input type="range" min={1} max={99} value={addPartnerSplit} onChange={e=>setAddPartnerSplit(Number(e.target.value))}
-            style={{ width:'100%', accentColor:'#6366f1' }} />
-          <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--text-secondary)', marginTop:4 }}>
-            <span>Εσύ: {addPartnerSplit}%</span>
-            <span>Partner: {100-addPartnerSplit}%</span>
+
+          {/* Header */}
+          <div style={{ padding:'12px 20px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid var(--border-light)' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ width:40, height:40, borderRadius:11, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <IconStarFilled size={18} color="#fff" />
+              </div>
+              <div>
+                <div style={{ fontWeight:800, fontSize:16, color:'var(--text-primary)' }}>Νέος Starred Partner</div>
+                <div style={{ fontSize:11, color:'var(--text-secondary)' }}>Για αυτόματο Split Bill</div>
+              </div>
+            </div>
+            <button onClick={()=>setShowAddPartnerModal(false)} style={{ background:'var(--bg-surface)', border:'none', borderRadius:9, width:32, height:32, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
+              <IconX size={16}/>
+            </button>
+          </div>
+
+          <div style={{ padding:'16px 20px 0' }}>
+            {/* Quick select from friends */}
+            {friendSuggestions.length > 0 && (
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>
+                  Από τους φίλους σου
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                  {friendSuggestions.map(f => {
+                    const isSelected = addPartnerUsername === f.username;
+                    return (
+                      <div key={f.shareKey} onClick={() => selectFriend(f)}
+                        style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', borderRadius:12, border:`1.5px solid ${isSelected?'#6366f1':'var(--border-light)'}`, background:isSelected?'rgba(99,102,241,0.08)':'var(--bg-surface)', cursor:'pointer', transition:'all 0.2s' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                          <div style={{ width:36, height:36, borderRadius:10, background:getAvatarColor(f.shareKey), display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontSize:14, flexShrink:0 }}>
+                            {getInitials(f.username)}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)' }}>{f.username}</div>
+                            <div style={{ fontSize:11, color:'var(--text-secondary)' }}>#{f.shareKey}</div>
+                          </div>
+                        </div>
+                        <div style={{ width:22, height:22, borderRadius:6, background:isSelected?'#6366f1':'transparent', border:`2px solid ${isSelected?'#6366f1':'var(--border-light)'}`, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' }}>
+                          {isSelected && <IconCheck size={12} color="#fff" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Manual username input */}
+            <div style={{ marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:7 }}>
+                {friendSuggestions.length > 0 ? 'Ή πληκτρολόγησε username' : 'Username χρήστη'}
+              </div>
+              <div style={{ position:'relative' }}>
+                <div style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-secondary)', pointerEvents:'none' }}>
+                  <IconUser size={15}/>
+                </div>
+                <input value={addPartnerUsername} onChange={e=>setAddPartnerUsername(e.target.value)}
+                  placeholder="username..."
+                  style={{ width:'100%', padding:'11px 14px 11px 36px', background:'var(--bg-surface)', border:`1.5px solid ${addPartnerUsername?'#6366f1':'var(--border-light)'}`, borderRadius:10, color:'var(--text-primary)', fontSize:14, boxSizing:'border-box', outline:'none', transition:'border 0.2s' }} />
+              </div>
+            </div>
+
+            {/* Nickname input */}
+            <div style={{ position:'relative', marginBottom:14 }}>
+              <div style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-secondary)', pointerEvents:'none' }}>
+                <IconEdit size={15}/>
+              </div>
+              <input value={addPartnerNickname} onChange={e=>setAddPartnerNickname(e.target.value)}
+                placeholder='Nickname (π.χ. "Σύντροφος", "Μαμά")...'
+                style={{ width:'100%', padding:'11px 14px 11px 36px', background:'var(--bg-surface)', border:'1.5px solid var(--border-light)', borderRadius:10, color:'var(--text-primary)', fontSize:14, boxSizing:'border-box', outline:'none' }} />
+            </div>
+
+            {/* Split slider */}
+            <div style={{ marginBottom:18 }}>
+              <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:7 }}>
+                Προεπιλεγμένο split: <strong style={{ color:'#6366f1' }}>Εσύ {addPartnerSplit}% / Partner {100-addPartnerSplit}%</strong>
+              </div>
+              <input type="range" min={1} max={99} value={addPartnerSplit} onChange={e=>setAddPartnerSplit(Number(e.target.value))}
+                style={{ width:'100%', accentColor:'#6366f1' }} />
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--text-secondary)', marginTop:3 }}>
+                <span>Εσύ: {addPartnerSplit}%</span>
+                <span>Partner: {100-addPartnerSplit}%</span>
+              </div>
+            </div>
+
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={()=>setShowAddPartnerModal(false)} style={{ flex:1, padding:12, background:'var(--bg-surface)', border:'1px solid var(--border-light)', borderRadius:12, color:'var(--text-secondary)', cursor:'pointer', fontWeight:600, fontSize:14 }}>Ακύρωση</button>
+              <button onClick={addStarredPartner} disabled={splitLoading||!addPartnerUsername.trim()}
+                style={{ flex:2, padding:12, background:addPartnerUsername.trim()?'linear-gradient(135deg,#6366f1,#8b5cf6)':'var(--bg-surface)', color:addPartnerUsername.trim()?'#fff':'var(--text-secondary)', border:'none', borderRadius:12, fontWeight:700, cursor:addPartnerUsername.trim()?'pointer':'not-allowed', opacity:splitLoading?0.7:1, fontSize:14, transition:'all 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                {splitLoading ? '⏳...' : <><IconStarFilled size={14}/> Προσθήκη Partner</>}
+              </button>
+            </div>
           </div>
         </div>
-
-        <div style={{ display:'flex', gap:8 }}>
-          <button onClick={()=>setShowAddPartnerModal(false)} style={{ flex:1, padding:12, background:'var(--bg-surface)', border:'1px solid var(--border-light)', borderRadius:12, color:'var(--text-secondary)', cursor:'pointer', fontWeight:600, fontSize:14 }}>Ακύρωση</button>
-          <button onClick={addStarredPartner} disabled={splitLoading||!addPartnerUsername.trim()}
-            style={{ flex:2, padding:12, background:addPartnerUsername.trim()?'linear-gradient(135deg,#6366f1,#8b5cf6)':'var(--bg-surface)', color:addPartnerUsername.trim()?'#fff':'var(--text-secondary)', border:'none', borderRadius:12, fontWeight:700, cursor:addPartnerUsername.trim()?'pointer':'not-allowed', opacity:splitLoading?0.7:1, fontSize:14, transition:'all 0.2s' }}>
-            {splitLoading ? '⏳...' : '⭐ Προσθήκη Partner'}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
+      </div>,
+      document.body
+    );
+  };
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -2778,7 +2927,7 @@ export default function App() {
 
       {/* Friend modals & panel */}
       <FriendPickerModal isOpen={friendPicker.open} friends={friends} item={friendPicker.item} onSend={handlePickerSend} onClose={() => setFriendPicker({ open:false, item:null })} />
-      <AddFriendModal isOpen={showAddFriendModal} onAdd={addFriend} onClose={() => setShowAddFriendModal(false)} />
+      <AddFriendModal isOpen={showAddFriendModal} onAdd={addFriend} onClose={() => setShowAddFriendModal(false)} existingFriends={friends} />
       {showFriendsPanel && (
         <>
           <div
@@ -2806,25 +2955,72 @@ export default function App() {
             animation:'slideInRight 0.3s cubic-bezier(0.34,1.56,0.64,1)',
             backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
           }}>
-            <div style={{ padding:'20px 20px 16px', borderBottom:'1px solid var(--border-light)', display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--bg-surface)' }}>
-              <div>
-                <h3 style={{ margin:0, fontSize:16, fontWeight:800 }}>💬 Chat Καλαθιού</h3>
-                <p style={{ margin:'4px 0 0', fontSize:11, color:'var(--text-secondary)' }}>Μηνύματα διαγράφονται σε 24 ώρες</p>
+            <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border-light)', background:'var(--bg-surface)' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <div style={{ width:36, height:36, borderRadius:10, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <IconMessage size={18} color="#fff" stroke={2}/>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight:800, fontSize:15 }}>Chat Καλαθιού</div>
+                    <div style={{ fontSize:10, color:'var(--text-secondary)' }}>Αυτόματη διαγραφή μετά 24 ώρες</div>
+                  </div>
+                </div>
+                <div style={{ display:'flex', gap:6 }}>
+                  <button onClick={() => loadGroupChat()} title="Ανανέωση μηνυμάτων" style={{ background:'var(--bg-surface)', border:'1px solid var(--border-light)', borderRadius:8, width:30, height:30, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
+                    <IconRefresh size={14}/>
+                  </button>
+                  <button onClick={() => setShowChatPanel(false)} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-light)', borderRadius:8, width:30, height:30, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
+                    <IconX size={14}/>
+                  </button>
+                </div>
               </div>
-              <button onClick={() => setShowChatPanel(false)} style={{ background:'var(--bg-subtle)', border:'1px solid var(--border-light)', borderRadius:10, padding:'8px 10px', cursor:'pointer', color:'var(--text-primary)' }}>✕</button>
+              {/* Participant avatars */}
+              <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                {/* Me */}
+                <div title={user?.name} style={{ width:26, height:26, borderRadius:8, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:10, fontWeight:800, flexShrink:0, border:'2px solid var(--bg-card)' }}>
+                  {getInitials(user?.name || '?')}
+                </div>
+                {friends.slice(0,5).map(f => (
+                  <div key={f.shareKey} title={f.username} style={{ width:26, height:26, borderRadius:8, background:getAvatarColor(f.shareKey), display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:10, fontWeight:800, flexShrink:0, border:'2px solid var(--bg-card)' }}>
+                    {getInitials(f.username)}
+                  </div>
+                ))}
+                <span style={{ fontSize:10, color:'var(--text-secondary)', marginLeft:2 }}>{1 + friends.length} συμμετέχοντες</span>
+              </div>
             </div>
             
             <div style={{ flex:1, overflowY:'auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' }}>
               {chatMessages.length === 0 ? (
-                <div style={{ textAlign:'center', marginTop:'40px', color:'var(--text-secondary)', fontSize:'13px' }}>Στείλε το πρώτο μήνυμα!</div>
+                <div style={{ textAlign:'center', marginTop:'40px', padding:'0 20px' }}>
+                  <div style={{ width:64, height:64, borderRadius:20, background:'linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.1))', border:'1.5px solid rgba(99,102,241,0.2)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+                    <IconMessage size={28} stroke={1.5} style={{color:'#6366f1'}} />
+                  </div>
+                  <div style={{ fontWeight:700, fontSize:15, color:'var(--text-primary)', marginBottom:6 }}>Ξεκίνα τη συνομιλία!</div>
+                  <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5 }}>Τα μηνύματα φαίνονται σε όλους τους φίλους του καλαθιού σε πραγματικό χρόνο.</div>
+                </div>
               ) : (
                 chatMessages.map((m, i) => {
-                  const isMine = m.senderName === user.name;
+                  const isMine = m.senderName === user?.name;
+                  const prevMsg = chatMessages[i - 1];
+                  const showSenderName = !isMine && m.senderName !== prevMsg?.senderName;
+                  const msgTime = m.createdAt ? new Date(m.createdAt).toLocaleTimeString('el-GR', { hour:'2-digit', minute:'2-digit' }) : '';
+                  // Don't show duplicate local messages (optimistic vs server)
+                  const isDupe = m._id?.startsWith('local_') && chatMessages.slice(0, i).some(
+                    prev => !prev._id?.startsWith('local_') && prev.text === m.text && prev.senderName === m.senderName
+                  );
+                  if (isDupe) return null;
                   return (
-                    <div key={i} style={{ display:'flex', flexDirection:'column', width:'100%' }}>
-                      <div className={`chat-bubble ${isMine ? 'chat-mine' : 'chat-other'}`}>
-                        <div className="chat-sender">{isMine ? 'Εγώ' : m.senderName}</div>
-                        <div>{m.text}</div>
+                    <div key={m._id || i} style={{ display:'flex', flexDirection:'column', width:'100%', alignItems: isMine ? 'flex-end' : 'flex-start', marginBottom: 2 }}>
+                      {showSenderName && (
+                        <div style={{ fontSize:10, color:'var(--text-secondary)', fontWeight:600, marginLeft:12, marginBottom:3 }}>{m.senderName}</div>
+                      )}
+                      <div className={`chat-bubble ${isMine ? 'chat-mine' : 'chat-other'}`} style={{ maxWidth:'78%', wordBreak:'break-word' }}>
+                        <div style={{ fontSize:14 }}>{m.text}</div>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent: isMine ? 'flex-end' : 'flex-start', gap:4, marginTop:3 }}>
+                          <span style={{ fontSize:10, opacity:0.6 }}>{msgTime}</span>
+                          {isMine && <span style={{ fontSize:10, opacity:0.6 }}>{m._id?.startsWith('local_') ? '⏳' : '✓✓'}</span>}
+                        </div>
                       </div>
                     </div>
                   );
@@ -2839,8 +3035,8 @@ export default function App() {
                   type="text" placeholder="Γράψε μήνυμα..." value={chatInput} onChange={e => setChatInput(e.target.value)}
                   style={{ flex:1, padding:'12px 16px', borderRadius:'14px', border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text-primary)', outline:'none' }}
                 />
-                <button type="submit" disabled={!chatInput.trim()} style={{ background:'var(--accent)', color:'white', border:'none', borderRadius:'14px', width:'46px', cursor: chatInput.trim() ? 'pointer' : 'not-allowed', opacity: chatInput.trim() ? 1 : 0.5 }}>
-                  ➤
+                <button type="submit" disabled={!chatInput.trim()} style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'white', border:'none', borderRadius:'14px', width:'46px', cursor: chatInput.trim() ? 'pointer' : 'not-allowed', opacity: chatInput.trim() ? 1 : 0.5, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' }}>
+                  <IconArrowRight size={18} stroke={2.5}/>
                 </button>
               </form>
             </div>
@@ -2872,7 +3068,7 @@ export default function App() {
               {/* Barcode scanner button */}
               {user && (
                 <div className="action-btn-new scanner-btn-header" onClick={() => setShowScanner(true)} title="Σάρωση Barcode">
-                  📷
+                  <IconQrcode size={20} stroke={1.8} />
                 </div>
               )}
 
@@ -2883,7 +3079,7 @@ export default function App() {
                 onClick={() => { if (!user) return setShowAuthModal(true); setShowFriendsPanel(true); }}
                 title="Κοινό Καλάθι"
               >
-                🤝
+                <IconUsers size={20} stroke={1.8} />
                 {friends.length > 0 && (
                   <span style={{
                     position:'absolute', top:-4, right:-4,
@@ -2896,7 +3092,7 @@ export default function App() {
               {/* Chat Button */}
               {user && friends.length > 0 && (
                 <div className="action-btn-new" style={{ position:'relative' }} onClick={() => setShowChatPanel(true)} title="Chat Καλαθιού">
-                  💬
+                  <IconMessage size={20} stroke={1.8} />
                   {unreadChat > 0 && (
                     <span style={{
                       position:'absolute', top:-4, right:-4, background:'#ef4444', color:'#fff', borderRadius:'50%',
@@ -2909,16 +3105,17 @@ export default function App() {
 
               {/* Split Bill Button */}
               <div className="action-btn-new" onClick={openSplitModal} title="Split the Bill" style={{ position:'relative', background: showSplitModal ? 'rgba(99,102,241,0.15)' : undefined, border: showSplitModal ? '1.5px solid rgba(99,102,241,0.4)' : undefined }}>
-                💳
+                <IconCreditCard size={20} stroke={1.8} />
               </div>
 
-              <div className="action-btn-new" onClick={() => { if (!user) return setShowAuthModal(true); setShowListsModal(true); }} title="Λίστες μου">
-                📝{savedLists.length > 0 && <span className="list-badge">{savedLists.length}</span>}
+              <div className="action-btn-new" onClick={() => { if (!user) return setShowAuthModal(true); setShowListsModal(true); }} title="Λίστες μου" style={{ position:'relative' }}>
+                <IconNotes size={20} stroke={1.8} />
+                {savedLists.length > 0 && <span className="list-badge">{savedLists.length}</span>}
               </div>
 
               {user ? (
                 <div style={{ position:'relative' }}>
-                  <div className="action-btn-new" onClick={() => setShowProfileMenu(v => !v)} title={user.name}>👤</div>
+                  <div className="action-btn-new" onClick={() => setShowProfileMenu(v => !v)} title={user.name}><IconUser size={20} stroke={1.8} /></div>
                   {showProfileMenu && (
                     <>
                       <div style={{ position:'fixed', inset:0, zIndex:99 }} onClick={() => setShowProfileMenu(false)} />
@@ -2930,26 +3127,29 @@ export default function App() {
                             <button onClick={handleCopyShareKey} style={{ background:'var(--bg-surface-hover)', border:'1px solid var(--border-light)', cursor:'pointer', fontSize:'14px', padding:'4px 8px', borderRadius:'6px' }}>📋</button>
                           </div>
                         </div>
-                        <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }}>{isDarkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}</div>
-                        <div className="dropdown-item logout" onClick={handleLogout}>🚪 Αποσύνδεση</div>
+                        <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display:'flex', alignItems:'center', gap:8 }}>{isDarkMode ? <><IconSun size={16}/> Light Mode</> : <><IconMoon size={16}/> Dark Mode</>}</div>
+                        <div className="dropdown-item logout" onClick={handleLogout} style={{ display:'flex', alignItems:'center', gap:8 }}><IconLogout size={16}/> Αποσύνδεση</div>
                       </div>
                     </>
                   )}
                 </div>
               ) : (
-                <div className="action-btn-new" onClick={() => setShowAuthModal(true)} title="Σύνδεση">🔒</div>
+                <div className="action-btn-new" onClick={() => setShowAuthModal(true)} title="Σύνδεση"><IconLock size={20} stroke={1.8} /></div>
               )}
             </div>
-            <h1>___</h1>
-            <h1>Smart Grocery Hub</h1>
+            <h1 style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>Smart Grocery Hub</h1>
         </header>
         
 
         {/* ── Tabs ── */}
         <div className="tabs-container">
-          {['list','recipes','brochures'].map(tab => (
-            <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'list' ? 'Λίστα' : tab === 'recipes' ? 'Συνταγές' : 'Φυλλάδια'}
+          {[
+            ['list', <><IconShoppingCart size={16} stroke={2}/> Λίστα</>, 'Λίστα'],
+            ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
+            ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
+          ].map(([tab, label]) => (
+            <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)} style={{ display:'flex', alignItems:'center', gap:5 }}>
+              {label}
             </button>
           ))}
         </div>
