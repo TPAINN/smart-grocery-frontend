@@ -1857,6 +1857,17 @@ export default function App() {
   const [isOnline, setIsOnline]           = useState(() => navigator.onLine);
   const [wasOffline, setWasOffline]       = useState(false);
 
+  // ── Meal Planner state ─────────────────────────────────────────────────────
+  const [mealPlan,           setMealPlan]           = useState(null);
+  const [mealPlanLoading,    setMealPlanLoading]     = useState(false);
+  const [mealPlanError,      setMealPlanError]       = useState('');
+  const [activeMealDay,      setActiveMealDay]       = useState(0);
+  const [mealPlanStats,      setMealPlanStats]       = useState(null);
+  const [mealPlanShoppingList, setMealPlanShoppingList] = useState([]);
+  const [mealPlanPrefs,      setMealPlanPrefs]       = useState({
+    persons: 2, days: 7, budget: 80, goal: 'balanced', restrictions: []
+  });
+
   const storeOptions  = ['Όλα','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
   const searchTimeout = useRef(null);
 
@@ -2330,6 +2341,52 @@ export default function App() {
   const closeRecipeAddModal = () => {
     setRecipeAddModal({ open:false, recipeName:'', progress:0, total:0 });
     setNotification({ show:true, message:'✅ Υλικά προστέθηκαν στη λίστα!' });
+  };
+
+  // ── Meal Plan functions ────────────────────────────────────────────────────
+  const generateMealPlan = async () => {
+    setMealPlanLoading(true);
+    setMealPlanError('');
+    setMealPlan(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/meal-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mealPlanPrefs),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Σφάλμα AI');
+      setMealPlan(data.plan);
+      setMealPlanStats(data.stats);
+      setMealPlanShoppingList(data.shoppingList || []);
+      setActiveMealDay(0);
+    } catch (e) {
+      setMealPlanError(e.message);
+    } finally {
+      setMealPlanLoading(false);
+    }
+  };
+
+  const addMealPlanToCart = () => {
+    const found = mealPlanShoppingList.filter(i => i.found && i.price);
+    const newItems = found.map(i => ({
+      id: Date.now() + Math.random(),
+      text: i.productName || i.ingredient,
+      price: i.price,
+      store: i.store || '',
+      category: 'Meal Plan',
+      quantity: 1,
+    }));
+    setItems(prev => [...newItems, ...prev]);
+    setActiveTab('list');
+    setNotification({ show: true, message: `✅ ${newItems.length} υλικά προστέθηκαν στη λίστα!` });
+  };
+
+  const toggleMealRestriction = (r) => {
+    setMealPlanPrefs(p => ({
+      ...p,
+      restrictions: p.restrictions.includes(r) ? p.restrictions.filter(x => x !== r) : [...p.restrictions, r]
+    }));
   };
 
   const deleteItem = useCallback((id) => setItems(prev => prev.filter(i => i.id !== id)), []);
@@ -3146,6 +3203,7 @@ export default function App() {
           {[
             ['list', <><IconShoppingCart size={16} stroke={2}/> Λίστα</>, 'Λίστα'],
             ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
+            ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Chef</>, 'AI Chef'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
           ].map(([tab, label]) => (
             <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)} style={{ display:'flex', alignItems:'center', gap:5 }}>
@@ -3394,6 +3452,219 @@ export default function App() {
                   );
                 })()}
             </>
+            )}
+          </div>
+        )}
+
+        {/* ════ AI MEAL PLANNER TAB ════ */}
+        {activeTab === 'mealplan' && (
+          <div className="tab-content" style={{ animation: 'slideUpFadeIn 0.35s ease forwards' }}>
+
+            {/* ── Hero banner ── */}
+            <div style={{ background:'linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#a78bfa 100%)', borderRadius:20, padding:'22px 20px', marginBottom:18, position:'relative', overflow:'hidden' }}>
+              <div style={{ position:'absolute', top:-20, right:-20, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,0.08)' }}/>
+              <div style={{ position:'absolute', bottom:-30, left:-10, width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
+              <div style={{ display:'flex', alignItems:'center', gap:12, position:'relative' }}>
+                <div style={{ width:48, height:48, borderRadius:14, background:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <IconBrain size={26} color="#fff" stroke={1.5}/>
+                </div>
+                <div>
+                  <div style={{ fontWeight:900, fontSize:18, color:'#fff', letterSpacing:-0.4 }}>AI Meal Planner</div>
+                  <div style={{ fontSize:12, color:'rgba(255,255,255,0.8)', marginTop:2 }}>Εβδομαδιαίο πλάνο διατροφής με τιμές από τα super market σου</div>
+                </div>
+              </div>
+            </div>
+
+            {!mealPlan ? (
+              /* ── Preferences Form ── */
+              <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+                {/* Persons + Days */}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>👥 Άτομα</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <button onClick={() => setMealPlanPrefs(p => ({ ...p, persons: Math.max(1, p.persons-1) }))}
+                        style={{ width:30, height:30, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-surface)', cursor:'pointer', fontWeight:800, fontSize:16, color:'var(--text-primary)', display:'flex', alignItems:'center', justifyContent:'center' }}>-</button>
+                      <span style={{ fontWeight:900, fontSize:22, color:'var(--text-primary)', minWidth:24, textAlign:'center' }}>{mealPlanPrefs.persons}</span>
+                      <button onClick={() => setMealPlanPrefs(p => ({ ...p, persons: Math.min(8, p.persons+1) }))}
+                        style={{ width:30, height:30, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-surface)', cursor:'pointer', fontWeight:800, fontSize:16, color:'var(--text-primary)', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+                    </div>
+                  </div>
+                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>📅 Ημέρες</div>
+                    <div style={{ display:'flex', gap:6 }}>
+                      {[3,5,7].map(d => (
+                        <button key={d} onClick={() => setMealPlanPrefs(p => ({ ...p, days: d }))}
+                          style={{ flex:1, padding:'6px 0', borderRadius:8, border:`1.5px solid ${mealPlanPrefs.days===d?'#6366f1':'var(--border)'}`, background:mealPlanPrefs.days===d?'rgba(99,102,241,0.1)':'var(--bg-surface)', color:mealPlanPrefs.days===d?'#6366f1':'var(--text-secondary)', fontWeight:800, fontSize:13, cursor:'pointer', transition:'all 0.2s' }}>{d}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Budget slider */}
+                <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>💰 Εβδομαδιαίο Budget</div>
+                    <div style={{ fontWeight:900, fontSize:20, color:'#10b981' }}>{mealPlanPrefs.budget}€</div>
+                  </div>
+                  <input type="range" min={20} max={300} step={5} value={mealPlanPrefs.budget}
+                    onChange={e => setMealPlanPrefs(p => ({ ...p, budget: +e.target.value }))}
+                    style={{ width:'100%', accentColor:'#6366f1' }} />
+                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'var(--text-muted)', marginTop:4 }}>
+                    <span>20€</span><span>160€</span><span>300€</span>
+                  </div>
+                </div>
+
+                {/* Goal */}
+                <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>🎯 Στόχος</div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:7 }}>
+                    {[
+                      { k:'balanced', label:'⚖️ Ισορροπία' },
+                      { k:'weightloss', label:'🔥 Αδυνάτισμα' },
+                      { k:'muscle', label:'💪 Μυϊκή Μάζα' },
+                      { k:'budget', label:'🪙 Οικονομία' },
+                    ].map(({ k, label }) => (
+                      <button key={k} onClick={() => setMealPlanPrefs(p => ({ ...p, goal: k }))}
+                        style={{ padding:'10px 8px', borderRadius:10, border:`1.5px solid ${mealPlanPrefs.goal===k?'#6366f1':'var(--border)'}`, background:mealPlanPrefs.goal===k?'rgba(99,102,241,0.1)':'var(--bg-surface)', color:mealPlanPrefs.goal===k?'#6366f1':'var(--text-secondary)', fontWeight:700, fontSize:13, cursor:'pointer', transition:'all 0.2s' }}>{label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Restrictions */}
+                <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>🚫 Διατροφικοί Περιορισμοί</div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
+                    {['vegan','vegetarian','gluten-free','lactose-free','nut-free'].map(r => {
+                      const active = mealPlanPrefs.restrictions.includes(r);
+                      const labels = { vegan:'🌱 Vegan', vegetarian:'🥗 Vegetarian', 'gluten-free':'🌾 Χωρίς Γλουτένη', 'lactose-free':'🥛 Χωρίς Λακτόζη', 'nut-free':'🥜 Χωρίς Ξηρούς Καρπούς' };
+                      return (
+                        <button key={r} onClick={() => toggleMealRestriction(r)}
+                          style={{ padding:'7px 12px', borderRadius:20, border:`1.5px solid ${active?'#6366f1':'var(--border)'}`, background:active?'rgba(99,102,241,0.12)':'var(--bg-surface)', color:active?'#6366f1':'var(--text-secondary)', fontWeight:700, fontSize:12, cursor:'pointer', transition:'all 0.2s' }}>
+                          {labels[r]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {mealPlanError && (
+                  <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, padding:'12px 16px', color:'#ef4444', fontSize:13, fontWeight:600 }}>
+                    ❌ {mealPlanError}
+                  </div>
+                )}
+
+                <button onClick={generateMealPlan} disabled={mealPlanLoading}
+                  style={{ width:'100%', padding:16, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', border:'none', borderRadius:16, fontWeight:800, fontSize:16, cursor:mealPlanLoading?'not-allowed':'pointer', opacity:mealPlanLoading?0.75:1, display:'flex', alignItems:'center', justifyContent:'center', gap:10, transition:'all 0.2s', boxShadow:'0 4px 24px rgba(99,102,241,0.35)' }}>
+                  {mealPlanLoading ? (
+                    <><div style={{ width:20, height:20, border:'2.5px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.85s linear infinite' }}/> Δημιουργώ πλάνο...</>
+                  ) : (
+                    <><IconSparkles size={20} stroke={2}/> Δημιούργησε Πλάνο Διατροφής</>
+                  )}
+                </button>
+              </div>
+            ) : (
+              /* ── Results View ── */
+              <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+                {/* Stats bar */}
+                {mealPlanStats && (
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+                    {[
+                      { label:'Βρέθηκαν', value:`${mealPlanStats.foundInDB}/${mealPlanStats.totalIngredients}`, color:'#10b981' },
+                      { label:'Εκτ. Κόστος', value:`${mealPlanStats.estimatedCost}€`, color:'#6366f1' },
+                      { label:'Κάλυψη', value:`${mealPlanStats.coveragePercent}%`, color:'#f59e0b' },
+                    ].map(s => (
+                      <div key={s.label} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:12, padding:'10px 12px', textAlign:'center' }}>
+                        <div style={{ fontWeight:900, fontSize:18, color:s.color }}>{s.value}</div>
+                        <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, marginTop:2 }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Day selector */}
+                <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:4 }}>
+                  {mealPlan.map((day, i) => (
+                    <button key={i} onClick={() => setActiveMealDay(i)}
+                      style={{ flexShrink:0, padding:'8px 14px', borderRadius:20, border:`1.5px solid ${activeMealDay===i?'#6366f1':'var(--border)'}`, background:activeMealDay===i?'rgba(99,102,241,0.12)':'var(--bg-card)', color:activeMealDay===i?'#6366f1':'var(--text-secondary)', fontWeight:800, fontSize:13, cursor:'pointer', transition:'all 0.2s', whiteSpace:'nowrap' }}>
+                      {day.dayName || `Ημέρα ${day.day}`}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Day meals */}
+                {mealPlan[activeMealDay] && (() => {
+                  const day = mealPlan[activeMealDay];
+                  return (
+                    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                      {[['breakfast','🌅 Πρωινό'],['lunch','☀️ Μεσημεριανό'],['dinner','🌙 Βραδινό']].map(([mKey, mLabel]) => {
+                        const meal = day.meals?.[mKey];
+                        if (!meal) return null;
+                        return (
+                          <div key={mKey} style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, padding:'14px 16px' }}>
+                            <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:6 }}>{mLabel}</div>
+                            <div style={{ fontWeight:800, fontSize:15, color:'var(--text-primary)', marginBottom:4 }}>{meal.name}</div>
+                            <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:10 }}>{meal.description}</div>
+                            {/* Macros */}
+                            <div style={{ display:'flex', gap:8, marginBottom:10 }}>
+                              {[['kcal','kcal','#f59e0b'],['protein','g protein','#6366f1'],['carbs','g carbs','#10b981'],['fat','g fat','#ef4444']].map(([k, unit, col]) => (
+                                meal.macros?.[k] != null && (
+                                  <div key={k} style={{ background:`${col}14`, borderRadius:8, padding:'4px 8px', fontSize:11, fontWeight:800, color:col }}>
+                                    {meal.macros[k]}{unit}
+                                  </div>
+                                )
+                              ))}
+                              {meal.time && <div style={{ background:'var(--bg-surface)', borderRadius:8, padding:'4px 8px', fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>⏱ {meal.time}λ</div>}
+                            </div>
+                            {/* Ingredients */}
+                            {meal.ingredients?.length > 0 && (
+                              <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                                {meal.ingredients.map((ing, j) => {
+                                  const ingName = typeof ing === 'string' ? ing : ing.name;
+                                  const ingPrice = typeof ing === 'object' && ing.price ? `${ing.price}€` : null;
+                                  const found = typeof ing === 'object' && ing.found;
+                                  return (
+                                    <span key={j} style={{ fontSize:11, padding:'3px 8px', borderRadius:20, background: found ? 'rgba(16,185,129,0.1)' : 'var(--bg-surface)', border: `1px solid ${found ? 'rgba(16,185,129,0.25)' : 'var(--border)'}`, color: found ? '#10b981' : 'var(--text-secondary)', fontWeight:600 }}>
+                                      {ingName}{ingPrice ? ` • ${ingPrice}` : ''}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Day macros summary */}
+                      {day.dayMacros && (
+                        <div style={{ background:'linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.06))', border:'1px solid rgba(99,102,241,0.15)', borderRadius:12, padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <div style={{ fontSize:11, fontWeight:700, color:'#6366f1' }}>Σύνολο Ημέρας</div>
+                          <div style={{ display:'flex', gap:10 }}>
+                            {[['kcal','kcal'],['protein','P'],['carbs','C'],['fat','F']].map(([k,l]) => (
+                              day.dayMacros[k] != null && <span key={k} style={{ fontSize:11, fontWeight:800, color:'var(--text-primary)' }}>{day.dayMacros[k]}{l}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Action buttons */}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginTop:4 }}>
+                  <button onClick={addMealPlanToCart}
+                    style={{ padding:'13px 10px', background:'linear-gradient(135deg,#10b981,#059669)', color:'#fff', border:'none', borderRadius:14, fontWeight:800, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:7, boxShadow:'0 4px 16px rgba(16,185,129,0.3)' }}>
+                    <IconShoppingCart size={16} stroke={2}/> Στη Λίστα
+                  </button>
+                  <button onClick={() => { setMealPlan(null); setMealPlanStats(null); setMealPlanShoppingList([]); }}
+                    style={{ padding:'13px 10px', background:'var(--bg-card)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:14, fontWeight:800, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                    <IconRefresh size={16} stroke={2}/> Νέο Πλάνο
+                  </button>
+                </div>
+
+              </div>
             )}
           </div>
         )}
