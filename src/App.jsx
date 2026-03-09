@@ -638,7 +638,9 @@ function SwipeableItem({ item, onDelete, onSend, user }) {
       <div
         className={`item-card ${swiping ? 'swiping' : ''}`}
         style={{
-          transform: `translateX(${offsetX}px)`,
+          transform: `translateX(${offsetX}px) rotate(${offsetX * 0.018}deg)`,
+          transformOrigin: offsetX > 0 ? 'right center' : 'left center',
+          transition: swiping ? 'none' : 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease',
           position: 'relative',
           zIndex: 1,
           // Intense red border tint as swipe progresses
@@ -1457,6 +1459,8 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             <button key={t.id} className={`scanner-tab ${activeView === t.id ? 'active' : ''}`}
               onClick={() => {
                 if (activeView === 'scan') stopScanner();
+                const card = document.querySelector('.scanner-card');
+                if (card) { const h = card.offsetHeight; card.style.minHeight = h + 'px'; setTimeout(() => { card.style.minHeight = ''; }, 400); }
                 setActiveView(t.id);
                 if (t.id === 'scan' && !product) setScanKey(k => k + 1);
               }}
@@ -1813,7 +1817,7 @@ export default function App() {
   const chatEndRef = useRef(null);
 
   // ── Friends state ──────────────────────────────────────────────────────────
-  const [friends, setFriends]                 = useState(() => JSON.parse(localStorage.getItem('sg_friends') || '[]'));
+  const [friends, setFriends]                 = useState([]);  // loaded from DB on login
   const [showFriendsPanel, setShowFriendsPanel] = useState(false);
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
   const [friendPicker, setFriendPicker]       = useState({ open:false, item:null });
@@ -1868,15 +1872,18 @@ export default function App() {
     persons: 2, days: 7, budget: 80, goal: 'balanced', restrictions: []
   });
 
+  const [showSmartShopping, setShowSmartShopping] = useState(false);
+
   const storeOptions  = ['Όλα','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
   const searchTimeout = useRef(null);
 
   // ── Persist friends ────────────────────────────────────────────────────────
   useEffect(() => {
-    localStorage.setItem('sg_friends', JSON.stringify(friends));
+    // friends are persisted in DB — no localStorage needed
   }, [friends]);
 
   const addFriend = async (friend) => {
+    if (!user) return;
     if (friends.some(f => f.shareKey === friend.shareKey)) {
       setNotification({ show:true, message:'Αυτός ο φίλος υπάρχει ήδη!' });
       return;
@@ -1885,44 +1892,66 @@ export default function App() {
       setNotification({ show:true, message:'Δεν μπορείς να προσθέσεις τον εαυτό σου!' });
       return;
     }
-    // Add locally with the correct name field (backend returns 'name', UI stores as 'username')
-    const normalizedFriend = { 
+
+    // 1. Call backend — saves BOTH sides in DB, notifies target via socket
+    let confirmedFriend = null;
+    try {
+      const r = await fetch(`${API_BASE}/api/auth/add-friend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ targetShareKey: friend.shareKey }),
+      });
+      const data = await r.json();
+      if (r.ok) confirmedFriend = data.friend;
+    } catch {}
+
+    // 2. Update local state with confirmed (or optimistic) data
+    const normalizedFriend = confirmedFriend || {
       shareKey: friend.shareKey,
       username: friend.username || friend.name || friend.shareKey,
-      addedAt: friend.addedAt || Date.now()
+      addedAt: Date.now(),
     };
+
     setFriends(prev => [...prev, normalizedFriend]);
     setShowAddFriendModal(false);
     setNotification({ show:true, message:`✅ ${normalizedFriend.username} προστέθηκε στο κοινό καλάθι!` });
 
-    // 1. Real-time: notify via socket (for online users)
-    if (socketRef.current && user) {
-      // Join their room immediately so we receive their messages & items
+    // 3. Join their socket room immediately (for real-time items/chat)
+    if (socketRef.current) {
       socketRef.current.emit('join_cart', normalizedFriend.shareKey);
-      // Notify the other person (they join our room on their end)
-      socketRef.current.emit('friend_added', {
-        targetShareKey: normalizedFriend.shareKey,
-        from: { shareKey: user.shareKey, username: user.name }
-      });
-    }
-
-    // 2. Persistent: notify via backend so they see us even when offline
-    if (user) {
-      try {
-        await fetch(`${API_BASE}/api/auth/notify-friend`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeader() },
-          body: JSON.stringify({ 
-            targetShareKey: friend.shareKey,
-            from: { shareKey: user.shareKey, username: user.name, name: user.name }
-          }),
-        });
-      } catch {} // Non-critical — socket handles real-time
     }
   };
 
-  const removeFriend = (shareKey) => {
+  // Load friends from DB — called on login and app start
+  const loadFriendsFromDB = async () => {
+    if (!user) return;
+    try {
+      const r = await fetch(`${API_BASE}/api/auth/friends`, { headers: authHeader() });
+      if (r.ok) {
+        const data = await r.json();
+        const dbFriends = (data.friends || []).map(f => ({
+          shareKey: f.shareKey,
+          username: f.username,
+          addedAt:  f.addedAt,
+        }));
+        setFriends(dbFriends);
+        // Re-join all rooms
+        if (socketRef.current) {
+          dbFriends.forEach(f => socketRef.current.emit('join_cart', f.shareKey));
+        }
+      }
+    } catch {}
+  };
+
+  const removeFriend = async (shareKey) => {
     setFriends(prev => prev.filter(f => f.shareKey !== shareKey));
+    // Also remove from DB (bidirectional)
+    try {
+      await fetch(`${API_BASE}/api/auth/remove-friend/${shareKey}`, {
+        method: 'DELETE',
+        headers: authHeader(),
+      });
+    } catch {}
   };
 
   // ── Offline detection ──────────────────────────────────────────────────────
@@ -2015,6 +2044,15 @@ export default function App() {
           .catch(() => {});
       });
   }, [user, friends]);
+
+  // Load friends from DB every time the user changes (login/logout)
+  useEffect(() => {
+    if (user) {
+      loadFriendsFromDB();
+    } else {
+      setFriends([]);
+    }
+  }, [user?.shareKey]); // eslint-disable-line
 
   useEffect(() => { loadGroupChat(); }, [user, friends.length]);
 
@@ -2402,6 +2440,19 @@ export default function App() {
   }, {});
   const totalCost = items.reduce((s, i) => s + (i.price > 0 ? i.price : 0), 0);
 
+  // Smart Shopping: group items by store, sorted by total value desc
+  const smartStoreGroups = Object.entries(
+    items.filter(i => i.store && i.store !== '—' && i.store !== '').reduce((acc, item) => {
+      const s = item.store;
+      if (!acc[s]) acc[s] = { items: [], total: 0 };
+      acc[s].items.push(item);
+      acc[s].total += item.price > 0 ? item.price : 0;
+      return acc;
+    }, {})
+  ).sort((a, b) => b[1].total - a[1].total);
+
+  const itemsWithoutStore = items.filter(i => !i.store || i.store === '—' || i.store === '');
+
   const handleLogout       = () => { localStorage.removeItem('smart_grocery_token'); localStorage.removeItem('smart_grocery_user'); setUser(null); setSavedLists([]); setShowProfileMenu(false); };
   const handleCopyShareKey = () => { if (user?.shareKey) { navigator.clipboard.writeText(user.shareKey); setNotification({ show:true, message:`📋 Αντιγράφηκε: ${user.shareKey}` }); } };
 
@@ -2619,7 +2670,7 @@ export default function App() {
     return createPortal(
       <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.65)', backdropFilter:'blur(8px)' }}
         onClick={e => { if (e.target === e.currentTarget) setShowSplitModal(false); }}>
-        <div style={{ width:'100%', maxWidth:520, maxHeight:'92vh', overflowY:'auto', background:'var(--bg-card)', borderRadius:'24px 24px 0 0', padding:'0 0 32px 0', boxShadow:'0 -8px 40px rgba(0,0,0,0.4)' }}>
+        <div className="split-panel-enter" style={{ width:'100%', maxWidth:520, maxHeight:'92vh', overflowY:'auto', background:'var(--bg-card)', borderRadius:'24px 24px 0 0', padding:'0 0 32px 0', boxShadow:'0 -8px 60px rgba(99,102,241,0.25), 0 -2px 24px rgba(0,0,0,0.4)' }}>
 
           {/* Drag handle */}
           <div style={{ display:'flex', justifyContent:'center', padding:'12px 0 0' }}>
@@ -2635,7 +2686,7 @@ export default function App() {
                 <div style={{ fontSize:11, color:'var(--text-secondary)' }}>Ασφαλής διαμοιρασμός · Stripe + Biometric</div>
               </div>
             </div>
-            <button onClick={() => setShowSplitModal(false)} style={{ background:'var(--bg-surface)', border:'none', borderRadius:10, width:34, height:34, cursor:'pointer', fontSize:16, color:'var(--text-secondary)' }}>✕</button>
+            <button onClick={() => setShowSplitModal(false)} style={{ background:'var(--bg-surface)', border:'none', borderRadius:10, width:34, height:34, cursor:'pointer', fontSize:16, color:'var(--text-secondary)', transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)', display:'flex', alignItems:'center', justifyContent:'center' }} onMouseOver={e=>e.currentTarget.style.transform='scale(1.12) rotate(90deg)'} onMouseOut={e=>e.currentTarget.style.transform='scale(1) rotate(0)'}>✕</button>
           </div>
 
           {/* Progress bar */}
@@ -2659,59 +2710,119 @@ export default function App() {
             {/* ══ STEP: SETUP ══ */}
             {splitStep === 'setup' && (
               <div>
-                {/* Cart total */}
+                {/* ── Cart summary ── */}
                 <div style={{ background:'var(--bg-surface)', borderRadius:14, padding:'12px 16px', marginBottom:14, border:'1px solid var(--border-light)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <div style={{ fontSize:13, color:'var(--text-secondary)' }}>{items.length} προϊόντα</div>
-                  <div style={{ fontWeight:800, fontSize:24, color:'var(--brand-primary)' }}>{totalAmount.toFixed(2)}€</div>
-                </div>
-
-                {/* Split type */}
-                <div style={{ marginBottom:14 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Τρόπος διαχωρισμού</div>
-                  <div style={{ display:'flex', gap:8 }}>
-                    {[['equal','⚖️ Ίσα'], ['custom','✏️ Προσαρμοσμένο']].map(([val, label]) => (
-                      <button key={val} onClick={() => setSplitType(val)} style={{ flex:1, padding:'10px', borderRadius:10, border:`2px solid ${splitType===val?'#6366f1':'var(--border-light)'}`, background:splitType===val?'rgba(99,102,241,0.1)':'var(--bg-surface)', color:splitType===val?'#6366f1':'var(--text-primary)', cursor:'pointer', fontWeight:600, fontSize:13, transition:'all 0.2s' }}>
+                  <div>
+                    <div style={{ fontSize:12, color:'var(--text-secondary)' }}>{items.length} προϊόντα στο καλάθι</div>
+                    <div style={{ fontWeight:800, fontSize:26, color:'var(--brand-primary)', letterSpacing:-0.5, lineHeight:1.1 }}>{totalAmount.toFixed(2)}€</div>
+                  </div>
+                  <div style={{ display:'flex', gap:7 }}>
+                    {[['equal','⚖️ Ίσα'], ['custom','✏️ Custom']].map(([val, label]) => (
+                      <button key={val} onClick={() => setSplitType(val)}
+                        style={{ padding:'7px 12px', borderRadius:9, border:`1.5px solid ${splitType===val?'#6366f1':'var(--border-light)'}`, background:splitType===val?'rgba(99,102,241,0.12)':'var(--bg-surface)', color:splitType===val?'#6366f1':'var(--text-secondary)', cursor:'pointer', fontWeight:700, fontSize:12, transition:'all 0.2s' }}>
                         {label}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Starred Partners */}
+                {/* ── Friends list (primary selection) ── */}
                 <div style={{ marginBottom:14 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>⭐ Starred Partners</div>
-                    <button onClick={() => setShowAddPartnerModal(true)} style={{ background:'#6366f1', color:'#fff', border:'none', borderRadius:8, padding:'5px 12px', fontSize:12, cursor:'pointer', fontWeight:700 }}>+ Προσθήκη</button>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>
+                      Επίλεξε με ποιον μοιράζεις
+                    </div>
+                    {selectedSplitPartners.length > 0 && (
+                      <div style={{ fontSize:12, fontWeight:700, color:'#6366f1', background:'rgba(99,102,241,0.1)', borderRadius:20, padding:'3px 10px' }}>
+                        {selectedSplitPartners.length} επιλεγμέν{selectedSplitPartners.length===1?'ος':'οι'}
+                      </div>
+                    )}
                   </div>
 
-                  {starredPartners.length === 0 ? (
-                    <div style={{ background:'var(--bg-surface)', borderRadius:14, padding:20, textAlign:'center', border:'1.5px dashed var(--border-light)' }}>
-                      <div style={{ fontSize:32, marginBottom:6 }}>⭐</div>
-                      <div style={{ fontSize:13, color:'var(--text-secondary)' }}>Δεν έχεις starred partners ακόμα.</div>
-                      <button onClick={() => setShowAddPartnerModal(true)} style={{ marginTop:10, background:'#6366f1', color:'#fff', border:'none', borderRadius:10, padding:'9px 18px', fontSize:13, cursor:'pointer', fontWeight:700 }}>Πρόσθεσε Partner</button>
+                  {friends.length === 0 ? (
+                    <div style={{ background:'var(--bg-surface)', borderRadius:14, padding:24, textAlign:'center', border:'1.5px dashed var(--border-light)' }}>
+                      <div style={{ fontSize:36, marginBottom:8 }}>👥</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>Δεν έχεις φίλους ακόμα</div>
+                      <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5 }}>
+                        Πρόσθεσε φίλους από το panel επάνω δεξιά για να μοιράσεις τα έξοδα μαζί τους.
+                      </div>
                     </div>
                   ) : (
                     <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                      {starredPartners.map(p => {
-                        const isSel = selectedSplitPartners.some(s => s._id === p._id);
+                      {friends.map(friend => {
+                        // Check if this friend is also a starred partner (for extra info)
+                        const starred = starredPartners.find(sp =>
+                          sp.partnerName === friend.username || sp.partnerShareKey === friend.shareKey
+                        );
+                        // Match selected by shareKey
+                        const isSel = selectedSplitPartners.some(s => s.shareKey === friend.shareKey);
+                        const splitCount = selectedSplitPartners.length + 1;
+
                         return (
-                          <div key={p._id} onClick={() => setSelectedSplitPartners(prev => isSel ? prev.filter(s => s._id !== p._id) : [...prev, p])}
-                            style={{ display:'flex', alignItems:'center', gap:10, background:isSel?'rgba(99,102,241,0.08)':'var(--bg-surface)', border:`1.5px solid ${isSel?'#6366f1':'var(--border-light)'}`, borderRadius:12, padding:'10px 12px', cursor:'pointer', transition:'all 0.2s' }}>
-                            <div style={{ width:38, height:38, borderRadius:10, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, color:'#fff', fontSize:16, flexShrink:0 }}>
-                              {(p.nickname||p.partnerName||'?')[0].toUpperCase()}
+                          <div key={friend.shareKey}
+                            onClick={() => {
+                              setSelectedSplitPartners(prev =>
+                                isSel
+                                  ? prev.filter(s => s.shareKey !== friend.shareKey)
+                                  : [...prev, {
+                                      // Adapt friend to the shape createSplitSession expects
+                                      _id:                friend.shareKey,
+                                      shareKey:           friend.shareKey,
+                                      partnerName:        friend.username,
+                                      nickname:           friend.username,
+                                      defaultSplitPercent: starred?.defaultSplitPercent || 50,
+                                      partnerId:          { shareKey: friend.shareKey },
+                                    }]
+                              );
+                            }}
+                            style={{
+                              display:'flex', alignItems:'center', gap:12,
+                              background: isSel ? 'rgba(99,102,241,0.08)' : 'var(--bg-surface)',
+                              border: `1.5px solid ${isSel ? '#6366f1' : 'var(--border-light)'}`,
+                              borderRadius:14, padding:'11px 13px', cursor:'pointer',
+                              transition:'all 0.2s',
+                              boxShadow: isSel ? '0 0 0 3px rgba(99,102,241,0.12)' : 'none',
+                            }}>
+                            {/* Avatar */}
+                            <div style={{
+                              width:44, height:44, borderRadius:13, flexShrink:0,
+                              background: getAvatarColor(friend.shareKey),
+                              display:'flex', alignItems:'center', justifyContent:'center',
+                              color:'#fff', fontWeight:800, fontSize:16,
+                              boxShadow:`0 4px 10px ${getAvatarColor(friend.shareKey)}55`,
+                            }}>
+                              {getInitials(friend.username)}
                             </div>
+                            {/* Info */}
                             <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)' }}>{p.nickname||p.partnerName}</div>
-                              <div style={{ fontSize:11, color:'var(--text-secondary)' }}>{p.defaultSplitPercent}% προεπιλογή · {p.autoAccept?'Auto-accept':'Manual'}</div>
-                            </div>
-                            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                              {isSel && splitType==='equal' && (
-                                <div style={{ fontSize:13, fontWeight:700, color:'#6366f1' }}>{(totalAmount/splitCount).toFixed(2)}€</div>
-                              )}
-                              <div style={{ width:22, height:22, borderRadius:6, background:isSel?'#6366f1':'transparent', border:`2px solid ${isSel?'#6366f1':'var(--border-light)'}`, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:12, flexShrink:0 }}>
-                                {isSel?'✓':''}
+                              <div style={{ fontWeight:800, fontSize:15, color:'var(--text-primary)', display:'flex', alignItems:'center', gap:6 }}>
+                                {friend.username}
+                                {starred && (
+                                  <span style={{ fontSize:10, background:'rgba(245,158,11,0.15)', color:'#f59e0b', borderRadius:6, padding:'2px 6px', fontWeight:700 }}>⭐ Partner</span>
+                                )}
                               </div>
-                              <button onClick={e=>{e.stopPropagation();removeStarredPartner(p._id);}} style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', color:'#ef4444', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center' }}>🗑</button>
+                              <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop:2 }}>
+                                #{friend.shareKey}
+                                {starred?.defaultSplitPercent && ` · ${starred.defaultSplitPercent}% προεπιλογή`}
+                              </div>
+                            </div>
+                            {/* Right side: amount + checkbox */}
+                            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0 }}>
+                              {isSel && splitType === 'equal' && (
+                                <div style={{ fontWeight:900, fontSize:15, color:'#6366f1' }}>
+                                  {(totalAmount / splitCount).toFixed(2)}€
+                                </div>
+                              )}
+                              <div style={{
+                                width:24, height:24, borderRadius:7,
+                                background: isSel ? '#6366f1' : 'transparent',
+                                border: `2px solid ${isSel ? '#6366f1' : 'var(--border-light)'}`,
+                                display:'flex', alignItems:'center', justifyContent:'center',
+                                color:'#fff', fontSize:13, transition:'all 0.2s',
+                                transform: isSel ? 'scale(1.1)' : 'scale(1)',
+                              }}>
+                                {isSel ? '✓' : ''}
+                              </div>
                             </div>
                           </div>
                         );
@@ -2720,35 +2831,78 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Share preview */}
-                {selectedSplitPartners.length > 0 && (
-                  <div style={{ background:'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.08))', border:'1px solid rgba(99,102,241,0.25)', borderRadius:12, padding:'12px 14px', marginBottom:14 }}>
-                    <div style={{ fontSize:11, color:'var(--text-secondary)', marginBottom:6 }}>Διαμοιρασμός σε {splitCount} άτομα</div>
-                    <div style={{ display:'flex', justifyContent:'space-between' }}>
-                      <span style={{ fontSize:13, color:'var(--text-primary)' }}>Το μερίδιό σου:</span>
-                      <span style={{ fontWeight:800, fontSize:20, color:'#6366f1' }}>{(totalAmount/splitCount).toFixed(2)}€</span>
+                {/* ── Split preview ── */}
+                {selectedSplitPartners.length > 0 && (() => {
+                  const count = selectedSplitPartners.length + 1;
+                  const share = totalAmount / count;
+                  return (
+                    <div style={{ background:'linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.08))', border:'1.5px solid rgba(99,102,241,0.25)', borderRadius:14, padding:'14px 16px', marginBottom:14 }}>
+                      <div style={{ fontSize:11, color:'#6366f1', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Προεπισκόπηση Διαμοιρασμού</div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                        {/* Me */}
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <div style={{ width:28, height:28, borderRadius:8, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:11, fontWeight:800 }}>
+                              {getInitials(user?.name||'Εγώ')}
+                            </div>
+                            <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Εγώ</span>
+                          </div>
+                          <span style={{ fontWeight:900, fontSize:17, color:'#6366f1' }}>{share.toFixed(2)}€</span>
+                        </div>
+                        {/* Friends */}
+                        {selectedSplitPartners.map(p => (
+                          <div key={p.shareKey} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                              <div style={{ width:28, height:28, borderRadius:8, background:getAvatarColor(p.shareKey), display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:11, fontWeight:800 }}>
+                                {getInitials(p.partnerName)}
+                              </div>
+                              <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{p.partnerName}</span>
+                            </div>
+                            <span style={{ fontWeight:900, fontSize:17, color:'#6366f1' }}>{share.toFixed(2)}€</span>
+                          </div>
+                        ))}
+                        <div style={{ borderTop:'1px solid rgba(99,102,241,0.2)', paddingTop:8, marginTop:2, display:'flex', justifyContent:'space-between' }}>
+                          <span style={{ fontSize:12, color:'var(--text-secondary)', fontWeight:700 }}>Σύνολο</span>
+                          <span style={{ fontSize:13, fontWeight:900, color:'var(--text-primary)' }}>{totalAmount.toFixed(2)}€</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
-                {/* Security badges */}
+                {/* ── Security badges ── */}
                 <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:16 }}>
-                  {[['🔒','PCI-DSS L1'],['🔬','Zero-Knowledge'],['👆',biometricSupported?'Face ID / Finger':'Secure Fallback'],['🔑','Smart Consent']].map(([icon,label])=>(
-                    <div key={label} style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:8, padding:'4px 8px' }}>
+                  {[['🔒','PCI-DSS L1'],['🔬','Zero-Knowledge'],['👆',biometricSupported?'Face ID':'Secure'],['🔑','Smart Consent']].map(([icon,label])=>(
+                    <div key={label} style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:8, padding:'4px 9px' }}>
                       <span style={{ fontSize:11 }}>{icon}</span>
                       <span style={{ fontSize:10, color:'#10b981', fontWeight:700 }}>{label}</span>
                     </div>
                   ))}
                 </div>
 
-                <button onClick={createSplitSession} disabled={splitLoading || !selectedSplitPartners.length || !items.length}
-                  style={{ width:'100%', padding:14, background:selectedSplitPartners.length&&items.length?'linear-gradient(135deg,#6366f1,#8b5cf6)':'var(--bg-surface)', color:selectedSplitPartners.length&&items.length?'#fff':'var(--text-secondary)', border:'none', borderRadius:14, fontWeight:700, fontSize:15, cursor:selectedSplitPartners.length?'pointer':'not-allowed', opacity:splitLoading?0.7:1, transition:'all 0.2s' }}>
-                  {splitLoading ? '⏳ Δημιουργία session...' : `💳 Έναρξη Split · ${splitCount} άτομα`}
+                <button onClick={createSplitSession}
+                  disabled={splitLoading || !selectedSplitPartners.length || !items.length}
+                  style={{
+                    width:'100%', padding:15,
+                    background: selectedSplitPartners.length && items.length
+                      ? 'linear-gradient(135deg,#6366f1,#8b5cf6)'
+                      : 'var(--bg-surface)',
+                    color: selectedSplitPartners.length && items.length ? '#fff' : 'var(--text-secondary)',
+                    border:'none', borderRadius:14, fontWeight:800, fontSize:15,
+                    cursor: selectedSplitPartners.length ? 'pointer' : 'not-allowed',
+                    opacity: splitLoading ? 0.7 : 1, transition:'all 0.25s',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                    boxShadow: selectedSplitPartners.length ? '0 4px 20px rgba(99,102,241,0.35)' : 'none',
+                  }}>
+                  {splitLoading
+                    ? <><div style={{ width:18, height:18, border:'2.5px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/> Δημιουργία session...</>
+                    : <>💳 Έναρξη Split · {selectedSplitPartners.length + 1} άτομα · {totalAmount.toFixed(2)}€</>
+                  }
                 </button>
               </div>
             )}
 
-            {/* ══ STEP: BIOMETRIC ══ */}
+                        {/* ══ STEP: BIOMETRIC ══ */}
             {splitStep === 'biometric' && splitSession && (
               <div style={{ textAlign:'center', padding:'8px 0' }}>
                 <div style={{ fontSize:72, marginBottom:12 }}>{biometricSupported?'👆':'🔑'}</div>
@@ -2973,7 +3127,10 @@ export default function App() {
       {showWelcome && !user && <WelcomeModal onLogin={handleWelcomeLogin} onRegister={handleWelcomeRegister} onSkip={handleWelcomeSkip} />}
 
       <SavedListsModal isOpen={showListsModal} onClose={() => setShowListsModal(false)} lists={savedLists} onDelete={deleteList} onToggleItem={toggleListItem} />
-      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onLoginSuccess={(u) => setUser(u)} initMode={authInitMode} />
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onLoginSuccess={(u) => {
+          setUser(u);
+          // Friends will be loaded by the useEffect above when user changes
+        }} initMode={authInitMode} />
       <NameModal isOpen={nameModalOpen} value={nameModalValue} onChange={setNameModalValue} onConfirm={handleSaveConfirm} onCancel={() => setNameModalOpen(false)} />
       <ConfirmModal isOpen={confirmModal.open} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={() => setConfirmModal({ open:false, message:'', onConfirm:null })} />
       <RecipeNotification show={notification.show} message={notification.message} onClose={() => setNotification({ show:false, message:'' })} />
@@ -3161,7 +3318,7 @@ export default function App() {
               )}
 
               {/* Split Bill Button */}
-              <div className="action-btn-new" onClick={openSplitModal} title="Split the Bill" style={{ position:'relative', background: showSplitModal ? 'rgba(99,102,241,0.15)' : undefined, border: showSplitModal ? '1.5px solid rgba(99,102,241,0.4)' : undefined }}>
+              <div className="action-btn-new" onClick={openSplitModal} title="Split the Bill" style={{ position:'relative', background: showSplitModal ? 'rgba(99,102,241,0.15)' : undefined, border: showSplitModal ? '1.5px solid rgba(99,102,241,0.4)' : undefined, animation: showSplitModal ? 'splitBtnActive 0.5s cubic-bezier(0.34,1.56,0.64,1)' : undefined, boxShadow: showSplitModal ? '0 0 0 3px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.15)' : undefined }}>
                 <IconCreditCard size={20} stroke={1.8} />
               </div>
 
@@ -3246,6 +3403,70 @@ export default function App() {
                   </div>
                 </div>
                 <div style={{ fontSize:13, color:'var(--brand-primary)', fontWeight:700 }}>→</div>
+              </div>
+            )}
+
+            {/* Smart Shopping Panel */}
+            {items.length > 0 && smartStoreGroups.length > 1 && (
+              <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, marginBottom:12, overflow:'hidden' }}>
+                <div onClick={() => setShowSmartShopping(s => !s)}
+                  style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', cursor:'pointer', transition:'background 0.2s' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <div style={{ width:34, height:34, borderRadius:10, background:'linear-gradient(135deg,#f59e0b,#d97706)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <IconBuildingStore size={17} color="#fff" stroke={2}/>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight:800, fontSize:14, color:'var(--text-primary)' }}>Έξυπνες Αγορές</div>
+                      <div style={{ fontSize:11, color:'var(--text-secondary)' }}>{smartStoreGroups.length} καταστήματα · βέλτιστη διαδρομή</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:13, color:'var(--text-secondary)', fontWeight:700, transition:'transform 0.3s', transform: showSmartShopping ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</div>
+                </div>
+                {showSmartShopping && (
+                  <div style={{ padding:'0 16px 16px', animation:'slideUpFadeIn 0.3s ease' }}>
+                    {/* Route summary */}
+                    <div style={{ display:'flex', gap:6, marginBottom:12, overflowX:'auto', paddingBottom:4 }}>
+                      {smartStoreGroups.map(([store, data], i) => (
+                        <div key={store} style={{ flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
+                          <div style={{ background:'linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.1))', border:'1px solid rgba(99,102,241,0.2)', borderRadius:20, padding:'5px 12px', fontSize:12, fontWeight:700, color:'#6366f1', whiteSpace:'nowrap' }}>
+                            {i+1}. {store}
+                          </div>
+                          {i < smartStoreGroups.length - 1 && <span style={{ color:'var(--text-muted)', fontSize:14, flexShrink:0 }}>→</span>}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Per-store breakdown */}
+                    {smartStoreGroups.map(([store, data]) => (
+                      <div key={store} style={{ marginBottom:10 }}>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                            <div style={{ width:8, height:8, borderRadius:'50%', background:'#6366f1' }}/>
+                            <span style={{ fontWeight:800, fontSize:13, color:'var(--text-primary)' }}>{store}</span>
+                            <span style={{ fontSize:11, color:'var(--text-secondary)', background:'var(--bg-surface)', borderRadius:20, padding:'2px 8px', border:'1px solid var(--border)' }}>{data.items.length} προϊόντα</span>
+                          </div>
+                          <span style={{ fontWeight:900, fontSize:14, color:'#10b981' }}>{data.total.toFixed(2)}€</span>
+                        </div>
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                          {data.items.slice(0,6).map(item => (
+                            <span key={item.id} style={{ fontSize:11, padding:'3px 9px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:20, color:'var(--text-secondary)', fontWeight:600 }}>
+                              {item.text}{item.price > 0 ? ` · ${item.price.toFixed(2)}€` : ''}
+                            </span>
+                          ))}
+                          {data.items.length > 6 && <span style={{ fontSize:11, padding:'3px 9px', background:'rgba(99,102,241,0.08)', border:'1px solid rgba(99,102,241,0.2)', borderRadius:20, color:'#6366f1', fontWeight:700 }}>+{data.items.length-6} ακόμα</span>}
+                        </div>
+                      </div>
+                    ))}
+                    {itemsWithoutStore.length > 0 && (
+                      <div style={{ borderTop:'1px solid var(--border)', paddingTop:10, marginTop:4 }}>
+                        <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:700, marginBottom:6 }}>🔍 Χωρίς τιμή/κατάστημα</div>
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                          {itemsWithoutStore.slice(0,4).map(i => <span key={i.id} style={{ fontSize:11, padding:'3px 9px', background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:20, color:'var(--text-muted)' }}>{i.text}</span>)}
+                          {itemsWithoutStore.length > 4 && <span style={{ fontSize:11, color:'var(--text-muted)', padding:'3px 9px' }}>+{itemsWithoutStore.length-4} ακόμα</span>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
