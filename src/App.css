@@ -3520,3 +3520,159 @@ button[title="Κλείσιμο"], button[title="Κλείσε"], button[aria-labe
   60%  { transform: translateY(2px) scale(1.01); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SPLIT BILL — Swipe-up + Body scroll lock + No-glitch animations
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Lock body scroll when split modal is open */
+body.split-modal-open {
+  overflow: hidden !important;
+  position: fixed;
+  width: 100%;
+}
+
+/* The panel slides up from bottom — ONE-TIME on mount */
+@keyframes splitSheetUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+/* Remove old class — replace with new */
+.split-panel-enter {
+  animation: splitSheetUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+/* Split bill button — use CSS class, not inline animation (prevents re-trigger) */
+.split-btn-open {
+  /* Static glow — no animation, no re-trigger */
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.15) !important;
+  background: rgba(99,102,241,0.15) !important;
+  border-color: rgba(99,102,241,0.4) !important;
+}
+/* One-time bounce when it BECOMES active */
+.split-btn-open {
+  animation: splitBtnPop 0.4s cubic-bezier(0.34,1.56,0.64,1) 1 !important;
+}
+@keyframes splitBtnPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  65%  { transform: scale(0.94); }
+  85%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+/* Overlay fade */
+@keyframes splitOverlayIn {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(10px); }
+}
+.split-overlay-enter {
+  animation: splitOverlayIn 0.3s ease forwards;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TABS — Premium redesign
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.tabs-container {
+  display: flex;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  padding: 5px;
+  border-radius: 18px;
+  margin-bottom: 22px;
+  gap: 3px;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px 4px 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-family: var(--font);
+  border-radius: 13px;
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.1px;
+  position: relative;
+  transition:
+    color      0.25s ease,
+    background 0.25s ease,
+    transform  0.3s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow 0.25s ease;
+  -webkit-user-select: none; user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  line-height: 1.2;
+}
+
+.tab-btn.active {
+  background: var(--bg-card);
+  color: var(--brand-primary);
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.1),
+    0 0 0 1px rgba(255,255,255,0.08);
+  transform: translateY(-1px);
+}
+
+.tab-btn:not(.active):hover {
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.05);
+  transform: translateY(-1px);
+}
+
+.tab-btn:active {
+  transform: scale(0.93) !important;
+  transition-duration: 0.07s !important;
+}
+
+/* Active indicator dot */
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  animation: tabDotIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes tabDotIn {
+  from { transform: translateX(-50%) scale(0); }
+  to   { transform: translateX(-50%) scale(1); }
+}
+
+/* Tab icon size */
+.tab-btn svg {
+  flex-shrink: 0;
+}
+
+/* Tab content smooth entry */
+.tab-content {
+  animation: tabPageIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes tabPageIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

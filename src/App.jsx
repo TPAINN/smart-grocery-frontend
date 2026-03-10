@@ -1872,6 +1872,18 @@ export default function App() {
     persons: 2, days: 7, budget: 80, goal: 'balanced', restrictions: []
   });
 
+  // TDEE Calculator state
+  const [tdeeAge,      setTdeeAge]      = useState(30);
+  const [tdeeGender,   setTdeeGender]   = useState('male');
+  const [tdeeHeight,   setTdeeHeight]   = useState(175);
+  const [tdeeWeight,   setTdeeWeight]   = useState(75);
+  const [tdeeActivity, setTdeeActivity] = useState('moderate');
+  const [tdeeBodyFat,  setTdeeBodyFat]  = useState('');
+  const [tdeeResult,   setTdeeResult]   = useState(null);
+  const [tdeeGoal,     setTdeeGoal]     = useState(null);
+  const [showTdeeCalc, setShowTdeeCalc] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const [showSmartShopping, setShowSmartShopping] = useState(false);
 
   const storeOptions  = ['Όλα','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
@@ -2382,6 +2394,38 @@ export default function App() {
   };
 
   // ── Meal Plan functions ────────────────────────────────────────────────────
+  // TDEE Calculator (Mifflin-St Jeor)
+  const calculateTDEE = () => {
+    const w = parseFloat(tdeeWeight), h = parseFloat(tdeeHeight), a = parseFloat(tdeeAge);
+    if (!w || !h || !a) return;
+    // BMR
+    const bmr = tdeeGender === 'male'
+      ? 10 * w + 6.25 * h - 5 * a + 5
+      : 10 * w + 6.25 * h - 5 * a - 161;
+    const multipliers = { sedentary:1.2, light:1.375, moderate:1.55, active:1.725, veryactive:1.9 };
+    const tdee = Math.round(bmr * (multipliers[tdeeActivity] || 1.55));
+    // If body fat % provided, also show Katch-McArdle
+    let lbm = null;
+    if (tdeeBodyFat) {
+      lbm = w * (1 - parseFloat(tdeeBodyFat) / 100);
+    }
+    const goals = {
+      maintain:  { label: 'Διατήρηση βάρους',        kcal: tdee,        color: '#10b981' },
+      mild:      { label: 'Ήπια απώλεια βάρους',      kcal: tdee - 250,  color: '#6366f1' },
+      loss:      { label: 'Απώλεια βάρους',           kcal: tdee - 500,  color: '#f59e0b' },
+      extreme:   { label: 'Ακραία απώλεια βάρους',    kcal: tdee - 1000, color: '#ef4444' },
+    };
+    // Zigzag: 7-day alternating high/low
+    const zigzag = (base) => {
+      const high = Math.round(base * 1.15);
+      const low  = Math.round(base * 0.85);
+      return [high, low, high, low, high, low, high];
+    };
+    const result = { bmr: Math.round(bmr), tdee, goals, lbm: lbm ? Math.round(lbm) : null };
+    Object.keys(goals).forEach(k => { result.goals[k].zigzag = zigzag(goals[k].kcal); });
+    setTdeeResult(result);
+  };
+
   const generateMealPlan = async () => {
     setMealPlanLoading(true);
     setMealPlanError('');
@@ -2390,7 +2434,16 @@ export default function App() {
       const res = await fetch(`${API_BASE}/api/meal-plan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mealPlanPrefs),
+        body: JSON.stringify({
+          ...mealPlanPrefs,
+          tdee: tdeeGoal && tdeeResult ? tdeeResult.goals[tdeeGoal]?.kcal : null,
+          zigzag: tdeeGoal && tdeeResult ? tdeeResult.goals[tdeeGoal]?.zigzag : null,
+          gender: tdeeGender,
+          age: tdeeAge,
+          weight: tdeeWeight,
+          height: tdeeHeight,
+          activityLevel: tdeeActivity,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Σφάλμα AI');
@@ -2487,9 +2540,17 @@ export default function App() {
       if (recipeFilter === 'snack' && !tags.includes('snack')) return false;
       
       if (fridgeQuery.trim()) {
-        const q = greeklishToGreek(normalizeText(fridgeQuery));
-        const ings = Array.isArray(r.ingredients) ? r.ingredients :[];
-        return ings.some(ing => greeklishToGreek(normalizeText(String(ing))).includes(q));
+        // Split by comma or space — user can type multiple ingredients
+        const terms = fridgeQuery.split(/[,\s]+/).map(t => greeklishToGreek(normalizeText(t))).filter(t => t.length > 1);
+        if (!terms.length) return true;
+        const ings = Array.isArray(r.ingredients) ? r.ingredients.map(i => greeklishToGreek(normalizeText(String(i)))) : [];
+        const titleN = greeklishToGreek(normalizeText(r.title || ''));
+        const tagsN  = (r.tags || []).map(t => greeklishToGreek(normalizeText(t)));
+        // Match if ANY term is found in ingredients, title, or tags
+        return terms.some(term =>
+          ings.some(ing => ing.includes(term) || term.includes(ing.substring(0, Math.max(3, ing.length - 2)))) ||
+          titleN.includes(term) || tagsN.some(t => t.includes(term))
+        );
       }
       return true;
     });
@@ -2901,7 +2962,7 @@ export default function App() {
               )}
 
               {/* Split Bill Button */}
-              <div className="action-btn-new" onClick={openSplitModal} title="Split the Bill" style={{ position:'relative', background: showSplitModal ? 'rgba(99,102,241,0.15)' : undefined, border: showSplitModal ? '1.5px solid rgba(99,102,241,0.4)' : undefined, animation: showSplitModal ? 'splitBtnActive 0.5s cubic-bezier(0.34,1.56,0.64,1)' : undefined, boxShadow: showSplitModal ? '0 0 0 3px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.15)' : undefined }}>
+              <div className="action-btn-new" onClick={openSplitModal} title="Split the Bill" className={showSplitModal ? 'split-btn-open' : ''} style={{ position:'relative', background: showSplitModal ? 'rgba(99,102,241,0.15)' : undefined, border: showSplitModal ? '1.5px solid rgba(99,102,241,0.4)' : undefined, boxShadow: showSplitModal ? '0 0 0 3px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.15)' : undefined }}>
                 <IconCreditCard size={20} stroke={1.8} />
               </div>
 
@@ -3280,19 +3341,185 @@ export default function App() {
             </div>
 
             {!mealPlan ? (
-              /* ── Preferences Form ── */
-              <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              /* ── TDEE Calculator + Preferences Form ── */
+              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+
+                {/* TDEE Calculator toggle */}
+                <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, overflow:'hidden' }}>
+                  <div onClick={() => setShowTdeeCalc(s => !s)}
+                    style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', cursor:'pointer' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <div style={{ width:36, height:36, borderRadius:10, background:'linear-gradient(135deg,#10b981,#059669)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <span style={{ fontSize:18 }}>⚡</span>
+                      </div>
+                      <div>
+                        <div style={{ fontWeight:800, fontSize:14, color:'var(--text-primary)' }}>Υπολογιστής Θερμίδων (TDEE)</div>
+                        <div style={{ fontSize:11, color:'var(--text-secondary)' }}>
+                          {tdeeResult ? `BMR: ${tdeeResult.bmr} · TDEE: ${tdeeResult.tdee} kcal` : 'Υπολόγισε τις ιδανικές θερμίδες σου'}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize:14, color:'var(--text-muted)', transform: showTdeeCalc ? 'rotate(180deg)' : 'rotate(0)', transition:'transform 0.3s' }}>▼</div>
+                  </div>
+
+                  {showTdeeCalc && (
+                    <div style={{ padding:'0 16px 16px', borderTop:'1px solid var(--border)' }}>
+                      {/* Age + Gender */}
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12 }}>
+                        <div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:6 }}>ΗΛΙΚΙΑ</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, background:'var(--bg-surface)', borderRadius:10, padding:'8px 12px' }}>
+                            <button onClick={() => setTdeeAge(a => Math.max(15, a-5))} style={{ background:'var(--bg-card)', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', fontWeight:800, fontSize:16, color:'var(--text-primary)' }}>-</button>
+                            <span style={{ fontWeight:800, fontSize:16, flex:1, textAlign:'center', color:'var(--text-primary)' }}>{tdeeAge}</span>
+                            <button onClick={() => setTdeeAge(a => Math.min(80, a+5))} style={{ background:'var(--bg-card)', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', fontWeight:800, fontSize:16, color:'var(--text-primary)' }}>+</button>
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:6 }}>ΦΥΛΟ</div>
+                          <div style={{ display:'flex', gap:6 }}>
+                            {[['male','♂ Άνδρας'],['female','♀ Γυναίκα']].map(([v,l]) => (
+                              <button key={v} onClick={() => setTdeeGender(v)}
+                                style={{ flex:1, padding:'8px 4px', borderRadius:8, border:`1.5px solid ${tdeeGender===v?'#6366f1':'var(--border)'}`, background:tdeeGender===v?'rgba(99,102,241,0.12)':'var(--bg-surface)', color:tdeeGender===v?'#6366f1':'var(--text-secondary)', fontWeight:700, fontSize:11, cursor:'pointer' }}>
+                                {l}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Height + Weight */}
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:8 }}>
+                        <div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:6 }}>ΥΨΟΣ (cm)</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, background:'var(--bg-surface)', borderRadius:10, padding:'8px 12px' }}>
+                            <button onClick={() => setTdeeHeight(h => Math.max(140, h-1))} style={{ background:'var(--bg-card)', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', fontWeight:800, color:'var(--text-primary)' }}>-</button>
+                            <span style={{ fontWeight:800, fontSize:16, flex:1, textAlign:'center', color:'var(--text-primary)' }}>{tdeeHeight}</span>
+                            <button onClick={() => setTdeeHeight(h => Math.min(220, h+1))} style={{ background:'var(--bg-card)', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', fontWeight:800, color:'var(--text-primary)' }}>+</button>
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:6 }}>ΒΑΡΟΣ (kg)</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, background:'var(--bg-surface)', borderRadius:10, padding:'8px 12px' }}>
+                            <button onClick={() => setTdeeWeight(w => Math.max(30, w-1))} style={{ background:'var(--bg-card)', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', fontWeight:800, color:'var(--text-primary)' }}>-</button>
+                            <span style={{ fontWeight:800, fontSize:16, flex:1, textAlign:'center', color:'var(--text-primary)' }}>{tdeeWeight}</span>
+                            <button onClick={() => setTdeeWeight(w => Math.min(200, w+1))} style={{ background:'var(--bg-card)', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', fontWeight:800, color:'var(--text-primary)' }}>+</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Activity level */}
+                      <div style={{ marginTop:10 }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:6 }}>ΕΠΙΠΕΔΟ ΔΡΑΣΤΗΡΙΟΤΗΤΑΣ</div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                          {[
+                            ['sedentary',  '🪑 Καθιστικός', 'Σπάνια ή καθόλου άσκηση'],
+                            ['light',      '🚶 Ελαφρύς',    '1-2 φορές/εβδομάδα'],
+                            ['moderate',   '🏃 Μέτριος',    '3-5 φορές/εβδομάδα'],
+                            ['active',     '💪 Ενεργός',    '6-7 φορές/εβδομάδα'],
+                            ['veryactive', '🔥 Πολύ Ενεργός','2x/μέρα, έντονη άσκηση'],
+                          ].map(([v, l, sub]) => (
+                            <div key={v} onClick={() => setTdeeActivity(v)}
+                              style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'9px 12px', borderRadius:10, border:`1.5px solid ${tdeeActivity===v?'#6366f1':'var(--border)'}`, background:tdeeActivity===v?'rgba(99,102,241,0.08)':'var(--bg-surface)', cursor:'pointer', transition:'all 0.2s' }}>
+                              <div>
+                                <div style={{ fontWeight:700, fontSize:13, color:tdeeActivity===v?'#6366f1':'var(--text-primary)' }}>{l}</div>
+                                <div style={{ fontSize:10, color:'var(--text-muted)' }}>{sub}</div>
+                              </div>
+                              <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${tdeeActivity===v?'#6366f1':'var(--border)'}`, background:tdeeActivity===v?'#6366f1':'transparent', flexShrink:0 }}/>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Advanced: body fat */}
+                      <div style={{ marginTop:8 }}>
+                        <button onClick={() => setShowAdvanced(s=>!s)}
+                          style={{ background:'none', border:'none', color:'#6366f1', fontWeight:700, fontSize:12, cursor:'pointer', padding:0 }}>
+                          {showAdvanced ? '▼' : '▶'} Advanced (Προαιρετικό)
+                        </button>
+                        {showAdvanced && (
+                          <div style={{ marginTop:8, background:'var(--bg-surface)', borderRadius:10, padding:'10px 12px' }}>
+                            <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:6 }}>Ποσοστό Λίπους Σώματος % (προαιρετικό)</div>
+                            <input type="number" placeholder="π.χ. 20" value={tdeeBodyFat} onChange={e => setTdeeBodyFat(e.target.value)}
+                              style={{ width:'100%', padding:'8px 12px', borderRadius:8, border:'1.5px solid var(--border)', background:'var(--bg-card)', color:'var(--text-primary)', fontSize:14, boxSizing:'border-box' }}/>
+                            <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:4 }}>Χρησιμοποιείται για ακριβέστερο υπολογισμό (Katch-McArdle)</div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Calculate button */}
+                      <button onClick={calculateTDEE}
+                        style={{ width:'100%', marginTop:12, padding:'12px', background:'linear-gradient(135deg,#10b981,#059669)', color:'#fff', border:'none', borderRadius:12, fontWeight:800, fontSize:15, cursor:'pointer', transition:'all 0.2s' }}>
+                        ⚡ Υπολόγισε
+                      </button>
+
+                      {/* TDEE Results */}
+                      {tdeeResult && (
+                        <div style={{ marginTop:14 }}>
+                          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginBottom:10 }}>
+                            <div style={{ background:'var(--bg-surface)', borderRadius:10, padding:'10px 12px', textAlign:'center' }}>
+                              <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700 }}>BMR</div>
+                              <div style={{ fontSize:20, fontWeight:900, color:'var(--text-primary)' }}>{tdeeResult.bmr}</div>
+                              <div style={{ fontSize:10, color:'var(--text-muted)' }}>kcal/ημέρα</div>
+                            </div>
+                            <div style={{ background:'rgba(99,102,241,0.08)', borderRadius:10, padding:'10px 12px', textAlign:'center', border:'1.5px solid rgba(99,102,241,0.2)' }}>
+                              <div style={{ fontSize:10, color:'#6366f1', fontWeight:700 }}>TDEE</div>
+                              <div style={{ fontSize:20, fontWeight:900, color:'#6366f1' }}>{tdeeResult.tdee}</div>
+                              <div style={{ fontSize:10, color:'var(--text-muted)' }}>kcal/ημέρα</div>
+                            </div>
+                          </div>
+
+                          {/* Goal selection */}
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>Επίλεξε Στόχο</div>
+                          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                            {Object.entries(tdeeResult.goals).map(([k, g]) => (
+                              <div key={k} onClick={() => setTdeeGoal(k)}
+                                style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderRadius:12, border:`2px solid ${tdeeGoal===k ? g.color : 'var(--border)'}`, background:tdeeGoal===k ? `${g.color}14` : 'var(--bg-surface)', cursor:'pointer', transition:'all 0.2s' }}>
+                                <div>
+                                  <div style={{ fontWeight:700, fontSize:13, color:tdeeGoal===k ? g.color : 'var(--text-primary)' }}>{g.label}</div>
+                                  <div style={{ fontSize:10, color:'var(--text-muted)' }}>
+                                    Zigzag: {g.zigzag[0]} / {g.zigzag[1]} kcal εναλλάξ
+                                  </div>
+                                </div>
+                                <div style={{ fontWeight:900, fontSize:18, color: g.color }}>{g.kcal} <span style={{ fontSize:10, fontWeight:600 }}>kcal</span></div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Zigzag 7-day preview */}
+                          {tdeeGoal && (
+                            <div style={{ marginTop:10, background:'var(--bg-surface)', borderRadius:12, padding:'12px 14px' }}>
+                              <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:8 }}>📊 Zigzag Diet — 7 Ημέρες</div>
+                              <div style={{ display:'flex', gap:5 }}>
+                                {tdeeResult.goals[tdeeGoal].zigzag.map((kcal, i) => {
+                                  const isHigh = kcal > tdeeResult.goals[tdeeGoal].kcal;
+                                  return (
+                                    <div key={i} style={{ flex:1, textAlign:'center' }}>
+                                      <div style={{ fontSize:9, color:'var(--text-muted)', marginBottom:3 }}>
+                                        {['Δευ','Τρί','Τετ','Πέμ','Παρ','Σάβ','Κυρ'][i]}
+                                      </div>
+                                      <div style={{ background: isHigh ? 'rgba(99,102,241,0.15)' : 'rgba(16,185,129,0.15)', border:`1px solid ${isHigh?'rgba(99,102,241,0.3)':'rgba(16,185,129,0.3)'}`, borderRadius:8, padding:'6px 2px' }}>
+                                        <div style={{ fontSize:9, fontWeight:800, color: isHigh ? '#6366f1' : '#10b981' }}>{kcal}</div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Persons + Days */}
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
                   <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
                     <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>👥 Άτομα</div>
                     <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                      <button onClick={() => setMealPlanPrefs(p => ({ ...p, persons: Math.max(1, p.persons-1) }))}
-                        style={{ width:30, height:30, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-surface)', cursor:'pointer', fontWeight:800, fontSize:16, color:'var(--text-primary)', display:'flex', alignItems:'center', justifyContent:'center' }}>-</button>
+                      <button onClick={() => setMealPlanPrefs(p => ({ ...p, persons: Math.max(1, p.persons - 1) }))} style={{ width:34, height:34, borderRadius:9, border:'1.5px solid var(--border)', background:'var(--bg-surface)', fontSize:18, cursor:'pointer', fontWeight:700, color:'var(--text-primary)', display:'flex', alignItems:'center', justifyContent:'center' }}>-</button>
                       <span style={{ fontWeight:900, fontSize:22, color:'var(--text-primary)', minWidth:24, textAlign:'center' }}>{mealPlanPrefs.persons}</span>
-                      <button onClick={() => setMealPlanPrefs(p => ({ ...p, persons: Math.min(8, p.persons+1) }))}
-                        style={{ width:30, height:30, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-surface)', cursor:'pointer', fontWeight:800, fontSize:16, color:'var(--text-primary)', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+                      <button onClick={() => setMealPlanPrefs(p => ({ ...p, persons: Math.min(8, p.persons + 1) }))} style={{ width:34, height:34, borderRadius:9, border:'1.5px solid var(--border)', background:'var(--bg-surface)', fontSize:18, cursor:'pointer', fontWeight:700, color:'var(--text-primary)', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
                     </div>
                   </div>
                   <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
@@ -3306,7 +3533,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Budget slider */}
+                {/* Budget */}
                 <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
                     <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>💰 Εβδομαδιαίο Budget</div>
@@ -3314,7 +3541,7 @@ export default function App() {
                   </div>
                   <input type="range" min={20} max={300} step={5} value={mealPlanPrefs.budget}
                     onChange={e => setMealPlanPrefs(p => ({ ...p, budget: +e.target.value }))}
-                    style={{ width:'100%', accentColor:'#6366f1' }} />
+                    style={{ width:'100%', accentColor:'#6366f1' }}/>
                   <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'var(--text-muted)', marginTop:4 }}>
                     <span>20€</span><span>160€</span><span>300€</span>
                   </div>
@@ -3323,13 +3550,8 @@ export default function App() {
                 {/* Goal */}
                 <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
                   <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>🎯 Στόχος</div>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:7 }}>
-                    {[
-                      { k:'balanced', label:'⚖️ Ισορροπία' },
-                      { k:'weightloss', label:'🔥 Αδυνάτισμα' },
-                      { k:'muscle', label:'💪 Μυϊκή Μάζα' },
-                      { k:'budget', label:'🪙 Οικονομία' },
-                    ].map(({ k, label }) => (
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                    {Object.entries({ balanced:'⚖️ Ισορροπία', weightloss:'🔥 Αδυνάτισμα', muscle:'💪 Μυϊκή Μάζα', budget:'💰 Οικονομία' }).map(([k, label]) => (
                       <button key={k} onClick={() => setMealPlanPrefs(p => ({ ...p, goal: k }))}
                         style={{ padding:'10px 8px', borderRadius:10, border:`1.5px solid ${mealPlanPrefs.goal===k?'#6366f1':'var(--border)'}`, background:mealPlanPrefs.goal===k?'rgba(99,102,241,0.1)':'var(--bg-surface)', color:mealPlanPrefs.goal===k?'#6366f1':'var(--text-secondary)', fontWeight:700, fontSize:13, cursor:'pointer', transition:'all 0.2s' }}>{label}</button>
                     ))}
@@ -3339,14 +3561,13 @@ export default function App() {
                 {/* Restrictions */}
                 <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
                   <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>🚫 Διατροφικοί Περιορισμοί</div>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
-                    {['vegan','vegetarian','gluten-free','lactose-free','nut-free'].map(r => {
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                    {[['vegan','🌱 Vegan'],['vegetarian','🥗 Vegetarian'],['gluten-free','🌾 Χωρίς Γλουτένη'],['lactose-free','🥛 Χωρίς Λακτόζη'],['nut-free','🥜 Χωρίς Ξηρούς Καρπούς']].map(([r, label]) => {
                       const active = mealPlanPrefs.restrictions.includes(r);
-                      const labels = { vegan:'🌱 Vegan', vegetarian:'🥗 Vegetarian', 'gluten-free':'🌾 Χωρίς Γλουτένη', 'lactose-free':'🥛 Χωρίς Λακτόζη', 'nut-free':'🥜 Χωρίς Ξηρούς Καρπούς' };
                       return (
-                        <button key={r} onClick={() => toggleMealRestriction(r)}
-                          style={{ padding:'7px 12px', borderRadius:20, border:`1.5px solid ${active?'#6366f1':'var(--border)'}`, background:active?'rgba(99,102,241,0.12)':'var(--bg-surface)', color:active?'#6366f1':'var(--text-secondary)', fontWeight:700, fontSize:12, cursor:'pointer', transition:'all 0.2s' }}>
-                          {labels[r]}
+                        <button key={r} onClick={() => setMealPlanPrefs(p => ({ ...p, restrictions: active ? p.restrictions.filter(x=>x!==r) : [...p.restrictions, r] }))}
+                          style={{ padding:'8px 14px', borderRadius:20, border:`1.5px solid ${active?'#6366f1':'var(--border)'}`, background:active?'rgba(99,102,241,0.1)':'var(--bg-surface)', color:active?'#6366f1':'var(--text-secondary)', fontWeight:700, fontSize:13, cursor:'pointer', transition:'all 0.2s' }}>
+                          {label}
                         </button>
                       );
                     })}
@@ -3354,18 +3575,17 @@ export default function App() {
                 </div>
 
                 {mealPlanError && (
-                  <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, padding:'12px 16px', color:'#ef4444', fontSize:13, fontWeight:600 }}>
+                  <div style={{ background:'rgba(239,68,68,0.08)', border:'1.5px solid rgba(239,68,68,0.25)', borderRadius:12, padding:'12px 14px', color:'#ef4444', fontSize:13 }}>
                     ❌ {mealPlanError}
                   </div>
                 )}
 
                 <button onClick={generateMealPlan} disabled={mealPlanLoading}
-                  style={{ width:'100%', padding:16, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', border:'none', borderRadius:16, fontWeight:800, fontSize:16, cursor:mealPlanLoading?'not-allowed':'pointer', opacity:mealPlanLoading?0.75:1, display:'flex', alignItems:'center', justifyContent:'center', gap:10, transition:'all 0.2s', boxShadow:'0 4px 24px rgba(99,102,241,0.35)' }}>
-                  {mealPlanLoading ? (
-                    <><div style={{ width:20, height:20, border:'2.5px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.85s linear infinite' }}/> Δημιουργώ πλάνο...</>
-                  ) : (
-                    <><IconSparkles size={20} stroke={2}/> Δημιούργησε Πλάνο Διατροφής</>
-                  )}
+                  style={{ width:'100%', padding:16, background:mealPlanLoading?'var(--bg-surface)':'linear-gradient(135deg,#6366f1,#8b5cf6)', color:mealPlanLoading?'var(--text-secondary)':'#fff', border:'none', borderRadius:16, fontWeight:800, fontSize:16, cursor:mealPlanLoading?'not-allowed':'pointer', opacity:mealPlanLoading?0.75:1, display:'flex', alignItems:'center', justifyContent:'center', gap:10, transition:'all 0.2s', boxShadow:mealPlanLoading?'none':'0 4px 24px rgba(99,102,241,0.35)' }}>
+                  {mealPlanLoading
+                    ? <><div style={{ width:20, height:20, border:'2.5px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.85s linear infinite' }}/> Δημιουργώ πλάνο...</>
+                    : <><IconSparkles size={20} stroke={2}/> Δημιούργησε Πλάνο Διατροφής</>
+                  }
                 </button>
               </div>
             ) : (
@@ -3512,6 +3732,7 @@ export default function App() {
       </div>
     </div>
   );
+}
 
 // ─── SplitBillModal — OUTSIDE App component to prevent re-mount every second ──
 function SplitBillModal({
@@ -3530,9 +3751,15 @@ function SplitBillModal({
   const totalAmount = items.reduce((s, i) => s + (i.price > 0 ? i.price : 0), 0);
   const splitCount  = selectedSplitPartners.length + 1;
 
+  // Lock body scroll while modal is open — prevents main menu scrolling behind
+  useEffect(() => {
+    document.body.classList.add('split-modal-open');
+    return () => document.body.classList.remove('split-modal-open');
+  }, []);
+
 
   return createPortal(
-    <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.65)', backdropFilter:'blur(8px)' }}
+    <div className="split-overlay-enter" style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.65)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)' }}
       onClick={e => { if (e.target === e.currentTarget) setShowSplitModal(false); }}>
       <div className="split-panel-enter" style={{ width:'100%', maxWidth:520, maxHeight:'92vh', overflowY:'auto', background:'var(--bg-card)', borderRadius:'24px 24px 0 0', padding:'0 0 32px 0', boxShadow:'0 -8px 60px rgba(99,102,241,0.25), 0 -2px 24px rgba(0,0,0,0.4)' }}>
 
@@ -3990,6 +4217,4 @@ function AddPartnerModal({
     </div>,
     document.body
   );
-}
-
 }
