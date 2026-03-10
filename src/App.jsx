@@ -1886,6 +1886,11 @@ export default function App() {
 
   const [showSmartShopping, setShowSmartShopping] = useState(false);
 
+  // ── Daily Streak ───────────────────────────────────────────────────────────
+  const [streak,          setStreak]          = useState(0);
+  const [streakToast,     setStreakToast]      = useState('');
+  const [isNewStreakRecord, setIsNewStreakRecord] = useState(false);
+
   const storeOptions  = ['Όλα','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
   const searchTimeout = useRef(null);
 
@@ -1981,6 +1986,33 @@ export default function App() {
     window.addEventListener('offline', offlineH);
     window.addEventListener('online', onlineH);
     return () => { window.removeEventListener('offline', offlineH); window.removeEventListener('online', onlineH); };
+  }, []);
+
+  // ── Daily Streak ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const stored = JSON.parse(localStorage.getItem('sg_streak') || '{"count":0,"lastDate":"","best":0}');
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    let newCount = stored.count;
+    let isRecord = false;
+    if (stored.lastDate === today) {
+      newCount = stored.count;
+    } else if (stored.lastDate === yesterday) {
+      newCount = stored.count + 1;
+    } else {
+      newCount = 1;
+    }
+    const newBest = Math.max(stored.best || 0, newCount);
+    if (newCount > (stored.best || 0) && newCount > 1) isRecord = true;
+    localStorage.setItem('sg_streak', JSON.stringify({ count: newCount, lastDate: today, best: newBest }));
+    setStreak(newCount);
+    setIsNewStreakRecord(isRecord);
+    if (isRecord && newCount >= 3) {
+      setTimeout(() => {
+        setStreakToast(`🔥 ${newCount} μέρες streak! Νέο ρεκόρ!`);
+        setTimeout(() => setStreakToast(''), 3000);
+      }, 1200);
+    }
   }, []);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
@@ -2309,15 +2341,39 @@ export default function App() {
   };
 
   // ── Voice ──────────────────────────────────────────────────────────────────
+  const voiceRecRef = useRef(null);
   const handleVoiceClick = () => {
+    // Stop if already listening
+    if (isListening) {
+      voiceRecRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert('Δεν υποστηρίζεται φωνητική εισαγωγή.'); return; }
+    if (!SR) {
+      setNotification({ show: true, message: '❌ Η φωνητική εισαγωγή δεν υποστηρίζεται στον browser σου' });
+      return;
+    }
     const r = new SR();
-    r.lang     = 'el-GR';
+    r.lang = 'el-GR';
+    r.continuous = false;
+    r.interimResults = false;
+    voiceRecRef.current = r;
     r.onstart  = () => setIsListening(true);
-    r.onresult = (e) => { const t = e.results[0][0].transcript; setInputValue(t); triggerSearch(t, selectedStore); };
-    r.onend    = () => setIsListening(false);
-    r.start();
+    r.onresult = (e) => {
+      const t = e.results[0][0].transcript;
+      setInputValue(t);
+      setNotification({ show: true, message: `🎙️ "${t}"` });
+      if (user) triggerSearch(t, selectedStore);
+    };
+    r.onerror = () => {
+      setIsListening(false);
+      setNotification({ show: true, message: '❌ Σφάλμα αναγνώρισης φωνής' });
+    };
+    r.onend = () => setIsListening(false);
+    try { r.start(); } catch { setIsListening(false); }
+    // Haptic feedback on mobile
+    if (navigator.vibrate) navigator.vibrate(30);
   };
 
   // ── Recipe → list (multi-strategy + parallel batch) ───────────────────────
@@ -2919,14 +2975,34 @@ export default function App() {
 
         {/* ── Header ── */}
         <header className="app-header">
-          <div className="header-top">
-            <div className="datetime-display">
+          
+          {/* Πάνω: Ώρα, Ημερομηνία & Streak κεντραρισμένα */}
+          <div className="header-clock-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+            <div className="datetime-display" style={{ maxWidth: '240px', margin: '0 auto' }}>
               <div className="current-date">{timeGreeting} {timeIcon}</div>
               <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'long', day:'numeric', month:'long' })}</div>
               <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit' })}</div>
             </div>
+
+            {/* Streak Badge */}
+            {streak >= 2 && (
+              <div
+                className={`streak-badge${isNewStreakRecord ? ' new-record' : ''}`}
+                title={`${streak} μέρες στη σειρά! Καλύτερο: ${JSON.parse(localStorage.getItem('sg_streak')||'{}').best || streak}`}
+              >
+                🔥 <span>{streak}</span>
+              </div>
+            )}
           </div>
-          <div className="header-actions">
+
+          {/* Τίτλος */}
+          <h1 style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text", textAlign: 'center', marginTop: '15px' }}>
+            Smart Grocery Hub
+          </h1>
+
+          {/* Κάτω: Κουμπιά κεντραρισμένα σε νέα σειρά */}
+          <div className="header-actions-row">
+            <div className="header-actions">
               {!isOnline && (
                 <div style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:700, color:'#ef4444' }}>
                   📡 Offline
@@ -2957,6 +3033,7 @@ export default function App() {
                   }}>{friends.length}</span>
                 )}
               </div>
+
               {/* Chat Button */}
               {user && friends.length > 0 && (
                 <div className="action-btn-new" style={{ position:'relative' }} onClick={() => setShowChatPanel(true)} title="Chat Καλαθιού">
@@ -2983,7 +3060,9 @@ export default function App() {
 
               {user ? (
                 <div style={{ position:'relative' }}>
-                  <div className="action-btn-new" onClick={() => setShowProfileMenu(v => !v)} title={user.name}><IconUser size={20} stroke={1.8} /></div>
+                  <div className="action-btn-new" onClick={() => setShowProfileMenu(v => !v)} title={user.name}>
+                    <IconUser size={20} stroke={1.8} />
+                  </div>
                   {showProfileMenu && (
                     <>
                       <div style={{ position:'fixed', inset:0, zIndex:99 }} onClick={() => setShowProfileMenu(false)} />
@@ -3002,10 +3081,12 @@ export default function App() {
                   )}
                 </div>
               ) : (
-                <div className="action-btn-new" onClick={() => setShowAuthModal(true)} title="Σύνδεση"><IconLock size={20} stroke={1.8} /></div>
+                <div className="action-btn-new" onClick={() => setShowAuthModal(true)} title="Σύνδεση">
+                  <IconLock size={20} stroke={1.8} />
+                </div>
               )}
             </div>
-            <h1 style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>Smart Grocery Hub</h1>
+          </div>
         </header>
         
 
@@ -3017,7 +3098,7 @@ export default function App() {
             ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Plan'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
           ].map(([tab, label]) => (
-            <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)} style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => { setActiveTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ display:'flex', alignItems:'center', gap:5 }}>
               {label}
             </button>
           ))}
@@ -3185,8 +3266,29 @@ export default function App() {
               <div className="empty-cart-state">
                 <span className="empty-cart-icon">🛒</span>
                 <h3>Η λίστα είναι άδεια</h3>
-                <p>{user ? 'Αναζήτησε προϊόντα παραπάνω ή πρόσθεσε υλικά από μια συνταγή.' : 'Γράψε ό,τι χρειάζεσαι και πάτα + για να το προσθέσεις.'}</p>
-                {!user && <button className="locked-unlock-btn" style={{ marginTop:'16px' }} onClick={() => setShowAuthModal(true)}>Σύνδεση για τιμές, συνταγές & άλλα</button>}
+                <p style={{ marginBottom: 18 }}>
+                  {user
+                    ? 'Αναζήτησε προϊόντα παραπάνω ή χρησιμοποίησε 🎤 για φωνητική εισαγωγή'
+                    : 'Γράψε ό,τι χρειάζεσαι και πάτα + για να το προσθέσεις'}
+                </p>
+                {/* Quick-add suggestions */}
+                <div style={{ display:'flex', flexWrap:'wrap', gap:7, justifyContent:'center', marginBottom: user ? 0 : 16 }}>
+                  {['🥛 Γάλα','🍞 Ψωμί','🥚 Αυγά','🍌 Μπανάνες','🧀 Τυρί'].map(chip => {
+                    const name = chip.split(' ').slice(1).join(' ');
+                    return (
+                      <button key={chip}
+                        onClick={() => {
+                          if (user) { setInputValue(name); document.querySelector('.search-input')?.focus(); }
+                          else { setItems(prev => [...prev, { id: Date.now()+Math.random(), text:name, price:0, store:'', quantity:1, category: getCategory(name) }]); if(navigator.vibrate) navigator.vibrate(20); }
+                        }}
+                        style={{ padding:'7px 13px', background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:20, fontSize:13, fontWeight:600, cursor:'pointer', color:'var(--text-primary)', fontFamily:'var(--font)', transition:'all 0.22s cubic-bezier(0.34,1.56,0.64,1)' }}
+                        onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px) scale(1.06)'; e.currentTarget.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';}}
+                        onMouseLeave={e=>{e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow='';}}
+                      >{chip}</button>
+                    );
+                  })}
+                </div>
+                {!user && <button className="locked-unlock-btn" style={{ marginTop:'4px' }} onClick={() => setShowAuthModal(true)}>Σύνδεση για τιμές, συνταγές & άλλα</button>}
               </div>
             ) : (
               <div className="categories-container">
@@ -3333,7 +3435,7 @@ export default function App() {
 
         {/* ════ AI MEAL PLANNER TAB ════ */}
         {activeTab === 'mealplan' && (
-          <div className="tab-content" style={{ animation: 'slideUpFadeIn 0.35s ease forwards' }}>
+          <div className="tab-content">
 
             {/* ── Hero banner ── */}
             <div style={{ background:'linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#a78bfa 100%)', borderRadius:20, padding:'22px 20px', marginBottom:18, position:'relative', overflow:'hidden' }}>

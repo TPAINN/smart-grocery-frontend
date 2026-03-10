@@ -271,40 +271,7 @@ body.dark-mode .dropdown-item.logout:hover { background: rgba(239,68,68,.1); }
   transition: background 0.4s var(--ease);
 }
 
-.tab-btn {
-  flex: 1;
-  padding: 10px 4px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-weight: 700;
-  font-family: var(--font);
-  border-radius: var(--radius-xs);
-  cursor: pointer;
-  font-size: 13px;
-  letter-spacing: 0.1px;
-  position: relative;
-  transition:
-    color      0.28s var(--ease),
-    background 0.2s var(--ease),
-    box-shadow 0.32s var(--ease),
-    transform  0.34s var(--spring);
-  -webkit-user-select: none; user-select: none;
-}
-
-.tab-btn.active {
-  background: var(--bg-container);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-
-.tab-btn:not(.active):hover {
-  color: var(--text-primary);
-  background: var(--bg-chip-hover);
-}
-
-.tab-btn:active { transform: scale(0.95) !important; }
+/* .tab-btn → defined in Premium UI section below */
 
 /* ── BUDGET BANNER ─────────────────────────────────────── */
 .budget-banner {
@@ -621,12 +588,12 @@ body.dark-mode .budget-banner {
   animation: fadeUp 0.6s var(--smooth) forwards;
   opacity: 0;
 }
-.category-group:nth-child(1) { animation-delay: .06s; }
-.category-group:nth-child(2) { animation-delay: .28s; }
-.category-group:nth-child(3) { animation-delay: .22s; }
-.category-group:nth-child(4) { animation-delay: .30s; }
-.category-group:nth-child(5) { animation-delay: .38s; }
-.category-group:nth-child(6) { animation-delay: .46s; }
+.category-group:nth-child(1) { animation-delay: 0.05s; }
+.category-group:nth-child(2) { animation-delay: 0.12s; }
+.category-group:nth-child(3) { animation-delay: 0.19s; }
+.category-group:nth-child(4) { animation-delay: 0.26s; }
+.category-group:nth-child(5) { animation-delay: 0.33s; }
+.category-group:nth-child(6) { animation-delay: 0.40s; }
 
 .category-title {
   font-size: 11px;
@@ -672,13 +639,14 @@ body.dark-mode .budget-banner {
   background: var(--bg-card);
 }
 
-/* Stagger item animations */
-.grocery-list .item-card:nth-child(1) { animation-delay: .32s; }
-.grocery-list .item-card:nth-child(2) { animation-delay: .32s; }
-.grocery-list .item-card:nth-child(3) { animation-delay: .48s; }
-.grocery-list .item-card:nth-child(4) { animation-delay: .32s; }
-.grocery-list .item-card:nth-child(5) { animation-delay: .40s; }
-.grocery-list .item-card:nth-child(n+6) { animation-delay: .48s; }
+/* Stagger item animations — natural cascade */
+.grocery-list .item-card:nth-child(1)    { animation-delay: 0.04s; }
+.grocery-list .item-card:nth-child(2)    { animation-delay: 0.09s; }
+.grocery-list .item-card:nth-child(3)    { animation-delay: 0.14s; }
+.grocery-list .item-card:nth-child(4)    { animation-delay: 0.19s; }
+.grocery-list .item-card:nth-child(5)    { animation-delay: 0.24s; }
+.grocery-list .item-card:nth-child(6)    { animation-delay: 0.29s; }
+.grocery-list .item-card:nth-child(n+7)  { animation-delay: 0.34s; }
 
 .item-content { flex: 1; min-width: 0; }
 
@@ -3354,29 +3322,11 @@ button[title="Κλείσιμο"], button[title="Κλείσε"], button[aria-labe
   transition-duration: 0.08s !important;
 }
 
-/* ── Tab buttons ───────────────────────────────────────────────────────────── */
-.tab-btn {
-  transition:
-    color        0.28s ease,
-    background   0.28s ease,
-    transform    0.32s var(--spring-bouncy),
-    box-shadow   0.28s ease !important;
-}
-.tab-btn:not(.active):hover {
-  transform: translateY(-2px) scale(1.03) !important;
-}
-.tab-btn:active {
-  transform: scale(0.93) !important;
-  transition-duration: 0.08s !important;
-}
-.tab-btn.active {
-  animation: tabActiveBounce 0.4s var(--spring-bouncy);
-}
+/* ── Tab bounce keyframe (used by .active) ──────────────────────────────── */
 @keyframes tabActiveBounce {
   0%   { transform: scale(1); }
-  35%  { transform: scale(1.1); }
-  60%  { transform: scale(0.96); }
-  80%  { transform: scale(1.03); }
+  35%  { transform: scale(1.08); }
+  65%  { transform: scale(0.97); }
   100% { transform: scale(1); }
 }
 
@@ -3674,5 +3624,283 @@ body.split-modal-open {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+   PREMIUM OVERHAUL — Smooth & Addictive UI
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Global will-change hints (only where it matters) ─────────────────── */
+.item-card, .recipe-card, .action-btn-new, .tab-btn, .store-chip,
+.voice-btn, .add-btn, .send-friend-btn, .delete-btn {
+  will-change: transform;
+}
+
+/* ── Item card — premium hover ────────────────────────────────────────── */
+.item-card {
+  transition:
+    transform    0.28s cubic-bezier(0.34,1.56,0.64,1),
+    box-shadow   0.24s ease,
+    border-color 0.18s ease,
+    background   0.18s ease !important;
+}
+.item-card:not(.swiping):hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 22px rgba(0,0,0,0.1) !important;
+  border-color: var(--border-strong) !important;
+}
+
+/* ── itemSlideIn — cleaner spring ─────────────────────────────────────── */
+@keyframes itemSlideIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* ── Action buttons — crisp feedback ─────────────────────────────────── */
+.action-btn-new:hover {
+  transform: translateY(-3px) scale(1.06) !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.13) !important;
+  background: var(--bg-chip-hover) !important;
+  border-color: var(--border-strong) !important;
+}
+.action-btn-new:active {
+  transform: scale(0.88) !important;
+  box-shadow: none !important;
+  transition-duration: 0.07s !important;
+}
+
+/* ── Recipe cards ─────────────────────────────────────────────────────── */
+.recipe-card:hover {
+  transform: translateY(-4px) scale(1.015) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.14) !important;
+}
+.recipe-card:active {
+  transform: scale(0.96) !important;
+  transition-duration: 0.07s !important;
+}
+
+/* ── Shimmer skeleton ─────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle) 25%,
+    var(--bg-chip-hover) 50%,
+    var(--bg-subtle) 75%
+  ) !important;
+  background-size: 600px 100% !important;
+  animation: skeletonWave 1.5s ease-in-out infinite !important;
+  border-radius: 8px;
+}
+@keyframes skeletonWave {
+  0%   { background-position: -300px 0; }
+  100% { background-position:  300px 0; }
+}
+
+/* ── Tab content entry ────────────────────────────────────────────────── */
+.tab-content {
+  animation: tabEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+@keyframes tabEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Submit/action buttons ────────────────────────────────────────────── */
+.submit-btn:not(:disabled):hover {
+  transform: translateY(-2px) !important;
+  filter: brightness(1.08) !important;
+  box-shadow: 0 6px 20px rgba(99,102,241,0.32) !important;
+}
+.submit-btn:active {
+  transform: scale(0.96) !important;
+  transition-duration: 0.07s !important;
+}
+
+/* ── Voice btn upgrade ────────────────────────────────────────────────── */
+.voice-btn {
+  transition:
+    transform    0.28s cubic-bezier(0.34,1.56,0.64,1),
+    background   0.2s ease,
+    border-color 0.2s ease,
+    box-shadow   0.22s ease !important;
+}
+.voice-btn:hover {
+  transform: translateY(-2px) scale(1.06) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12) !important;
+}
+.voice-btn:active {
+  transform: scale(0.88) !important;
+  transition-duration: 0.07s !important;
+}
+.voice-btn.listening {
+  background: rgba(239,68,68,0.1) !important;
+  border-color: rgba(239,68,68,0.6) !important;
+  animation: voiceRing 1.3s ease-in-out infinite !important;
+}
+@keyframes voiceRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); transform: scale(1); }
+  50%      { box-shadow: 0 0 0 7px rgba(239,68,68,0); transform: scale(1.05); }
+}
+
+/* ── Streak badge ─────────────────────────────────────────────────────── */
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, rgba(249,115,22,0.12), rgba(234,179,8,0.08));
+  border: 1px solid rgba(249,115,22,0.25);
+  border-radius: 20px;
+  padding: 5px 11px 5px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ea580c;
+  cursor: default;
+  animation: streakIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  white-space: nowrap;
+}
+.streak-badge.new-record {
+  animation: streakGlow 0.6s cubic-bezier(0.34,1.56,0.64,1) both,
+             streakShine 2s ease-in-out 0.6s infinite;
+}
+@keyframes streakIn {
+  from { opacity: 0; transform: scale(0.7) rotate(-5deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes streakGlow {
+  0%  { box-shadow: 0 0 0 0 rgba(249,115,22,0.6); }
+  60% { box-shadow: 0 0 0 10px rgba(249,115,22,0); }
+  100%{ box-shadow: none; }
+}
+@keyframes streakShine {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.2); }
+}
+
+/* ── Streak unlock toast ──────────────────────────────────────────────── */
+.streak-toast {
+  position: fixed;
+  top: 80px; left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #f97316, #eab308);
+  color: #fff;
+  border-radius: 28px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 800;
+  z-index: 9999;
+  box-shadow: 0 8px 30px rgba(249,115,22,0.4);
+  animation: streakToastIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards,
+             streakToastOut 0.4s ease 2.5s forwards;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+@keyframes streakToastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.85); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+@keyframes streakToastOut {
+  to { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+}
+
+/* ── Header upgrade ───────────────────────────────────────────────────── */
+.header-actions {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+}
+
+/* ── Modal overlays — faster blur ─────────────────────────────────────── */
+.modal-overlay, .welcome-overlay {
+  backdrop-filter: blur(18px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+}
+
+/* ── Swipe delete/send buttons — micro-bounce ─────────────────────────── */
+.send-friend-btn:hover {
+  transform: translateY(-2px) scale(1.1) !important;
+}
+.delete-btn:hover {
+  transform: translateY(-2px) scale(1.1) !important;
+}
+.send-friend-btn:active, .delete-btn:active {
+  transform: scale(0.87) !important;
+  transition-duration: 0.07s !important;
+}
+
+/* ── Focus ring — consistent across inputs ────────────────────────────── */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2.5px rgba(99,102,241,0.22) !important;
+  border-color: rgba(99,102,241,0.45) !important;
+}
+
+/* ── Empty state upgrade ──────────────────────────────────────────────── */
+.empty-cart-state {
+  animation: emptyIn 0.45s cubic-bezier(0.16,1,0.3,1) both !important;
+}
+@keyframes emptyIn {
+  from { opacity: 0; transform: scale(0.95) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.empty-cart-state .empty-icon {
+  animation: floatIcon 3.5s ease-in-out infinite, emptyIconIn 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+}
+@keyframes emptyIconIn {
+  from { opacity:0; transform: scale(0.5) rotate(-10deg); }
+  to   { opacity:1; transform: scale(1) rotate(0); }
+}
+
+/* ── Smart Shopping panel entry ───────────────────────────────────────── */
+@keyframes shoppingPanelIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.smart-shopping-enter {
+  animation: shoppingPanelIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+/* ── Notification toast — better ─────────────────────────────────────── */
+.notification-bar {
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease !important;
+}
+
+/* ── Haptic-feel on add-btn ───────────────────────────────────────────── */
+.add-btn {
+  transition:
+    transform    0.25s cubic-bezier(0.34,1.56,0.64,1),
+    background   0.18s ease,
+    box-shadow   0.2s ease !important;
+}
+.add-btn:hover {
+  transform: translateY(-2px) scale(1.05) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
+}
+.add-btn:active {
+  transform: scale(0.88) !important;
+  transition-duration: 0.07s !important;
+}
+
+/* ── Progress bars — smooth ───────────────────────────────────────────── */
+.progress-fill {
+  transition: width 0.6s cubic-bezier(0.16,1,0.3,1) !important;
+}
+
+/* ── Chip hover (search chips etc) ───────────────────────────────────── */
+.chip:hover, .filter-chip:hover {
+  transform: translateY(-1px) scale(1.03) !important;
+}
+.chip:active, .filter-chip:active {
+  transform: scale(0.93) !important;
+  transition-duration: 0.07s !important;
+}
+
+/* ── Reduce motion — respect user preferences ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
