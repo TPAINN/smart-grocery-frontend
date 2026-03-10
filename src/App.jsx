@@ -1873,7 +1873,7 @@ export default function App() {
   });
 
   // TDEE Calculator state
-  const [tdeeAge,      setTdeeAge]      = useState(30);
+  const [tdeeAge,      setTdeeAge]      = useState('22-28');  // age range
   const [tdeeGender,   setTdeeGender]   = useState('male');
   const [tdeeHeight,   setTdeeHeight]   = useState(175);
   const [tdeeWeight,   setTdeeWeight]   = useState(75);
@@ -2396,7 +2396,17 @@ export default function App() {
   // ── Meal Plan functions ────────────────────────────────────────────────────
   // TDEE Calculator (Mifflin-St Jeor)
   const calculateTDEE = () => {
-    const w = parseFloat(tdeeWeight), h = parseFloat(tdeeHeight), a = parseFloat(tdeeAge);
+    const w = parseFloat(tdeeWeight), h = parseFloat(tdeeHeight);
+    // Use midpoint of selected age range
+    const ageStr = String(tdeeAge);
+    let a;
+    if (ageStr === '65+') { a = 68; }
+    else {
+      const ageParts = ageStr.split('-');
+      a = ageParts.length === 2
+        ? (parseFloat(ageParts[0]) + parseFloat(ageParts[1])) / 2
+        : parseFloat(ageStr);
+    }
     if (!w || !h || !a) return;
     // BMR
     const bmr = tdeeGender === 'male'
@@ -3004,7 +3014,7 @@ export default function App() {
           {[
             ['list', <><IconShoppingCart size={16} stroke={2}/> Λίστα</>, 'Λίστα'],
             ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
-            ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Chef</>, 'AI Chef'],
+            ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Chef'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
           ].map(([tab, label]) => (
             <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)} style={{ display:'flex', alignItems:'center', gap:5 }}>
@@ -3368,10 +3378,13 @@ export default function App() {
                       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12 }}>
                         <div>
                           <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:6 }}>ΗΛΙΚΙΑ</div>
-                          <div style={{ display:'flex', alignItems:'center', gap:6, background:'var(--bg-surface)', borderRadius:10, padding:'8px 12px' }}>
-                            <button onClick={() => setTdeeAge(a => Math.max(15, a-5))} style={{ background:'var(--bg-card)', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', fontWeight:800, fontSize:16, color:'var(--text-primary)' }}>-</button>
-                            <span style={{ fontWeight:800, fontSize:16, flex:1, textAlign:'center', color:'var(--text-primary)' }}>{tdeeAge}</span>
-                            <button onClick={() => setTdeeAge(a => Math.min(80, a+5))} style={{ background:'var(--bg-card)', border:'none', borderRadius:6, width:28, height:28, cursor:'pointer', fontWeight:800, fontSize:16, color:'var(--text-primary)' }}>+</button>
+                          <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                            {[['15-18','15–18'], ['18-22','18–22'], ['22-28','22–28'], ['28-35','28–35'], ['35-45','35–45'], ['45-55','45–55'], ['55-65','55–65'], ['65+','65+']].map(([val, label]) => (
+                              <button key={val} onClick={() => setTdeeAge(val)}
+                                style={{ padding:'7px 10px', borderRadius:8, border:`1.5px solid ${tdeeAge===val?'#6366f1':'var(--border)'}`, background:tdeeAge===val?'rgba(99,102,241,0.12)':'var(--bg-surface)', color:tdeeAge===val?'#6366f1':'var(--text-secondary)', fontWeight:700, fontSize:12, cursor:'pointer', transition:'all 0.18s', textAlign:'left' }}>
+                                {label} <span style={{ fontSize:10, color:'var(--text-muted)' }}>χρονών</span>
+                              </button>
+                            ))}
                           </div>
                         </div>
                         <div>
