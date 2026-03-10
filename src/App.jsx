@@ -2972,7 +2972,7 @@ export default function App() {
               )}
 
               {/* Split Bill Button */}
-              <div className="action-btn-new" onClick={openSplitModal} title="Split the Bill" className={showSplitModal ? 'split-btn-open' : ''} style={{ position:'relative', background: showSplitModal ? 'rgba(99,102,241,0.15)' : undefined, border: showSplitModal ? '1.5px solid rgba(99,102,241,0.4)' : undefined, boxShadow: showSplitModal ? '0 0 0 3px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.15)' : undefined }}>
+              <div className={`action-btn-new${showSplitModal ? ' split-btn-open' : ''}`} onClick={openSplitModal} title="Split the Bill" style={{ position:'relative', background: showSplitModal ? 'rgba(99,102,241,0.15)' : undefined, border: showSplitModal ? '1.5px solid rgba(99,102,241,0.4)' : undefined, boxShadow: showSplitModal ? '0 0 0 3px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.15)' : undefined }}>
                 <IconCreditCard size={20} stroke={1.8} />
               </div>
 
@@ -3014,7 +3014,7 @@ export default function App() {
           {[
             ['list', <><IconShoppingCart size={16} stroke={2}/> Λίστα</>, 'Λίστα'],
             ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
-            ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Chef'],
+            ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Plan'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
           ].map(([tab, label]) => (
             <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)} style={{ display:'flex', alignItems:'center', gap:5 }}>
@@ -3382,7 +3382,7 @@ export default function App() {
                             {[['15-18','15–18'], ['18-22','18–22'], ['22-28','22–28'], ['28-35','28–35'], ['35-45','35–45'], ['45-55','45–55'], ['55-65','55–65'], ['65+','65+']].map(([val, label]) => (
                               <button key={val} onClick={() => setTdeeAge(val)}
                                 style={{ padding:'7px 10px', borderRadius:8, border:`1.5px solid ${tdeeAge===val?'#6366f1':'var(--border)'}`, background:tdeeAge===val?'rgba(99,102,241,0.12)':'var(--bg-surface)', color:tdeeAge===val?'#6366f1':'var(--text-secondary)', fontWeight:700, fontSize:12, cursor:'pointer', transition:'all 0.18s', textAlign:'left' }}>
-                                {label} <span style={{ fontSize:10, color:'var(--text-muted)' }}>χρονών</span>
+                                {label} <span style={{ fontSize:10, color:'var(--text-muted)' }}>χρόνων</span>
                               </button>
                             ))}
                           </div>
