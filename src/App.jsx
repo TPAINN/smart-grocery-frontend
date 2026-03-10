@@ -5,6 +5,8 @@ import './App.css';
 import RecipeNotification from './RecipeNotification';
 import AuthModal from './AuthModal';
 import SavedListsModal from './SavedListsModal';
+import SmartRouteMap, { FloatingMapButton } from './SmartRouteMap';
+import './SmartRouteMap.css';
 import { io } from 'socket.io-client';
 import {
   IconShoppingCart, IconQrcode, IconUsers, IconMessage,
@@ -1857,6 +1859,7 @@ export default function App() {
   const [expandedRecipe, setExpandedRecipe] = useState(null);
   const [fridgeQuery, setFridgeQuery]     = useState('');
   const [showScanner, setShowScanner]     = useState(false);
+  const [showSmartRoute, setShowSmartRoute] = useState(false);
   const [currentTime, setCurrentTime]     = useState(new Date());
   const [isOnline, setIsOnline]           = useState(() => navigator.onLine);
   const [wasOffline, setWasOffline]       = useState(false);
@@ -2777,6 +2780,11 @@ export default function App() {
     } catch { setNotification({ show: true, message: '❌ Σφάλμα σύνδεσης.' }); }
     setSplitLoading(false);
   };
+
+  // ── Smart Route: count unique stores in user's list ──────────────────────
+  const uniqueStoresInList = [...new Set(
+    items.filter(i => i.store && i.store !== 'Άγνωστο').map(i => i.store)
+  )].length;
 
   const openSplitModal = () => {
     if (!user) { setNotification({ show: true, message: '⚠️ Συνδέσου πρώτα.' }); return; }
@@ -3846,6 +3854,17 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* ── Smart Route — Floating button + Fullscreen map ── */}
+      <FloatingMapButton
+        onClick={() => setShowSmartRoute(true)}
+        itemCount={uniqueStoresInList}
+      />
+      <SmartRouteMap
+        isOpen={showSmartRoute}
+        onClose={() => setShowSmartRoute(false)}
+        items={items}
+      />
     </div>
   );
 }
