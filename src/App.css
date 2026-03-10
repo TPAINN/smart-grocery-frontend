@@ -3477,10 +3477,10 @@ button[title="Κλείσιμο"], button[title="Κλείσε"], button[aria-labe
    ════════════════════════════════════════════════════════════════════════════ */
 
 /* Lock body scroll when split modal is open */
+/* Lock body scroll when split modal is open — position/top handled by JS to prevent scroll jump */
 body.split-modal-open {
   overflow: hidden !important;
-  position: fixed;
-  width: 100%;
+  /* position: fixed and top are set dynamically by JS to preserve scroll position */
 }
 
 /* The panel slides up from bottom — ONE-TIME on mount */

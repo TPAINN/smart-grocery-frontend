@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import './App.css';
@@ -2110,9 +2110,10 @@ export default function App() {
 
   // ── Clock ──────────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (showSplitModal) return; // ← pause clock while split modal is open (prevents re-renders)
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [showSplitModal]);
 
   // ── Recipes ────────────────────────────────────────────────────────────────
   const fetchRecipes = useCallback(async () => {
@@ -3849,8 +3850,8 @@ export default function App() {
   );
 }
 
-// ─── SplitBillModal — OUTSIDE App component to prevent re-mount every second ──
-function SplitBillModal({
+// ─── SplitBillModal — OUTSIDE App + memo'd to prevent re-render from App's 1s timer ──
+const SplitBillModal = memo(function SplitBillModal({
   items, friends, user,
   splitStep, setSplitStep,
   splitSession, setSplitSession,
@@ -3868,8 +3869,20 @@ function SplitBillModal({
 
   // Lock body scroll while modal is open — prevents main menu scrolling behind
   useEffect(() => {
+    const scrollY = window.scrollY;
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
     document.body.classList.add('split-modal-open');
-    return () => document.body.classList.remove('split-modal-open');
+    return () => {
+      document.body.classList.remove('split-modal-open');
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
   }, []);
 
 
@@ -4203,11 +4216,11 @@ function SplitBillModal({
     </div>,
     document.body
   );
-}
+});
 
 
-// ─── AddPartnerModal — outside App to prevent re-mount ──────────────────────
-function AddPartnerModal({
+// ─── AddPartnerModal — outside App + memo'd to prevent re-mount ──────────────────────
+const AddPartnerModal = memo(function AddPartnerModal({
   friends, starredPartners, splitLoading,
   addPartnerUsername, setAddPartnerUsername,
   addPartnerNickname, setAddPartnerNickname,
@@ -4332,4 +4345,4 @@ function AddPartnerModal({
     </div>,
     document.body
   );
-}
+});
