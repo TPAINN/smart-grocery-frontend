@@ -7,7 +7,11 @@ import {
   IconRoute, IconCurrentLocation, IconChevronDown,
   IconChevronUp, IconClock, IconWalk, IconCar,
   IconShoppingCart, IconRefresh, IconAlertTriangle,
-  IconCheck, IconMapPin, IconLoader2,
+  IconCheck, IconMapPin, IconLoader2, IconBike,
+  IconNavigation, IconArrowUpRight,
+  IconArrowRight, IconArrowLeft,
+  IconArrowBearRight, IconArrowBearLeft,
+  IconArrowRoundaboutRight, IconFlag,
 } from '@tabler/icons-react';
 
 // ─── Greek supermarket chains ────────────────────────────────────────────────
@@ -103,6 +107,77 @@ const fmtDist = (m) => {
   return m < 1000 ? `${Math.round(m)}μ` : `${(m/1000).toFixed(1)}χλμ`;
 };
 
+// ─── OSRM maneuver → icon + Greek text ──────────────────────────────────────
+const MANEUVER_MAP = {
+  'turn-right':        { icon: IconArrowRight,           text: 'Στρίψε δεξιά' },
+  'turn-left':         { icon: IconArrowLeft,            text: 'Στρίψε αριστερά' },
+  'turn-slight-right': { icon: IconArrowBearRight,       text: 'Ελαφρά δεξιά' },
+  'turn-slight-left':  { icon: IconArrowBearLeft,        text: 'Ελαφρά αριστερά' },
+  'turn-sharp-right':  { icon: IconArrowRight,           text: 'Απότομη στροφή δεξιά' },
+  'turn-sharp-left':   { icon: IconArrowLeft,            text: 'Απότομη στροφή αριστερά' },
+  'straight':          { icon: IconArrowUpRight,         text: 'Συνέχισε ευθεία' },
+  'depart':            { icon: IconNavigation,           text: 'Ξεκίνα' },
+  'arrive':            { icon: IconFlag,                 text: 'Έφτασες' },
+  'roundabout':        { icon: IconArrowRoundaboutRight, text: 'Μπες στον κυκλικό κόμβο' },
+  'rotary':            { icon: IconArrowRoundaboutRight, text: 'Κυκλικός κόμβος' },
+  'merge':             { icon: IconArrowUpRight,         text: 'Συγχωνεύσου' },
+  'fork-right':        { icon: IconArrowBearRight,       text: 'Κράτα δεξιά στη διακλάδωση' },
+  'fork-left':         { icon: IconArrowBearLeft,        text: 'Κράτα αριστερά στη διακλάδωση' },
+  'end of road-right': { icon: IconArrowRight,           text: 'Στο τέλος στρίψε δεξιά' },
+  'end of road-left':  { icon: IconArrowLeft,            text: 'Στο τέλος στρίψε αριστερά' },
+  'continue':          { icon: IconArrowUpRight,         text: 'Συνέχισε' },
+  'new name':          { icon: IconArrowUpRight,         text: 'Συνέχισε σε' },
+};
+
+const getManeuver = (step) => {
+  const type = step.maneuver?.type || '';
+  const modifier = step.maneuver?.modifier || '';
+  const key = modifier ? `${type}-${modifier}` : type;
+  const m = MANEUVER_MAP[key] || MANEUVER_MAP[type] || { icon: IconArrowUpRight, text: 'Συνέχισε' };
+  const road = step.name || step.ref || '';
+  return { ...m, road, distance: step.distance, duration: step.duration };
+};
+
+// ─── Parse all OSRM steps from legs ─────────────────────────────────────────
+const parseSteps = (legs) => {
+  if (!legs?.length) return [];
+  const steps = [];
+  legs.forEach((leg, legIdx) => {
+    (leg.steps || []).forEach((step) => {
+      if (step.distance < 5 && step.maneuver?.type === 'arrive' && legIdx < legs.length - 1) return; // skip intermediate arrives
+      steps.push(getManeuver(step));
+    });
+  });
+  return steps;
+};
+
+// ─── Open external navigation app ───────────────────────────────────────────
+const openExternalNav = (userLoc, orderedStores, travelMode) => {
+  // Build waypoints for Google Maps URL
+  const waypoints = orderedStores.map(s => `${s.lat},${s.lng}`);
+  const origin = `${userLoc.lat},${userLoc.lng}`;
+  const destination = origin; // return home
+
+  // Google Maps travel mode mapping
+  const gmodeMap = { driving: 'driving', walking: 'walking', cycling: 'bicycling' };
+  const gmode = gmodeMap[travelMode] || 'driving';
+
+  // Try to detect platform
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  if (isIOS) {
+    // Apple Maps with waypoints isn't great, use Google Maps URL which opens in browser/app
+    const waypointStr = waypoints.join('|');
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypointStr}&travelmode=${gmode}`;
+    window.open(url, '_blank');
+  } else {
+    // Google Maps intent (opens app if installed, otherwise web)
+    const waypointStr = waypoints.join('|');
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypointStr}&travelmode=${gmode}`;
+    window.open(url, '_blank');
+  }
+};
+
 // ─── Custom icons ───────────────────────────────────────────────────────────
 const storeIcon = (L, color) => L.divIcon({
   className: '',
@@ -141,6 +216,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
   const [searching, setSearching] = useState(false);
   const [routing, setRouting]     = useState(false);
   const [panel, setPanel]         = useState(true);
+  const [showNav, setShowNav]     = useState(false); // turn-by-turn view
   const [err, setErr]             = useState('');
 
   const containerRef  = useRef(null);
@@ -291,14 +367,14 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
           ordered = idx.map(x => x.s);
         }
       }
-      setRoute({ distance: r.distance, duration: r.duration, orderedStores: ordered });
+      setRoute({ distance: r.distance, duration: r.duration, orderedStores: ordered, steps: parseSteps(r.legs), legs: r.legs });
     } catch (e) { setErr('Δεν βρέθηκε διαδρομή.'); }
     setRouting(false);
   }, [userLoc, selected, mode]);
 
-  const toggle = (s) => { setSelected(p => p.find(x=>x.id===s.id) ? p.filter(x=>x.id!==s.id) : [...p, s]); setRoute(null); };
+  const toggle = (s) => { setSelected(p => p.find(x=>x.id===s.id) ? p.filter(x=>x.id!==s.id) : [...p, s]); setRoute(null); setShowNav(false); };
   const recenter = () => { if (mapRef.current && userLoc) mapRef.current.setView([userLoc.lat, userLoc.lng], 14); };
-  const refresh = () => { if (userLoc) { setRoute(null); setSelected([]); doSearch(userLoc); } };
+  const refresh = () => { if (userLoc) { setRoute(null); setSelected([]); setShowNav(false); doSearch(userLoc); } };
 
   if (!isOpen) return null;
 
@@ -359,8 +435,8 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         {panel && (
           <div className="smart-route-panel-content">
             <div className="smart-route-travel-modes">
-              {[{ m:'driving', i:<IconCar size={15}/>, l:'Αυτοκίνητο' }, { m:'walking', i:<IconWalk size={15}/>, l:'Περπάτημα' }].map(({m,i,l}) => (
-                <button key={m} className={`smart-route-travel-btn ${mode===m?'active':''}`} onClick={()=>{setMode(m);setRoute(null);}}>{i} {l}</button>
+              {[{ m:'driving', i:<IconCar size={15}/>, l:'Αυτοκίνητο' }, { m:'cycling', i:<IconBike size={15}/>, l:'Ποδήλατο' }, { m:'walking', i:<IconWalk size={15}/>, l:'Πόδια' }].map(({m,i,l}) => (
+                <button key={m} className={`smart-route-travel-btn ${mode===m?'active':''}`} onClick={()=>{setMode(m);setRoute(null);setShowNav(false);}}>{i} {l}</button>
               ))}
             </div>
 
@@ -420,6 +496,46 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
                   ))}
                   <div className="smart-route-stop"><div className="smart-route-stop-dot end"/><div className="smart-route-stop-text"><div className="smart-route-stop-name">🏠 Επιστροφή</div></div></div>
                 </div>
+
+                {/* ── Navigation buttons ── */}
+                <div className="smart-route-nav-actions">
+                  <button className="smart-route-nav-btn primary" onClick={() => openExternalNav(userLoc, route.orderedStores, mode)}>
+                    <IconNavigation size={17}/> Πλοήγηση
+                    <span className="smart-route-nav-btn-sub">Google Maps</span>
+                  </button>
+                  <button className="smart-route-nav-btn secondary" onClick={() => setShowNav(!showNav)}>
+                    <IconRoute size={17}/> {showNav ? 'Κρύψε' : 'Οδηγίες'}
+                  </button>
+                </div>
+
+                {/* ── Turn-by-turn directions ── */}
+                {showNav && route.steps?.length > 0 && (
+                  <div className="smart-route-directions">
+                    <div className="smart-route-directions-title">
+                      {mode === 'driving' ? '🚗' : mode === 'cycling' ? '🚲' : '🚶'} Βήμα-βήμα οδηγίες
+                    </div>
+                    {route.steps.map((step, i) => {
+                      const StepIcon = step.icon;
+                      return (
+                        <div key={i} className="smart-route-direction-step">
+                          <div className="smart-route-direction-icon">
+                            <StepIcon size={16} />
+                          </div>
+                          <div className="smart-route-direction-text">
+                            <div className="smart-route-direction-instruction">
+                              {step.text}{step.road ? ` — ${step.road}` : ''}
+                            </div>
+                            {step.distance > 0 && (
+                              <div className="smart-route-direction-meta">
+                                {fmtDist(step.distance)} · {fmtDuration(step.duration)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
