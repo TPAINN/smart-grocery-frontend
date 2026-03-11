@@ -1,16 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="el">
   <head>
     <meta charset="UTF-8" />
-    <!-- Εδώ βάζουμε ένα emoji καροτσιού αντί για κανονική εικόνα για να είναι γρήγορο! -->
     <link rel="icon" href="/pwa-192x192.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Smart Grocery Hub | Οι Καλύτερες Προσφορές</title>
-    <meta name="theme-color" content="#111827">
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="/pwa-192x192.png">
-</head>
+    <!-- Preload font to prevent FOUT (flash of unstyled text) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

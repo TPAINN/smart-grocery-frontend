@@ -1860,6 +1860,7 @@ export default function App() {
   const [fridgeQuery, setFridgeQuery]     = useState('');
   const [showScanner, setShowScanner]     = useState(false);
   const [showSmartRoute, setShowSmartRoute] = useState(false);
+  const [showSidebar, setShowSidebar]       = useState(false);
   const [currentTime, setCurrentTime]     = useState(new Date());
   const [isOnline, setIsOnline]           = useState(() => navigator.onLine);
   const [wasOffline, setWasOffline]       = useState(false);
@@ -2806,10 +2807,60 @@ export default function App() {
 
 
   // ─── Render ────────────────────────────────────────────────────────────────
+  const TABS = [
+    { id:'list',      icon:'📋', label:'Λίστα' },
+    { id:'recipes',   icon:'👨‍🍳', label:'Συνταγές' },
+    { id:'mealplan',  icon:'✨', label:'AI Plan' },
+    { id:'brochures', icon:'🏷️', label:'Φυλλάδια' },
+  ];
+
   return (
     <div className="app-wrapper">
       <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} />
       {showWelcome && !user && <WelcomeModal onLogin={handleWelcomeLogin} onRegister={handleWelcomeRegister} onSkip={handleWelcomeSkip} />}
+
+      {/* ── Sidebar overlay (mobile) ── */}
+      {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}
+
+      {/* ── Sidebar (desktop: always visible, mobile: slide-in) ── */}
+      <aside className={`app-sidebar ${showSidebar ? 'open' : ''}`}>
+        <div className="sidebar-brand">
+          <span className="sidebar-logo">🛒</span>
+          <span className="sidebar-name">Smart Hub</span>
+        </div>
+        <nav className="sidebar-nav">
+          {TABS.map(t => (
+            <button key={t.id} className={`sidebar-link ${activeTab === t.id ? 'active' : ''}`}
+              onClick={() => { setActiveTab(t.id); setShowSidebar(false); window.scrollTo({ top:0, behavior:'smooth' }); }}>
+              <span className="sidebar-link-icon">{t.icon}</span>
+              <span className="sidebar-link-text">{t.label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <button className="sidebar-link" onClick={() => { setIsDarkMode(v => !v); }}>
+            <span className="sidebar-link-icon">{isDarkMode ? '☀️' : '🌙'}</span>
+            <span className="sidebar-link-text">{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
+          {user && (
+            <button className="sidebar-link" onClick={() => { setShowSidebar(false); setShowProfileMenu(v => !v); }}>
+              <span className="sidebar-link-icon">👤</span>
+              <span className="sidebar-link-text">{user.name}</span>
+            </button>
+          )}
+        </div>
+      </aside>
+
+      {/* ── Bottom Nav (mobile only, shown via CSS) ── */}
+      <nav className="bottom-nav">
+        {TABS.map(t => (
+          <button key={t.id} className={`bottom-nav-btn ${activeTab === t.id ? 'active' : ''}`}
+            onClick={() => { setActiveTab(t.id); window.scrollTo({ top:0, behavior:'smooth' }); }}>
+            <span className="bottom-nav-icon">{t.icon}</span>
+            <span className="bottom-nav-label">{t.label}</span>
+          </button>
+        ))}
+      </nav>
 
       <SavedListsModal isOpen={showListsModal} onClose={() => setShowListsModal(false)} lists={savedLists} onDelete={deleteList} onToggleItem={toggleListItem} />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onLoginSuccess={(u) => {
@@ -2977,141 +3028,77 @@ export default function App() {
         </>
       )}
 
-      <div className="container" style={!isOnline ? { marginTop: 64 } : {}}>
-        {isScraping && (
-          <div className="live-scraping-banner"><div className="pulsing-dot" /><span>LIVE ΕΝΗΜΕΡΩΣΗ ΤΙΜΩΝ...</span></div>
-        )}
-
-        {/* ── Header ── */}
-        <header className="app-header">
-          
-          {/* Πάνω: Ώρα, Ημερομηνία & Streak κεντραρισμένα */}
-          <div className="header-clock-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-            <div className="datetime-display" style={{ maxWidth: '240px', margin: '0 auto' }}>
-              <div className="current-date">{timeGreeting} {timeIcon}</div>
-              <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'long', day:'numeric', month:'long' })}</div>
-              <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit' })}</div>
+      {/* ── Main content area ── */}
+      <main className="app-main">
+        {/* Topbar */}
+        <header className="app-topbar">
+          <button className="menu-toggle" onClick={() => setShowSidebar(true)}>
+            <span /><span /><span />
+          </button>
+          <div className="topbar-left">
+            <div className="topbar-greeting">
+              {timeGreeting} {timeIcon} · {currentTime.toLocaleDateString('el-GR', { weekday:'short', day:'numeric', month:'short' })}
+              {streak >= 2 && <span style={{ marginLeft:8 }}>🔥 {streak}</span>}
             </div>
-
-            {/* Streak Badge */}
-            {streak >= 2 && (
-              <div
-                className={`streak-badge${isNewStreakRecord ? ' new-record' : ''}`}
-                title={`${streak} μέρες στη σειρά! Καλύτερο: ${JSON.parse(localStorage.getItem('sg_streak')||'{}').best || streak}`}
-              >
-                🔥 <span>{streak}</span>
+          </div>
+          <div className="topbar-actions">
+            {user && (
+              <div className="action-btn-new" onClick={() => setShowScanner(true)} title="Σάρωση Barcode">
+                <IconQrcode size={18} stroke={1.8} />
+              </div>
+            )}
+            <div className="action-btn-new" style={{ position:'relative' }}
+              onClick={() => { if (!user) return setShowAuthModal(true); setShowFriendsPanel(true); }} title="Φίλοι">
+              <IconUsers size={18} stroke={1.8} />
+              {friends.length > 0 && <span style={{ position:'absolute', top:-4, right:-4, background:'#6366f1', color:'#fff', borderRadius:'50%', width:14, height:14, fontSize:8, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center' }}>{friends.length}</span>}
+            </div>
+            {user && friends.length > 0 && (
+              <div className="action-btn-new" style={{ position:'relative' }} onClick={() => setShowChatPanel(true)} title="Chat">
+                <IconMessage size={18} stroke={1.8} />
+                {unreadChat > 0 && <span style={{ position:'absolute', top:-4, right:-4, background:'#ef4444', color:'#fff', borderRadius:'50%', width:14, height:14, fontSize:8, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center' }}>{unreadChat}</span>}
+              </div>
+            )}
+            <div className={`action-btn-new${showSplitModal ? ' split-btn-open' : ''}`} onClick={openSplitModal} title="Split Bill">
+              <IconCreditCard size={18} stroke={1.8} />
+            </div>
+            <div className="action-btn-new" onClick={() => { if (!user) return setShowAuthModal(true); setShowListsModal(true); }} title="Λίστες" style={{ position:'relative' }}>
+              <IconNotes size={18} stroke={1.8} />
+              {savedLists.length > 0 && <span className="list-badge">{savedLists.length}</span>}
+            </div>
+            {user ? (
+              <div style={{ position:'relative' }}>
+                <div className="action-btn-new" onClick={() => setShowProfileMenu(v => !v)} title={user.name}>
+                  <IconUser size={18} stroke={1.8} />
+                </div>
+                {showProfileMenu && (
+                  <>
+                    <div style={{ position:'fixed', inset:0, zIndex:99 }} onClick={() => setShowProfileMenu(false)} />
+                    <div className="profile-dropdown">
+                      <div className="dropdown-info" style={{ padding:'15px', borderBottom:'1px solid var(--border)' }}>
+                        <strong style={{ display:'block', fontSize:'14px' }}>{user.name}</strong>
+                        <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'8px' }}>
+                          <span style={{ color:'var(--text-secondary)', fontSize:'12px' }}>#{user.shareKey || 'N/A'}</span>
+                          <button onClick={handleCopyShareKey} style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', cursor:'pointer', fontSize:'14px', padding:'4px 8px', borderRadius:'6px' }}>📋</button>
+                        </div>
+                      </div>
+                      <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display:'flex', alignItems:'center', gap:8 }}>{isDarkMode ? <><IconSun size={16}/> Light Mode</> : <><IconMoon size={16}/> Dark Mode</>}</div>
+                      <div className="dropdown-item logout" onClick={handleLogout} style={{ display:'flex', alignItems:'center', gap:8 }}><IconLogout size={16}/> Αποσύνδεση</div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="action-btn-new" onClick={() => setShowAuthModal(true)} title="Σύνδεση">
+                <IconLock size={18} stroke={1.8} />
               </div>
             )}
           </div>
-
-          {/* Τίτλος */}
-          <h1 style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text", textAlign: 'center', marginTop: '15px' }}>
-            Smart Grocery Hub
-          </h1>
-
-          {/* Κάτω: Κουμπιά κεντραρισμένα σε νέα σειρά */}
-          <div className="header-actions-row">
-            <div className="header-actions">
-              {!isOnline && (
-                <div style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:700, color:'#ef4444' }}>
-                  📡 Offline
-                </div>
-              )}
-
-              {/* Barcode scanner button */}
-              {user && (
-                <div className="action-btn-new scanner-btn-header" onClick={() => setShowScanner(true)} title="Σάρωση Barcode">
-                  <IconQrcode size={20} stroke={1.8} />
-                </div>
-              )}
-
-              {/* Friends button with badge */}
-              <div
-                className="action-btn-new"
-                style={{ position:'relative' }}
-                onClick={() => { if (!user) return setShowAuthModal(true); setShowFriendsPanel(true); }}
-                title="Κοινό Καλάθι"
-              >
-                <IconUsers size={20} stroke={1.8} />
-                {friends.length > 0 && (
-                  <span style={{
-                    position:'absolute', top:-4, right:-4,
-                    background:'#7c3aed', color:'#fff', borderRadius:'50%',
-                    width:16, height:16, fontSize:9, fontWeight:800,
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                  }}>{friends.length}</span>
-                )}
-              </div>
-
-              {/* Chat Button */}
-              {user && friends.length > 0 && (
-                <div className="action-btn-new" style={{ position:'relative' }} onClick={() => setShowChatPanel(true)} title="Chat Καλαθιού">
-                  <IconMessage size={20} stroke={1.8} />
-                  {unreadChat > 0 && (
-                    <span style={{
-                      position:'absolute', top:-4, right:-4, background:'#ef4444', color:'#fff', borderRadius:'50%',
-                      width:16, height:16, fontSize:9, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center',
-                      animation: 'badgePop 0.3s spring'
-                    }}>{unreadChat}</span>
-                  )}
-                </div>
-              )}
-
-              {/* Split Bill Button */}
-              <div className={`action-btn-new${showSplitModal ? ' split-btn-open' : ''}`} onClick={openSplitModal} title="Split the Bill" style={{ position:'relative', background: showSplitModal ? 'rgba(99,102,241,0.15)' : undefined, border: showSplitModal ? '1.5px solid rgba(99,102,241,0.4)' : undefined, boxShadow: showSplitModal ? '0 0 0 3px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.15)' : undefined }}>
-                <IconCreditCard size={20} stroke={1.8} />
-              </div>
-
-              <div className="action-btn-new" onClick={() => { if (!user) return setShowAuthModal(true); setShowListsModal(true); }} title="Λίστες μου" style={{ position:'relative' }}>
-                <IconNotes size={20} stroke={1.8} />
-                {savedLists.length > 0 && <span className="list-badge">{savedLists.length}</span>}
-              </div>
-
-              {user ? (
-                <div style={{ position:'relative' }}>
-                  <div className="action-btn-new" onClick={() => setShowProfileMenu(v => !v)} title={user.name}>
-                    <IconUser size={20} stroke={1.8} />
-                  </div>
-                  {showProfileMenu && (
-                    <>
-                      <div style={{ position:'fixed', inset:0, zIndex:99 }} onClick={() => setShowProfileMenu(false)} />
-                      <div className="profile-dropdown">
-                        <div className="dropdown-info" style={{ padding:'15px', borderBottom:'1px solid var(--border-light)' }}>
-                          <strong style={{ display:'block', fontSize:'14px' }}>{user.name}</strong>
-                          <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'8px' }}>
-                            <span style={{ color:'var(--text-secondary)', fontSize:'12px' }}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
-                            <button onClick={handleCopyShareKey} style={{ background:'var(--bg-surface-hover)', border:'1px solid var(--border-light)', cursor:'pointer', fontSize:'14px', padding:'4px 8px', borderRadius:'6px' }}>📋</button>
-                          </div>
-                        </div>
-                        <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display:'flex', alignItems:'center', gap:8 }}>{isDarkMode ? <><IconSun size={16}/> Light Mode</> : <><IconMoon size={16}/> Dark Mode</>}</div>
-                        <div className="dropdown-item logout" onClick={handleLogout} style={{ display:'flex', alignItems:'center', gap:8 }}><IconLogout size={16}/> Αποσύνδεση</div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="action-btn-new" onClick={() => setShowAuthModal(true)} title="Σύνδεση">
-                  <IconLock size={20} stroke={1.8} />
-                </div>
-              )}
-            </div>
-          </div>
         </header>
-        
 
-        {/* ── Tabs ── */}
-        <div className="tabs-container">
-          {[
-            ['list', <><IconShoppingCart size={16} stroke={2}/> Λίστα</>, 'Λίστα'],
-            ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
-            ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Plan'],
-            ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
-          ].map(([tab, label]) => (
-            <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => { setActiveTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ display:'flex', alignItems:'center', gap:5 }}>
-              {label}
-            </button>
-          ))}
-        </div>
+      <div className="container" style={!isOnline ? { marginTop: 0 } : {}}>
+        {isScraping && (
+          <div className="live-scraping-banner"><div className="pulsing-dot" /><span>LIVE ΕΝΗΜΕΡΩΣΗ ΤΙΜΩΝ...</span></div>
+        )}
 
         {/* ════ LIST TAB ════ */}
         {activeTab === 'list' && (
@@ -3854,6 +3841,7 @@ export default function App() {
           </div>
         )}
       </div>
+      </main>
 
       {/* ── Smart Route — Floating button + Fullscreen map ── */}
       <FloatingMapButton
