@@ -148,7 +148,22 @@
 .smart-route-direction-instruction { font-size:13px;font-weight:600;color:var(--text-primary,#1a1a1a);line-height:1.4 }
 .smart-route-direction-meta { font-size:11px;color:var(--text-secondary,#888);margin-top:2px }
 
-/* ── Dark mode ────────────────────────────────────────────────── */
+/* ── Map: ALWAYS light/normal — never dark-mode filtered ─────── */
+.smart-route-map .leaflet-tile,
+.smart-route-map .srm-tiles,
+body.dark-mode .smart-route-map .leaflet-tile,
+body.dark-mode .smart-route-map .srm-tiles {
+  filter: none !important;
+}
+/* Keep zoom controls always light to match the light map */
+.smart-route-map .leaflet-control-zoom a,
+body.dark-mode .smart-route-map .leaflet-control-zoom a {
+  background: #fff !important;
+  color: #333 !important;
+  border-color: #e5e7eb !important;
+}
+
+/* ── Dark mode — UI shell only (NOT the map) ─────────────────── */
 body.dark-mode .smart-route-overlay { background:#0f0f14 }
 body.dark-mode .smart-route-topbar { background:#1a1a24;border-color:#2a2a3a }
 body.dark-mode .smart-route-panel { background:#1a1a24;border-color:#2a2a3a }
@@ -159,8 +174,40 @@ body.dark-mode .smart-route-loading { background:#0f0f14 }
 body.dark-mode .smart-route-nav-btn.secondary { background:#2a2a3a;border-color:#3a3a4a;color:#e5e5e5 }
 body.dark-mode .smart-route-direction-icon { background:rgba(99,102,241,.15) }
 body.dark-mode .smart-route-direction-step { border-color:#2a2a3a }
-body.dark-mode .smart-route-map .leaflet-tile { filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(1.1) }
-body.dark-mode .smart-route-map .leaflet-control-zoom a { background:#1a1a24 !important;color:#e5e5e5 !important;border-color:#2a2a3a !important }
+body.dark-mode .smart-route-travel-btn { background:#22222e;border-color:#2a2a3a;color:#aaa }
+body.dark-mode .smart-route-travel-btn.active { background:rgba(99,102,241,.15);border-color:#6366f1;color:#818cf8 }
+body.dark-mode .smart-route-icon-btn { background:#22222e;border-color:#2a2a3a;color:#aaa }
+body.dark-mode .smart-route-handle-bar { background:#3a3a4a }
+body.dark-mode .smart-route-result-header { border-color:#2a2a3a }
+body.dark-mode .smart-route-nav-actions { border-color:#2a2a3a }
+body.dark-mode .smart-route-store-items { color:#818cf8 }
+body.dark-mode .smart-route-stop-name { color:#e5e5e5 }
+
+/* ── Select-all button ────────────────────────────────────────── */
+.smart-route-select-all {
+  width:100%; padding:8px 12px; border-radius:10px; margin-bottom:10px;
+  border:1.5px dashed var(--border-light,#e5e7eb);
+  background:transparent; color:var(--text-secondary,#888);
+  font-size:12px; font-weight:700; font-family:inherit;
+  cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:6px;
+  -webkit-tap-highlight-color:transparent;
+}
+.smart-route-select-all:hover { border-color:#6366f1; color:#6366f1; background:rgba(99,102,241,.04); }
+.smart-route-select-all:active { transform:scale(.97); }
+body.dark-mode .smart-route-select-all { border-color:#3a3a4a; color:#666; }
+body.dark-mode .smart-route-select-all:hover { border-color:#6366f1; color:#818cf8; }
+
+/* ── Store card hover (desktop) ───────────────────────────────── */
+@media(hover:hover) {
+  .smart-route-store-card:hover { border-color:#6366f1;transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.12) }
+  .smart-route-icon-btn:hover { background:var(--border-light,#e5e7eb); color:var(--text-primary,#333); }
+  .smart-route-travel-btn:hover:not(.active) { border-color:#6366f1;color:#6366f1;background:rgba(99,102,241,.04) }
+  .smart-route-calc-btn:hover:not(:disabled) { transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,102,241,.4) }
+  .smart-route-nav-btn.primary:hover { transform:translateY(-2px);box-shadow:0 8px 24px rgba(16,185,129,.4) }
+}
+
+/* ── Map border radius ────────────────────────────────────────── */
+.smart-route-map-container { border-top: 1px solid var(--border-light,#e5e7eb); }
 
 /* ── Responsive ───────────────────────────────────────────────── */
 @media(min-width:768px) {

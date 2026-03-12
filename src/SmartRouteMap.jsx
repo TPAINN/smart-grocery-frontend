@@ -224,7 +224,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         if (containerRef.current && !mapRef.current) {
           const L = window.L;
           const map = L.map(containerRef.current, { center:[pos.lat,pos.lng], zoom:14, zoomControl:false, attributionControl:false });
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,crossOrigin:true,className:'srm-tiles'}).addTo(map);
           L.control.attribution({position:'bottomright',prefix:false}).addAttribution('© <a href="https://openstreetmap.org">OSM</a>').addTo(map);
           L.control.zoom({position:'topright'}).addTo(map);
           L.marker([pos.lat,pos.lng],{icon:mkUser(L),zIndexOffset:1000}).addTo(map).bindPopup('<b>📍 Εδώ είσαι</b>');
@@ -349,6 +349,15 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
             ))}
           </div>
           {searching&&<div className="smart-route-searching"><div className="smart-route-spinner small"/>Αναζήτηση...</div>}
+          {!searching&&stores.length>0&&<button
+            className="smart-route-select-all"
+            onClick={()=>{
+              if(selected.length===stores.length){setSelected([]);setRoute(null);setShowNav(false)}
+              else{setSelected([...stores]);setRoute(null);setShowNav(false)}
+            }}
+          >
+            {selected.length===stores.length?'✕ Αποεπιλογή Όλων':'✓ Επιλογή Όλων'} ({stores.length})
+          </button>}
           <div className="smart-route-store-list">
             {stores.map(s=>{const sel=selected.some(x=>x.id===s.id);return(
               <div key={s.id} className={`smart-route-store-card ${sel?'selected':''}`} onClick={()=>toggle(s)}>
