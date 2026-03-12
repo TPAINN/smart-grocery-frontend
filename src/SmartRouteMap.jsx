@@ -1,5 +1,4 @@
-// ─── SmartRouteMap.jsx — Fullscreen Smart Route (Leaflet + OpenStreetMap) ────
-// 100% FREE — No API key, no billing, no limits
+// ─── SmartRouteMap.jsx — v2: Draggable FAB + Animations + Faster Routing ─────
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -14,191 +13,164 @@ import {
   IconArrowRoundaboutRight, IconFlag,
 } from '@tabler/icons-react';
 
-// ─── Greek supermarket chains ────────────────────────────────────────────────
-const STORE_CHAINS = [
-  { id: 'ab',          name: 'ΑΒ Βασιλόπουλος', tags: ['ΑΒ Βασιλόπουλος','AB Vassilopoulos','AB Food Market'], color: '#e31e24', emoji: '🔴' },
-  { id: 'sklavenitis', name: 'Σκλαβενίτης',     tags: ['Σκλαβενίτης','Sklavenitis'],                         color: '#1a5632', emoji: '🟢' },
-  { id: 'mymarket',    name: 'My Market',        tags: ['My Market'],                                         color: '#f5a623', emoji: '🟡' },
-  { id: 'lidl',        name: 'Lidl',             tags: ['Lidl'],                                              color: '#0050aa', emoji: '🔵' },
-  { id: 'masoutis',    name: 'Μασούτης',         tags: ['Μασούτης','Masoutis'],                                color: '#c41230', emoji: '🟠' },
-  { id: 'galaxias',    name: 'Γαλαξίας',         tags: ['Γαλαξίας','Galaxias'],                                color: '#6b21a8', emoji: '🟣' },
+// ─── Chains ──────────────────────────────────────────────────────────────────
+const CHAINS = [
+  { id:'ab', name:'ΑΒ Βασιλόπουλος', tags:['ΑΒ Βασιλόπουλος','AB Vassilopoulos','AB Food Market'], color:'#e31e24', emoji:'🔴' },
+  { id:'sklavenitis', name:'Σκλαβενίτης', tags:['Σκλαβενίτης','Sklavenitis'], color:'#1a5632', emoji:'🟢' },
+  { id:'mymarket', name:'My Market', tags:['My Market'], color:'#f5a623', emoji:'🟡' },
+  { id:'lidl', name:'Lidl', tags:['Lidl'], color:'#0050aa', emoji:'🔵' },
+  { id:'masoutis', name:'Μασούτης', tags:['Μασούτης','Masoutis'], color:'#c41230', emoji:'🟠' },
+  { id:'galaxias', name:'Γαλαξίας', tags:['Γαλαξίας','Galaxias'], color:'#6b21a8', emoji:'🟣' },
 ];
 
-// ─── Load Leaflet dynamically ────────────────────────────────────────────────
-let leafletLoaded = false;
+// ─── Leaflet loader ──────────────────────────────────────────────────────────
+let _ll = false;
 const loadLeaflet = () => {
-  if (leafletLoaded && window.L) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    if (!document.getElementById('leaflet-css')) {
-      const link = document.createElement('link');
-      link.id = 'leaflet-css';
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      link.crossOrigin = '';
-      document.head.appendChild(link);
+  if (_ll && window.L) return Promise.resolve();
+  return new Promise((ok, fail) => {
+    if (!document.getElementById('lf-css')) {
+      const l = document.createElement('link'); l.id='lf-css'; l.rel='stylesheet';
+      l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; l.crossOrigin=''; document.head.appendChild(l);
     }
-    if (window.L) { leafletLoaded = true; resolve(); return; }
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.crossOrigin = '';
-    script.onload = () => { leafletLoaded = true; resolve(); };
-    script.onerror = () => reject(new Error('Failed to load Leaflet'));
-    document.head.appendChild(script);
+    if (window.L) { _ll=true; ok(); return; }
+    const s = document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.crossOrigin=''; s.onload=()=>{_ll=true;ok()}; s.onerror=()=>fail(new Error('Leaflet failed'));
+    document.head.appendChild(s);
   });
 };
 
-// ─── Overpass API: find nearby supermarkets (FREE) ──────────────────────────
-const searchOverpass = async (lat, lng, radius = 5000) => {
-  const query = `[out:json][timeout:15];(node["shop"="supermarket"](around:${radius},${lat},${lng});way["shop"="supermarket"](around:${radius},${lat},${lng}););out center body;`;
-  const resp = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+// ─── APIs ────────────────────────────────────────────────────────────────────
+let _overpassCache = null;
+const searchOverpass = async (lat, lng, r=5000) => {
+  const k = `${lat.toFixed(3)},${lng.toFixed(3)},${r}`;
+  if (_overpassCache?.k === k && Date.now() - _overpassCache.t < 120000) return _overpassCache.d;
+  const q = `[out:json][timeout:12];(node["shop"="supermarket"](around:${r},${lat},${lng});way["shop"="supermarket"](around:${r},${lat},${lng}););out center body;`;
+  const resp = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
   if (!resp.ok) throw new Error('Overpass error');
   const data = await resp.json();
-  return data.elements.map(el => ({
-    id: el.id,
-    name: el.tags?.name || 'Σούπερ Μάρκετ',
-    brand: el.tags?.brand || el.tags?.operator || '',
-    lat: el.lat || el.center?.lat,
-    lng: el.lon || el.center?.lon,
-    address: [el.tags?.['addr:street'], el.tags?.['addr:housenumber']].filter(Boolean).join(' ') || '',
+  const d = data.elements.map(e => ({
+    id:e.id, name:e.tags?.name||'Σούπερ Μάρκετ', brand:e.tags?.brand||e.tags?.operator||'',
+    lat:e.lat||e.center?.lat, lng:e.lon||e.center?.lon,
+    address:[e.tags?.['addr:street'],e.tags?.['addr:housenumber']].filter(Boolean).join(' ')||'',
   })).filter(s => s.lat && s.lng);
+  _overpassCache = { k, d, t:Date.now() };
+  return d;
 };
 
-// ─── OSRM: free routing ─────────────────────────────────────────────────────
-const getOSRMRoute = async (coords, profile = 'driving') => {
-  const str = coords.map(c => `${c.lng},${c.lat}`).join(';');
-  const resp = await fetch(`https://router.project-osrm.org/route/v1/${profile}/${str}?overview=full&geometries=geojson&steps=true`);
-  if (!resp.ok) throw new Error('Routing error');
-  const data = await resp.json();
-  if (data.code !== 'Ok' || !data.routes?.length) throw new Error('No route');
-  return data.routes[0];
+const osrmRoute = async (coords, p='driving') => {
+  const s = coords.map(c=>`${c.lng},${c.lat}`).join(';');
+  const r = await fetch(`https://router.project-osrm.org/route/v1/${p}/${s}?overview=full&geometries=geojson&steps=true`);
+  const d = await r.json(); if (d.code!=='Ok'||!d.routes?.length) throw new Error('No route'); return d.routes[0];
+};
+const osrmTrip = async (coords, p='driving') => {
+  const s = coords.map(c=>`${c.lng},${c.lat}`).join(';');
+  const r = await fetch(`https://router.project-osrm.org/trip/v1/${p}/${s}?overview=full&geometries=geojson&roundtrip=true&source=first&destination=last`);
+  const d = await r.json(); if (d.code!=='Ok'||!d.trips?.length) throw new Error('No trip'); return d.trips[0];
 };
 
-const getOSRMTrip = async (coords, profile = 'driving') => {
-  const str = coords.map(c => `${c.lng},${c.lat}`).join(';');
-  const resp = await fetch(`https://router.project-osrm.org/trip/v1/${profile}/${str}?overview=full&geometries=geojson&roundtrip=true&source=first&destination=last`);
-  if (!resp.ok) throw new Error('Trip error');
-  const data = await resp.json();
-  if (data.code !== 'Ok' || !data.trips?.length) throw new Error('No trip');
-  return data.trips[0];
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const hav = (a,b,c,d) => { const R=6371e3,r=x=>x*Math.PI/180,dL=r(c-a),dN=r(d-b),x=Math.sin(dL/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dN/2)**2; return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); };
+const matchChain = (n,b) => { const t=`${n} ${b}`.toLowerCase(); return CHAINS.find(c=>c.tags.some(x=>t.includes(x.toLowerCase())))||null; };
+const fmtD = s => { if(!s||s<60)return'<1\''; const m=Math.round(s/60); return m<60?`${m}'`:`${Math.floor(m/60)}h ${m%60}'`; };
+const fmtM = m => { if(!m)return''; return m<1000?`${Math.round(m)}μ`:`${(m/1000).toFixed(1)}χλμ`; };
+
+// Maneuvers
+const MAN = {
+  'turn-right':{i:IconArrowRight,t:'Στρίψε δεξιά'},'turn-left':{i:IconArrowLeft,t:'Στρίψε αριστερά'},
+  'turn-slight-right':{i:IconArrowBearRight,t:'Ελαφρά δεξιά'},'turn-slight-left':{i:IconArrowBearLeft,t:'Ελαφρά αριστερά'},
+  'straight':{i:IconArrowUpRight,t:'Ευθεία'},'depart':{i:IconNavigation,t:'Ξεκίνα'},'arrive':{i:IconFlag,t:'Έφτασες'},
+  'roundabout':{i:IconArrowRoundaboutRight,t:'Κυκλικός κόμβος'},'continue':{i:IconArrowUpRight,t:'Συνέχισε'},
+  'fork-right':{i:IconArrowBearRight,t:'Κράτα δεξιά'},'fork-left':{i:IconArrowBearLeft,t:'Κράτα αριστερά'},
+};
+const getMan = s => { const k=s.maneuver?.modifier?`${s.maneuver.type}-${s.maneuver.modifier}`:s.maneuver?.type||''; const m=MAN[k]||MAN[s.maneuver?.type]||{i:IconArrowUpRight,t:'Συνέχισε'}; return{...m,road:s.name||'',distance:s.distance,duration:s.duration}; };
+const parseSteps = legs => { if(!legs?.length)return[]; const r=[]; legs.forEach((l,li)=>{(l.steps||[]).forEach(s=>{if(s.distance<5&&s.maneuver?.type==='arrive'&&li<legs.length-1)return;r.push(getMan(s))})}); return r; };
+
+const openNav = (loc, stores, mode) => {
+  const wp = stores.map(s=>`${s.lat},${s.lng}`).join('|');
+  const gm = {driving:'driving',walking:'walking',cycling:'bicycling'}[mode]||'driving';
+  window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${loc.lat},${loc.lng}&waypoints=${wp}&travelmode=${gm}`,'_blank');
 };
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-const haversine = (lat1, lng1, lat2, lng2) => {
-  const R = 6371e3, toRad = d => d * Math.PI / 180;
-  const dLat = toRad(lat2-lat1), dLng = toRad(lng2-lng1);
-  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-};
+// Icons
+const mkStore = (L,c) => L.divIcon({className:'',html:`<div style="width:28px;height:28px;border-radius:50% 50% 50% 4px;background:${c};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center"><div style="transform:rotate(45deg);font-size:12px">🏪</div></div>`,iconSize:[28,28],iconAnchor:[14,28],popupAnchor:[0,-30]});
+const mkUser = L => L.divIcon({className:'',html:`<div style="width:16px;height:16px;border-radius:50%;background:#4285F4;border:3px solid #fff;box-shadow:0 0 0 4px rgba(66,133,244,.25),0 2px 6px rgba(0,0,0,.2)"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
 
-const matchChain = (name, brand) => {
-  const text = `${name} ${brand}`.toLowerCase();
-  return STORE_CHAINS.find(c => c.tags.some(t => text.includes(t.toLowerCase()))) || null;
-};
-
-const fmtDuration = (s) => {
-  if (!s || s < 60) return '<1\'';
-  const m = Math.round(s/60);
-  if (m < 60) return `${m} λεπτ${m===1?'ό':'ά'}`;
-  return `${Math.floor(m/60)}ώρ${m%60>0?` ${m%60}'`:''}`;
-};
-
-const fmtDist = (m) => {
-  if (!m) return '';
-  return m < 1000 ? `${Math.round(m)}μ` : `${(m/1000).toFixed(1)}χλμ`;
-};
-
-// ─── OSRM maneuver → icon + Greek text ──────────────────────────────────────
-const MANEUVER_MAP = {
-  'turn-right':        { icon: IconArrowRight,           text: 'Στρίψε δεξιά' },
-  'turn-left':         { icon: IconArrowLeft,            text: 'Στρίψε αριστερά' },
-  'turn-slight-right': { icon: IconArrowBearRight,       text: 'Ελαφρά δεξιά' },
-  'turn-slight-left':  { icon: IconArrowBearLeft,        text: 'Ελαφρά αριστερά' },
-  'turn-sharp-right':  { icon: IconArrowRight,           text: 'Απότομη στροφή δεξιά' },
-  'turn-sharp-left':   { icon: IconArrowLeft,            text: 'Απότομη στροφή αριστερά' },
-  'straight':          { icon: IconArrowUpRight,         text: 'Συνέχισε ευθεία' },
-  'depart':            { icon: IconNavigation,           text: 'Ξεκίνα' },
-  'arrive':            { icon: IconFlag,                 text: 'Έφτασες' },
-  'roundabout':        { icon: IconArrowRoundaboutRight, text: 'Μπες στον κυκλικό κόμβο' },
-  'rotary':            { icon: IconArrowRoundaboutRight, text: 'Κυκλικός κόμβος' },
-  'merge':             { icon: IconArrowUpRight,         text: 'Συγχωνεύσου' },
-  'fork-right':        { icon: IconArrowBearRight,       text: 'Κράτα δεξιά στη διακλάδωση' },
-  'fork-left':         { icon: IconArrowBearLeft,        text: 'Κράτα αριστερά στη διακλάδωση' },
-  'end of road-right': { icon: IconArrowRight,           text: 'Στο τέλος στρίψε δεξιά' },
-  'end of road-left':  { icon: IconArrowLeft,            text: 'Στο τέλος στρίψε αριστερά' },
-  'continue':          { icon: IconArrowUpRight,         text: 'Συνέχισε' },
-  'new name':          { icon: IconArrowUpRight,         text: 'Συνέχισε σε' },
-};
-
-const getManeuver = (step) => {
-  const type = step.maneuver?.type || '';
-  const modifier = step.maneuver?.modifier || '';
-  const key = modifier ? `${type}-${modifier}` : type;
-  const m = MANEUVER_MAP[key] || MANEUVER_MAP[type] || { icon: IconArrowUpRight, text: 'Συνέχισε' };
-  const road = step.name || step.ref || '';
-  return { ...m, road, distance: step.distance, duration: step.duration };
-};
-
-// ─── Parse all OSRM steps from legs ─────────────────────────────────────────
-const parseSteps = (legs) => {
-  if (!legs?.length) return [];
-  const steps = [];
-  legs.forEach((leg, legIdx) => {
-    (leg.steps || []).forEach((step) => {
-      if (step.distance < 5 && step.maneuver?.type === 'arrive' && legIdx < legs.length - 1) return; // skip intermediate arrives
-      steps.push(getManeuver(step));
-    });
-  });
-  return steps;
-};
-
-// ─── Open external navigation app ───────────────────────────────────────────
-const openExternalNav = (userLoc, orderedStores, travelMode) => {
-  // Build waypoints for Google Maps URL
-  const waypoints = orderedStores.map(s => `${s.lat},${s.lng}`);
-  const origin = `${userLoc.lat},${userLoc.lng}`;
-  const destination = origin; // return home
-
-  // Google Maps travel mode mapping
-  const gmodeMap = { driving: 'driving', walking: 'walking', cycling: 'bicycling' };
-  const gmode = gmodeMap[travelMode] || 'driving';
-
-  // Try to detect platform
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-  if (isIOS) {
-    // Apple Maps with waypoints isn't great, use Google Maps URL which opens in browser/app
-    const waypointStr = waypoints.join('|');
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypointStr}&travelmode=${gmode}`;
-    window.open(url, '_blank');
-  } else {
-    // Google Maps intent (opens app if installed, otherwise web)
-    const waypointStr = waypoints.join('|');
-    const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypointStr}&travelmode=${gmode}`;
-    window.open(url, '_blank');
-  }
-};
-
-// ─── Custom icons ───────────────────────────────────────────────────────────
-const storeIcon = (L, color) => L.divIcon({
-  className: '',
-  html: `<div style="width:30px;height:30px;border-radius:50% 50% 50% 4px;background:${color};border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.3);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center"><div style="transform:rotate(45deg);font-size:13px">🏪</div></div>`,
-  iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -32],
-});
-
-const userIcon = (L) => L.divIcon({
-  className: '',
-  html: `<div style="width:18px;height:18px;border-radius:50%;background:#4285F4;border:3px solid #fff;box-shadow:0 0 0 4px rgba(66,133,244,0.25),0 2px 8px rgba(0,0,0,0.2)"></div>`,
-  iconSize: [18, 18], iconAnchor: [9, 9],
-});
+// ─── FAB position persistence ────────────────────────────────────────────────
+const FAB_KEY = 'sg_fab_pos';
+const saveFabPos = (x,y) => { try{localStorage.setItem(FAB_KEY,JSON.stringify({x,y}))}catch{} };
+const loadFabPos = () => { try{const v=JSON.parse(localStorage.getItem(FAB_KEY));if(v?.x!=null)return v}catch{} return null; };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// FloatingMapButton
+// FloatingMapButton — DRAGGABLE + animated
 // ═══════════════════════════════════════════════════════════════════════════════
 export function FloatingMapButton({ onClick, itemCount = 0 }) {
+  const [pos, setPos] = useState(() => loadFabPos() || { x: null, y: null });
+  const [dragging, setDragging] = useState(false);
+  const [ripple, setRipple] = useState(false);
+  const dragRef = useRef({ startX:0, startY:0, startPosX:0, startPosY:0, moved:false });
+  const btnRef = useRef(null);
+
+  // Default position (bottom-right)
+  const style = pos.x != null ? {
+    position:'fixed', left:pos.x, top:pos.y, right:'auto', bottom:'auto', zIndex:900,
+  } : {
+    position:'fixed', bottom:90, right:16, zIndex:900,
+  };
+
+  const handleStart = (clientX, clientY) => {
+    const rect = btnRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    dragRef.current = { startX:clientX, startY:clientY, startPosX:rect.left, startPosY:rect.top, moved:false };
+    setDragging(true);
+  };
+
+  const handleMove = (clientX, clientY) => {
+    if (!dragging) return;
+    const d = dragRef.current;
+    const dx = clientX - d.startX;
+    const dy = clientY - d.startY;
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) d.moved = true;
+    if (!d.moved) return;
+    const nx = Math.max(0, Math.min(window.innerWidth - 52, d.startPosX + dx));
+    const ny = Math.max(0, Math.min(window.innerHeight - 52, d.startPosY + dy));
+    setPos({ x: nx, y: ny });
+  };
+
+  const handleEnd = () => {
+    if (!dragging) return;
+    setDragging(false);
+    if (dragRef.current.moved) {
+      saveFabPos(pos.x, pos.y);
+    } else {
+      // Tap — trigger ripple + open
+      setRipple(true);
+      setTimeout(() => { setRipple(false); onClick?.(); }, 350);
+    }
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const mm = e => handleMove(e.clientX, e.clientY);
+    const mu = () => handleEnd();
+    window.addEventListener('mousemove', mm);
+    window.addEventListener('mouseup', mu);
+    return () => { window.removeEventListener('mousemove', mm); window.removeEventListener('mouseup', mu); };
+  });
+
   return (
-    <button onClick={onClick} className="smart-route-fab" title="Smart Route" aria-label="Smart Route">
+    <button
+      ref={btnRef}
+      className={`smart-route-fab ${ripple ? 'ripple' : ''} ${dragging ? 'dragging' : ''}`}
+      style={style}
+      onTouchStart={e => { e.stopPropagation(); handleStart(e.touches[0].clientX, e.touches[0].clientY); }}
+      onTouchMove={e => { e.stopPropagation(); handleMove(e.touches[0].clientX, e.touches[0].clientY); }}
+      onTouchEnd={e => { e.stopPropagation(); handleEnd(); }}
+      onMouseDown={e => { e.preventDefault(); handleStart(e.clientX, e.clientY); }}
+      aria-label="Smart Route"
+    >
       <IconMap2 size={22} stroke={2.2} />
       {itemCount > 0 && <span className="smart-route-fab-badge">{itemCount > 9 ? '9+' : itemCount}</span>}
+      {ripple && <span className="fab-ripple" />}
     </button>
   );
 }
@@ -207,29 +179,26 @@ export function FloatingMapButton({ onClick, itemCount = 0 }) {
 // SmartRouteMap
 // ═══════════════════════════════════════════════════════════════════════════════
 const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] }) {
-  const [status, setStatus]       = useState('loading');
-  const [userLoc, setUserLoc]     = useState(null);
-  const [stores, setStores]       = useState([]);
-  const [selected, setSelected]   = useState([]);
-  const [route, setRoute]         = useState(null);
-  const [mode, setMode]           = useState('driving');
+  const [status, setStatus] = useState('loading');
+  const [userLoc, setUserLoc] = useState(null);
+  const [stores, setStores] = useState([]);
+  const [selected, setSelected] = useState([]);
+  const [route, setRoute] = useState(null);
+  const [mode, setMode] = useState('driving');
   const [searching, setSearching] = useState(false);
-  const [routing, setRouting]     = useState(false);
-  const [panel, setPanel]         = useState(true);
-  const [showNav, setShowNav]     = useState(false); // turn-by-turn view
-  const [err, setErr]             = useState('');
+  const [routing, setRouting] = useState(false);
+  const [panel, setPanel] = useState(true);
+  const [showNav, setShowNav] = useState(false);
+  const [err, setErr] = useState('');
 
-  const containerRef  = useRef(null);
-  const mapRef        = useRef(null);
-  const markersRef    = useRef([]);
+  const containerRef = useRef(null);
+  const mapRef = useRef(null);
+  const markersRef = useRef([]);
   const routeLayerRef = useRef(null);
 
-  const countItems = useCallback((chain) => {
+  const countItems = useCallback(chain => {
     if (!chain) return 0;
-    return items.filter(i => {
-      const s = (i.store||'').toLowerCase();
-      return chain.tags.some(t => s.includes(t.toLowerCase()));
-    }).length;
+    return items.filter(i => { const s=(i.store||'').toLowerCase(); return chain.tags.some(t=>s.includes(t.toLowerCase())); }).length;
   }, [items]);
 
   // Lock scroll
@@ -237,313 +206,190 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
     if (!isOpen) return;
     const y = window.scrollY;
     Object.assign(document.body.style, { overflow:'hidden', position:'fixed', top:`-${y}px`, width:'100%' });
-    return () => {
-      Object.assign(document.body.style, { overflow:'', position:'', top:'', width:'' });
-      window.scrollTo(0, y);
-    };
+    return () => { Object.assign(document.body.style, { overflow:'', position:'', top:'', width:'' }); window.scrollTo(0,y); };
   }, [isOpen]);
 
   // Init
   useEffect(() => {
     if (!isOpen) return;
     let dead = false;
-
     (async () => {
       try {
         setStatus('loading'); setErr('');
         await loadLeaflet();
         if (dead) return;
-        const L = window.L;
-
-        const pos = await new Promise((ok, fail) =>
-          navigator.geolocation.getCurrentPosition(
-            p => ok({ lat: p.coords.latitude, lng: p.coords.longitude }),
-            fail,
-            { enableHighAccuracy: true, timeout: 12000 }
-          )
-        );
+        const pos = await new Promise((ok,fail) => navigator.geolocation.getCurrentPosition(p=>ok({lat:p.coords.latitude,lng:p.coords.longitude}),fail,{enableHighAccuracy:true,timeout:12000}));
         if (dead) return;
         setUserLoc(pos);
-
         if (containerRef.current && !mapRef.current) {
-          const map = L.map(containerRef.current, {
-            center: [pos.lat, pos.lng], zoom: 14,
-            zoomControl: false, attributionControl: false,
-          });
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-          L.control.attribution({ position:'bottomright', prefix:false }).addAttribution('© <a href="https://openstreetmap.org">OSM</a>').addTo(map);
-          L.control.zoom({ position:'topright' }).addTo(map);
-          L.marker([pos.lat, pos.lng], { icon: userIcon(L), zIndexOffset: 1000 }).addTo(map).bindPopup('<b>📍 Η θέση σου</b>');
+          const L = window.L;
+          const map = L.map(containerRef.current, { center:[pos.lat,pos.lng], zoom:14, zoomControl:false, attributionControl:false });
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+          L.control.attribution({position:'bottomright',prefix:false}).addAttribution('© <a href="https://openstreetmap.org">OSM</a>').addTo(map);
+          L.control.zoom({position:'topright'}).addTo(map);
+          L.marker([pos.lat,pos.lng],{icon:mkUser(L),zIndexOffset:1000}).addTo(map).bindPopup('<b>📍 Εδώ είσαι</b>');
           mapRef.current = map;
-          setTimeout(() => map.invalidateSize(), 200);
+          setTimeout(() => map.invalidateSize(), 150);
         }
         setStatus('ready');
         await doSearch(pos);
       } catch (e) {
         if (dead) return;
-        setErr(e.code === 1 ? 'Ενεργοποίησε την τοποθεσία (GPS) στις ρυθμίσεις.' : e.code === 3 ? 'Timeout. Δοκίμασε ξανά.' : (e.message || 'Σφάλμα'));
+        setErr(e.code===1?'Ενεργοποίησε GPS στις ρυθμίσεις.':e.code===3?'Timeout. Δοκίμασε ξανά.':(e.message||'Σφάλμα'));
         setStatus('error');
       }
     })();
-
-    return () => {
-      dead = true;
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-      markersRef.current = [];
-      routeLayerRef.current = null;
-      setStores([]); setSelected([]); setRoute(null);
-    };
+    return () => { dead=true; if(mapRef.current){mapRef.current.remove();mapRef.current=null} markersRef.current=[]; routeLayerRef.current=null; setStores([]); setSelected([]); setRoute(null); };
   }, [isOpen]);
 
-  // Search
-  const doSearch = async (pos) => {
+  const doSearch = async pos => {
     setSearching(true);
     try {
       const raw = await searchOverpass(pos.lat, pos.lng, 5000);
       const L = window.L, map = mapRef.current;
-      markersRef.current.forEach(m => map?.removeLayer(m));
-      markersRef.current = [];
-
+      markersRef.current.forEach(m => map?.removeLayer(m)); markersRef.current = [];
       const enriched = raw.map(s => {
         const chain = matchChain(s.name, s.brand);
-        return { ...s, chain, chainId: chain?.id||'other', chainName: chain?.name||s.name, chainColor: chain?.color||'#6b7280', chainEmoji: chain?.emoji||'⚪', distance: haversine(pos.lat, pos.lng, s.lat, s.lng), itemCount: countItems(chain) };
-      }).sort((a,b) => a.distance - b.distance);
-
+        return { ...s, chain, chainId:chain?.id||'other', chainName:chain?.name||s.name, chainColor:chain?.color||'#6b7280', chainEmoji:chain?.emoji||'⚪', distance:hav(pos.lat,pos.lng,s.lat,s.lng), itemCount:countItems(chain) };
+      }).sort((a,b) => a.distance-b.distance);
       setStores(enriched);
-
       if (map && L) {
         enriched.forEach(s => {
-          const m = L.marker([s.lat, s.lng], { icon: storeIcon(L, s.chainColor) }).addTo(map);
-          let popup = `<div style="font-family:-apple-system,sans-serif;min-width:190px;max-width:260px">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-              <span style="font-size:16px">${s.chainEmoji}</span>
-              <div><div style="font-weight:700;font-size:13px">${s.name}</div>${s.address?`<div style="font-size:11px;color:#666">${s.address}</div>`:''}</div>
-            </div>
-            <div style="font-size:11px;color:#555">📍 ${fmtDist(s.distance)}</div>`;
+          const m = L.marker([s.lat,s.lng],{icon:mkStore(L,s.chainColor)}).addTo(map);
+          let p = `<div style="font-family:-apple-system,sans-serif;min-width:180px;max-width:250px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:16px">${s.chainEmoji}</span><div><div style="font-weight:700;font-size:13px">${s.name}</div>${s.address?`<div style="font-size:11px;color:#666">${s.address}</div>`:''}</div></div><div style="font-size:11px;color:#555">📍 ${fmtM(s.distance)}</div>`;
           if (s.itemCount > 0 && s.chain) {
-            const si = items.filter(i => s.chain.tags.some(t => (i.store||'').toLowerCase().includes(t.toLowerCase())));
-            popup += `<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">🛒 ${si.length} προϊόντα:</div>`;
-            si.slice(0,4).forEach(i => { popup += `<div style="font-size:11px;color:#555">• ${i.name}${i.price>0?` <b style="color:#10b981">€${i.price.toFixed(2)}</b>`:''}</div>`; });
-            if (si.length>4) popup += `<div style="font-size:10px;color:#999">+${si.length-4} ακόμα</div>`;
-            const tot = si.reduce((a,i) => a+(i.price>0?i.price:0), 0);
-            if (tot>0) popup += `<div style="font-size:12px;font-weight:700;color:#10b981;margin-top:3px;border-top:1px solid #eee;padding-top:3px">Σύνολο: €${tot.toFixed(2)}</div>`;
-            popup += '</div>';
+            const si = items.filter(i=>s.chain.tags.some(t=>(i.store||'').toLowerCase().includes(t.toLowerCase())));
+            p += `<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">🛒 ${si.length} προϊόντα:</div>`;
+            si.slice(0,3).forEach(i=>{p+=`<div style="font-size:11px;color:#555">• ${i.name||i.text}${i.price>0?` <b style="color:#10b981">€${i.price.toFixed(2)}</b>`:''}</div>`});
+            if(si.length>3) p+=`<div style="font-size:10px;color:#999">+${si.length-3}</div>`;
+            const tot=si.reduce((a,i)=>a+(i.price>0?i.price:0),0);
+            if(tot>0) p+=`<div style="font-size:12px;font-weight:700;color:#10b981;margin-top:3px;border-top:1px solid #eee;padding-top:3px">€${tot.toFixed(2)}</div>`;
+            p+='</div>';
           }
-          popup += '</div>';
-          m.bindPopup(popup);
-          markersRef.current.push(m);
+          p+='</div>';
+          m.bindPopup(p); markersRef.current.push(m);
         });
-
-        // Auto-select closest per chain that has items
-        const auto = [], seen = new Set();
-        enriched.forEach(s => { if (s.itemCount>0 && !seen.has(s.chainId)) { auto.push(s); seen.add(s.chainId); } });
-        if (auto.length) setSelected(auto);
+        const auto=[], seen=new Set();
+        enriched.forEach(s=>{if(s.itemCount>0&&!seen.has(s.chainId)){auto.push(s);seen.add(s.chainId)}});
+        if(auto.length) setSelected(auto);
       }
-    } catch (e) { console.error('Search error:', e); }
+    } catch(e) { console.error('Search error:',e); }
     setSearching(false);
   };
 
-  // Route
   const calcRoute = useCallback(async () => {
-    if (!mapRef.current || !userLoc || !selected.length) return;
+    if (!mapRef.current||!userLoc||!selected.length) return;
     setRouting(true); setRoute(null);
-    const L = window.L, map = mapRef.current;
-    if (routeLayerRef.current) { map.removeLayer(routeLayerRef.current); routeLayerRef.current = null; }
-
+    const L=window.L, map=mapRef.current;
+    if(routeLayerRef.current){map.removeLayer(routeLayerRef.current);routeLayerRef.current=null}
     try {
-      const pts = [userLoc, ...selected.map(s => ({lat:s.lat, lng:s.lng})), userLoc];
-      const r = selected.length === 1 ? await getOSRMRoute(pts, mode) : await getOSRMTrip(pts, mode);
-      const coords = r.geometry.coordinates.map(c => [c[1], c[0]]);
-      const line = L.polyline(coords, { color:'#6366f1', weight:5, opacity:0.85, smoothFactor:1, lineCap:'round' }).addTo(map);
-      routeLayerRef.current = line;
-      map.fitBounds(line.getBounds(), { padding:[50,50] });
+      const pts=[userLoc,...selected.map(s=>({lat:s.lat,lng:s.lng})),userLoc];
+      const r = selected.length===1 ? await osrmRoute(pts,mode) : await osrmTrip(pts,mode);
+      const coords=r.geometry.coordinates.map(c=>[c[1],c[0]]);
+      // Animated route drawing
+      const line = L.polyline([],{color:'#6366f1',weight:5,opacity:.85,smoothFactor:1,lineCap:'round',dashArray:'8 12'}).addTo(map);
+      routeLayerRef.current=line;
+      // Animate: add points progressively
+      const step=Math.max(1,Math.floor(coords.length/40));
+      let idx=0;
+      const draw=()=>{if(idx>=coords.length){line.setStyle({dashArray:null});map.fitBounds(line.getBounds(),{padding:[50,50]});return}
+        line.addLatLng(coords[Math.min(idx,coords.length-1)]);idx+=step;requestAnimationFrame(draw)};
+      draw();
 
-      let ordered = selected;
-      if (r.waypoints && selected.length > 1) {
-        const wp = r.waypoints.slice(1,-1).map(w => w.waypoint_index);
-        if (wp.length === selected.length) {
-          const idx = selected.map((s,i) => ({s, i:wp[i]}));
-          idx.sort((a,b) => a.i - b.i);
-          ordered = idx.map(x => x.s);
-        }
-      }
-      setRoute({ distance: r.distance, duration: r.duration, orderedStores: ordered, steps: parseSteps(r.legs), legs: r.legs });
-    } catch (e) { setErr('Δεν βρέθηκε διαδρομή.'); }
+      let ordered=selected;
+      if(r.waypoints&&selected.length>1){const wp=r.waypoints.slice(1,-1).map(w=>w.waypoint_index);if(wp.length===selected.length){const ix=selected.map((s,i)=>({s,i:wp[i]}));ix.sort((a,b)=>a.i-b.i);ordered=ix.map(x=>x.s)}}
+      setRoute({distance:r.distance,duration:r.duration,orderedStores:ordered,steps:parseSteps(r.legs)});
+    } catch(e){setErr('Δεν βρέθηκε διαδρομή.')}
     setRouting(false);
-  }, [userLoc, selected, mode]);
+  },[userLoc,selected,mode]);
 
-  const toggle = (s) => { setSelected(p => p.find(x=>x.id===s.id) ? p.filter(x=>x.id!==s.id) : [...p, s]); setRoute(null); setShowNav(false); };
-  const recenter = () => { if (mapRef.current && userLoc) mapRef.current.setView([userLoc.lat, userLoc.lng], 14); };
-  const refresh = () => { if (userLoc) { setRoute(null); setSelected([]); setShowNav(false); doSearch(userLoc); } };
+  const toggle=s=>{setSelected(p=>p.find(x=>x.id===s.id)?p.filter(x=>x.id!==s.id):[...p,s]);setRoute(null);setShowNav(false)};
+  const recenter=()=>{if(mapRef.current&&userLoc)mapRef.current.setView([userLoc.lat,userLoc.lng],14)};
+  const refresh=()=>{if(userLoc){setRoute(null);setSelected([]);setShowNav(false);doSearch(userLoc)}};
 
   if (!isOpen) return null;
 
   return createPortal(
     <div className="smart-route-overlay">
-      {/* Top bar */}
       <div className="smart-route-topbar">
         <div className="smart-route-topbar-left">
-          <IconMap2 size={20} stroke={2} />
+          <IconMap2 size={20} stroke={2}/>
           <div>
             <div className="smart-route-title">Smart Route</div>
             <div className="smart-route-subtitle">
-              {searching ? 'Αναζήτηση...' : stores.length > 0 ? `${stores.length} κοντινά σούπερ` : status === 'ready' ? 'Έτοιμο' : 'Φόρτωση...'}
+              {searching?'Αναζήτηση...':stores.length>0?`${stores.length} κοντινά σούπερ`:status==='ready'?'Έτοιμο':'Φόρτωση...'}
             </div>
           </div>
         </div>
         <div className="smart-route-topbar-actions">
-          <button className="smart-route-icon-btn" onClick={recenter} title="Η θέση μου"><IconCurrentLocation size={18}/></button>
+          <button className="smart-route-icon-btn" onClick={recenter} title="Θέση μου"><IconCurrentLocation size={18}/></button>
           <button className="smart-route-icon-btn" onClick={refresh} title="Ανανέωση"><IconRefresh size={18}/></button>
           <button className="smart-route-close-btn" onClick={onClose}><IconX size={20}/></button>
         </div>
       </div>
 
-      {/* Map */}
       <div className="smart-route-map-container">
-        <div ref={containerRef} className="smart-route-map" />
-        {status === 'loading' && (
-          <div className="smart-route-loading">
-            <div className="smart-route-spinner" />
-            <div style={{ fontWeight:600 }}>Φόρτωση χάρτη...</div>
-            <div style={{ fontSize:12, color:'var(--text-secondary,#888)' }}>OpenStreetMap · 100% Δωρεάν</div>
-          </div>
-        )}
-        {status === 'error' && (
-          <div className="smart-route-loading">
-            <IconAlertTriangle size={40} color="#f59e0b" />
-            <div style={{ fontWeight:700, marginTop:12, fontSize:16 }}>Σφάλμα</div>
-            <div style={{ fontSize:13, color:'var(--text-secondary,#888)', textAlign:'center', maxWidth:280, lineHeight:1.6 }}>{err}</div>
-            <button className="smart-route-retry-btn" onClick={() => { setStatus('loading'); setErr(''); }}>
-              <IconRefresh size={16}/> Δοκίμασε ξανά
-            </button>
-          </div>
-        )}
+        <div ref={containerRef} className="smart-route-map"/>
+        {status==='loading'&&<div className="smart-route-loading"><div className="smart-route-spinner"/><div style={{fontWeight:600}}>Φόρτωση χάρτη...</div></div>}
+        {status==='error'&&<div className="smart-route-loading"><IconAlertTriangle size={40} color="#f59e0b"/><div style={{fontWeight:700,marginTop:12}}>{err}</div><button className="smart-route-retry-btn" onClick={()=>{setStatus('loading');setErr('')}}><IconRefresh size={16}/>Ξαναδοκίμασε</button></div>}
       </div>
 
-      {/* Bottom panel */}
-      <div className={`smart-route-panel ${panel ? 'expanded' : 'collapsed'}`}>
-        <div className="smart-route-panel-handle" onClick={() => setPanel(!panel)}>
-          <div className="smart-route-handle-bar" />
+      <div className={`smart-route-panel ${panel?'expanded':'collapsed'}`}>
+        <div className="smart-route-panel-handle" onClick={()=>setPanel(!panel)}>
+          <div className="smart-route-handle-bar"/>
           <div className="smart-route-panel-header">
-            <span style={{ display:'flex', alignItems:'center', gap:6 }}>
-              <IconBuildingStore size={16}/>{selected.length > 0 ? ` ${selected.length} επιλεγμένα` : ' Κοντινά Σούπερ'}
-            </span>
-            {panel ? <IconChevronDown size={18}/> : <IconChevronUp size={18}/>}
+            <span style={{display:'flex',alignItems:'center',gap:6}}><IconBuildingStore size={16}/>{selected.length>0?` ${selected.length} επιλεγμένα`:' Κοντινά Σούπερ'}</span>
+            {panel?<IconChevronDown size={18}/>:<IconChevronUp size={18}/>}
           </div>
         </div>
-
-        {panel && (
-          <div className="smart-route-panel-content">
-            <div className="smart-route-travel-modes">
-              {[{ m:'driving', i:<IconCar size={15}/>, l:'Αυτοκίνητο' }, { m:'cycling', i:<IconBike size={15}/>, l:'Ποδήλατο' }, { m:'walking', i:<IconWalk size={15}/>, l:'Πόδια' }].map(({m,i,l}) => (
-                <button key={m} className={`smart-route-travel-btn ${mode===m?'active':''}`} onClick={()=>{setMode(m);setRoute(null);setShowNav(false);}}>{i} {l}</button>
-              ))}
-            </div>
-
-            {searching && <div className="smart-route-searching"><div className="smart-route-spinner small"/>Αναζήτηση κοντινών σούπερ...</div>}
-
-            <div className="smart-route-store-list">
-              {stores.map(s => {
-                const sel = selected.some(x => x.id === s.id);
-                return (
-                  <div key={s.id} className={`smart-route-store-card ${sel?'selected':''}`} onClick={() => toggle(s)}>
-                    <div className="smart-route-store-left">
-                      <div className="smart-route-store-icon" style={{ background:s.chainColor+'18', borderColor:s.chainColor+'40' }}>
-                        <span>{s.chainEmoji}</span>
-                      </div>
-                      <div className="smart-route-store-info">
-                        <div className="smart-route-store-name">{s.name}</div>
-                        <div className="smart-route-store-meta">
-                          <span>📍 {fmtDist(s.distance)}</span>
-                          {s.address && <span>{s.address}</span>}
-                        </div>
-                        {s.itemCount > 0 && <div className="smart-route-store-items"><IconShoppingCart size={12}/>{s.itemCount} προϊόντ{s.itemCount===1?'':'α'} στη λίστα</div>}
-                      </div>
-                    </div>
-                    <div className={`smart-route-store-check ${sel?'checked':''}`}>{sel && <IconCheck size={14} color="#fff"/>}</div>
-                  </div>
-                );
-              })}
-              {!searching && !stores.length && status === 'ready' && (
-                <div className="smart-route-empty"><IconBuildingStore size={32} color="var(--text-secondary,#888)"/><div>Δεν βρέθηκαν κοντινά σούπερ</div></div>
-              )}
-            </div>
-
-            {selected.length > 0 && (
-              <button className="smart-route-calc-btn" onClick={calcRoute} disabled={routing}>
-                {routing ? <><IconLoader2 size={18} className="smart-route-spin-icon"/> Υπολογισμός...</> : <><IconRoute size={18}/> {route?'Επανυπολογισμός':'Υπολόγισε Διαδρομή'} ({selected.length} στάσεις)</>}
-              </button>
-            )}
-
-            {route && (
-              <div className="smart-route-result">
-                <div className="smart-route-result-header">
-                  <div className="smart-route-result-stat"><IconClock size={16}/><span>{fmtDuration(route.duration)}</span></div>
-                  <div className="smart-route-result-stat"><IconMapPin size={16}/><span>{fmtDist(route.distance)}</span></div>
-                </div>
-                <div className="smart-route-result-stops">
-                  <div className="smart-route-stop"><div className="smart-route-stop-dot start"/><div className="smart-route-stop-line"/><div className="smart-route-stop-text"><div className="smart-route-stop-name">📍 Η θέση σου</div></div></div>
-                  {route.orderedStores.map((s,i) => (
-                    <div key={s.id} className="smart-route-stop">
-                      <div className="smart-route-stop-dot" style={{ background:s.chainColor }}/>
-                      {i < route.orderedStores.length-1 && <div className="smart-route-stop-line"/>}
-                      <div className="smart-route-stop-text">
-                        <div className="smart-route-stop-name">{s.chainEmoji} {s.name}</div>
-                        {s.itemCount > 0 && <div className="smart-route-stop-items">{s.itemCount} προϊόντα εδώ</div>}
-                        <div className="smart-route-stop-time">📍 {fmtDist(s.distance)} από εσένα</div>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="smart-route-stop"><div className="smart-route-stop-dot end"/><div className="smart-route-stop-text"><div className="smart-route-stop-name">🏠 Επιστροφή</div></div></div>
-                </div>
-
-                {/* ── Navigation buttons ── */}
-                <div className="smart-route-nav-actions">
-                  <button className="smart-route-nav-btn primary" onClick={() => openExternalNav(userLoc, route.orderedStores, mode)}>
-                    <IconNavigation size={17}/> Πλοήγηση
-                    <span className="smart-route-nav-btn-sub">Google Maps</span>
-                  </button>
-                  <button className="smart-route-nav-btn secondary" onClick={() => setShowNav(!showNav)}>
-                    <IconRoute size={17}/> {showNav ? 'Κρύψε' : 'Οδηγίες'}
-                  </button>
-                </div>
-
-                {/* ── Turn-by-turn directions ── */}
-                {showNav && route.steps?.length > 0 && (
-                  <div className="smart-route-directions">
-                    <div className="smart-route-directions-title">
-                      {mode === 'driving' ? '🚗' : mode === 'cycling' ? '🚲' : '🚶'} Βήμα-βήμα οδηγίες
-                    </div>
-                    {route.steps.map((step, i) => {
-                      const StepIcon = step.icon;
-                      return (
-                        <div key={i} className="smart-route-direction-step">
-                          <div className="smart-route-direction-icon">
-                            <StepIcon size={16} />
-                          </div>
-                          <div className="smart-route-direction-text">
-                            <div className="smart-route-direction-instruction">
-                              {step.text}{step.road ? ` — ${step.road}` : ''}
-                            </div>
-                            {step.distance > 0 && (
-                              <div className="smart-route-direction-meta">
-                                {fmtDist(step.distance)} · {fmtDuration(step.duration)}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+        {panel&&<div className="smart-route-panel-content">
+          <div className="smart-route-travel-modes">
+            {[{m:'driving',i:<IconCar size={15}/>,l:'Αυτοκίνητο'},{m:'cycling',i:<IconBike size={15}/>,l:'Ποδήλατο'},{m:'walking',i:<IconWalk size={15}/>,l:'Πόδια'}].map(({m,i,l})=>(
+              <button key={m} className={`smart-route-travel-btn ${mode===m?'active':''}`} onClick={()=>{setMode(m);setRoute(null);setShowNav(false)}}>{i} {l}</button>
+            ))}
           </div>
-        )}
+          {searching&&<div className="smart-route-searching"><div className="smart-route-spinner small"/>Αναζήτηση...</div>}
+          <div className="smart-route-store-list">
+            {stores.map(s=>{const sel=selected.some(x=>x.id===s.id);return(
+              <div key={s.id} className={`smart-route-store-card ${sel?'selected':''}`} onClick={()=>toggle(s)}>
+                <div className="smart-route-store-left">
+                  <div className="smart-route-store-icon" style={{background:s.chainColor+'18',borderColor:s.chainColor+'40'}}><span>{s.chainEmoji}</span></div>
+                  <div className="smart-route-store-info">
+                    <div className="smart-route-store-name">{s.name}</div>
+                    <div className="smart-route-store-meta"><span>📍 {fmtM(s.distance)}</span>{s.address&&<span>{s.address}</span>}</div>
+                    {s.itemCount>0&&<div className="smart-route-store-items"><IconShoppingCart size={12}/>{s.itemCount} προϊόντα</div>}
+                  </div>
+                </div>
+                <div className={`smart-route-store-check ${sel?'checked':''}`}>{sel&&<IconCheck size={14} color="#fff"/>}</div>
+              </div>
+            )})}
+            {!searching&&!stores.length&&status==='ready'&&<div className="smart-route-empty"><IconBuildingStore size={32} color="#888"/><div>Δεν βρέθηκαν σούπερ κοντά</div></div>}
+          </div>
+          {selected.length>0&&<button className="smart-route-calc-btn" onClick={calcRoute} disabled={routing}>
+            {routing?<><IconLoader2 size={18} className="smart-route-spin-icon"/>Υπολογισμός...</>:<><IconRoute size={18}/>{route?'Επανυπολογισμός':'Υπολόγισε Διαδρομή'} ({selected.length})</>}
+          </button>}
+          {route&&<div className="smart-route-result">
+            <div className="smart-route-result-header">
+              <div className="smart-route-result-stat"><IconClock size={16}/><span>{fmtD(route.duration)}</span></div>
+              <div className="smart-route-result-stat"><IconMapPin size={16}/><span>{fmtM(route.distance)}</span></div>
+            </div>
+            <div className="smart-route-result-stops">
+              <div className="smart-route-stop"><div className="smart-route-stop-dot start"/><div className="smart-route-stop-line"/><div className="smart-route-stop-text"><div className="smart-route-stop-name">📍 Εδώ είσαι</div></div></div>
+              {route.orderedStores.map((s,i)=><div key={s.id} className="smart-route-stop"><div className="smart-route-stop-dot" style={{background:s.chainColor}}/>{i<route.orderedStores.length-1&&<div className="smart-route-stop-line"/>}<div className="smart-route-stop-text"><div className="smart-route-stop-name">{s.chainEmoji} {s.name}</div>{s.itemCount>0&&<div className="smart-route-stop-items">{s.itemCount} προϊόντα</div>}<div className="smart-route-stop-time">{fmtM(s.distance)}</div></div></div>)}
+              <div className="smart-route-stop"><div className="smart-route-stop-dot end"/><div className="smart-route-stop-text"><div className="smart-route-stop-name">🏠 Επιστροφή</div></div></div>
+            </div>
+            <div className="smart-route-nav-actions">
+              <button className="smart-route-nav-btn primary" onClick={()=>openNav(userLoc,route.orderedStores,mode)}><IconNavigation size={17}/>Πλοήγηση<span className="smart-route-nav-btn-sub">Google Maps</span></button>
+              <button className="smart-route-nav-btn secondary" onClick={()=>setShowNav(!showNav)}><IconRoute size={17}/>{showNav?'Κρύψε':'Οδηγίες'}</button>
+            </div>
+            {showNav&&route.steps?.length>0&&<div className="smart-route-directions">
+              <div className="smart-route-directions-title">{mode==='driving'?'🚗':mode==='cycling'?'🚲':'🚶'} Οδηγίες</div>
+              {route.steps.map((s,i)=>{const I=s.i;return<div key={i} className="smart-route-direction-step"><div className="smart-route-direction-icon"><I size={16}/></div><div className="smart-route-direction-text"><div className="smart-route-direction-instruction">{s.t}{s.road?` — ${s.road}`:''}</div>{s.distance>0&&<div className="smart-route-direction-meta">{fmtM(s.distance)} · {fmtD(s.duration)}</div>}</div></div>})}
+            </div>}
+          </div>}
+        </div>}
       </div>
-    </div>,
-    document.body
-  );
+    </div>,document.body);
 });
 
 export default SmartRouteMap;
