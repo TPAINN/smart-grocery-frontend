@@ -273,6 +273,20 @@ body.dark-mode .dropdown-item.logout:hover { background: rgba(239,68,68,.1); }
 
 /* .tab-btn → defined in Premium UI section below */
 
+.tab-btn-locked {
+  position: relative;
+  opacity: 0.7;
+}
+
+.tab-btn-locked .tab-lock-indicator {
+  font-size: 11px;
+}
+
+/* Smooth tab content entrance for a more premium feel */
+.tab-content {
+  animation: fadeUp 0.45s var(--smooth) both;
+}
+
 /* ── BUDGET BANNER ─────────────────────────────────────── */
 .budget-banner {
   background: linear-gradient(135deg, #0c1526 0%, #162035 50%, #0c1526 100%);

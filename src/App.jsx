@@ -26,6 +26,27 @@ const API_BASE      = 'https://my-smart-grocery-api.onrender.com';
 const CACHE_VERSION = 'v3';
 const CACHE_TTL_MS  = 10 * 60 * 1000; // 10 min
 
+// #region agent log
+const debugLog = (payload) => {
+  try {
+    fetch('http://127.0.0.1:7511/ingest/af701115-fec6-479a-b09b-c1d32de6d5c8', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Debug-Session-Id': 'fe5a26',
+      },
+      body: JSON.stringify({
+        sessionId: 'fe5a26',
+        timestamp: Date.now(),
+        ...payload,
+      }),
+    }).catch(() => {});
+  } catch {
+    // swallow
+  }
+};
+// #endregion
+
 // ─── Smart Cache (memory + localStorage, stale-while-revalidate) ──────────────
 const memCache = new Map();
 
@@ -1897,6 +1918,21 @@ export default function App() {
   const storeOptions  = ['Όλα','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
   const searchTimeout = useRef(null);
 
+  // #region agent log
+  useEffect(() => {
+    debugLog({
+      runId: 'pre-repro',
+      hypothesisId: 'H1',
+      location: 'App.jsx:mount',
+      message: 'App mounted',
+      data: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
+    });
+  }, []);
+  // #endregion
+
   // ── Persist friends ────────────────────────────────────────────────────────
   useEffect(() => {
     // friends are persisted in DB — no localStorage needed
@@ -2209,9 +2245,40 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title: nameModalValue.trim(), items }),
       });
-      if (r.ok) { setNotification({ show:true, message:'✅ Αποθηκεύτηκε!' }); fetchSavedLists(); }
-      else { const e = await r.json(); setNotification({ show:true, message: e.message || 'Σφάλμα.' }); }
-    } catch {}
+      if (r.ok) {
+        setNotification({ show:true, message:'✅ Αποθηκεύτηκε!' });
+        fetchSavedLists();
+      } else {
+        const e = await r.json().catch(() => ({}));
+        // #region agent log
+        debugLog({
+          runId: 'pre-repro',
+          hypothesisId: 'H2',
+          location: 'App.jsx:handleSaveConfirm',
+          message: 'Save list failed',
+          data: {
+            status: r.status,
+            hasToken: !!token,
+            rawMessage: e?.message || null,
+          },
+        });
+        // #endregion
+        setNotification({
+          show:true,
+          message: e.message || 'Σφάλμα.',
+        });
+      }
+    } catch (err) {
+      // #region agent log
+      debugLog({
+        runId: 'pre-repro',
+        hypothesisId: 'H2',
+        location: 'App.jsx:handleSaveConfirm',
+        message: 'Save list threw',
+        data: { error: String(err && err.message ? err.message : err) },
+      });
+      // #endregion
+    }
   };
 
   const toggleListItem = async (listId, itemToToggle) => {
@@ -2552,8 +2619,49 @@ export default function App() {
 
   const deleteItem = useCallback((id) => setItems(prev => prev.filter(i => i.id !== id)), []);
 
-  const handleWelcomeLogin    = () => { setShowWelcome(false); localStorage.setItem('sg_welcomed_v2','1'); setAuthInitMode('login');    setShowAuthModal(true); };
-  const handleWelcomeRegister = () => { setShowWelcome(false); localStorage.setItem('sg_welcomed_v2','1'); setAuthInitMode('register'); setShowAuthModal(true); };
+  const handleWelcomeLogin    = () => {
+    setShowWelcome(false);
+    localStorage.setItem('sg_welcomed_v2','1');
+    setAuthInitMode('login');
+    // #region agent log
+    debugLog({
+      runId: 'pre-repro',
+      hypothesisId: 'H1',
+      location: 'App.jsx:welcomeLogin',
+      message: 'Open AuthModal from welcome',
+      data: {
+        showSmartRoute,
+        showSplitModal,
+        showListsModal,
+        showFriendsPanel,
+        showChatPanel,
+      },
+    });
+    // #endregion
+    setShowAuthModal(true);
+  };
+
+  const handleWelcomeRegister = () => {
+    setShowWelcome(false);
+    localStorage.setItem('sg_welcomed_v2','1');
+    setAuthInitMode('register');
+    // #region agent log
+    debugLog({
+      runId: 'pre-repro',
+      hypothesisId: 'H1',
+      location: 'App.jsx:welcomeRegister',
+      message: 'Open AuthModal (register) from welcome',
+      data: {
+        showSmartRoute,
+        showSplitModal,
+        showListsModal,
+        showFriendsPanel,
+        showChatPanel,
+      },
+    });
+    // #endregion
+    setShowAuthModal(true);
+  };
   const handleWelcomeSkip     = () => { setShowWelcome(false); localStorage.setItem('sg_welcomed_v2','1'); };
 
   const groupedItems = items.reduce((acc, item) => {
@@ -3062,7 +3170,32 @@ export default function App() {
                 <IconCreditCard size={20} stroke={1.8} />
               </div>
 
-              <div className="action-btn-new" onClick={() => { if (!user) return setShowAuthModal(true); setShowListsModal(true); }} title="Λίστες μου" style={{ position:'relative' }}>
+              <div
+                className="action-btn-new"
+                onClick={() => {
+                  if (!user) {
+                    // #region agent log
+                    debugLog({
+                      runId: 'pre-repro',
+                      hypothesisId: 'H1',
+                      location: 'App.jsx:listsActionUnauthed',
+                      message: 'Open AuthModal from lists action',
+                      data: {
+                        showSmartRoute,
+                        showSplitModal,
+                        showListsModal,
+                        showFriendsPanel,
+                        showChatPanel,
+                      },
+                    });
+                    // #endregion
+                    return setShowAuthModal(true);
+                  }
+                  setShowListsModal(true);
+                }}
+                title="Λίστες μου"
+                style={{ position:'relative' }}
+              >
                 <IconNotes size={20} stroke={1.8} />
                 {savedLists.length > 0 && <span className="list-badge">{savedLists.length}</span>}
               </div>
@@ -3090,7 +3223,28 @@ export default function App() {
                   )}
                 </div>
               ) : (
-                <div className="action-btn-new" onClick={() => setShowAuthModal(true)} title="Σύνδεση">
+                <div
+                  className="action-btn-new"
+                  onClick={() => {
+                    // #region agent log
+                    debugLog({
+                      runId: 'pre-repro',
+                      hypothesisId: 'H1',
+                      location: 'App.jsx:headerLogin',
+                      message: 'Open AuthModal from header login',
+                      data: {
+                        showSmartRoute,
+                        showSplitModal,
+                        showListsModal,
+                        showFriendsPanel,
+                        showChatPanel,
+                      },
+                    });
+                    // #endregion
+                    setShowAuthModal(true);
+                  }}
+                  title="Σύνδεση"
+                >
                   <IconLock size={20} stroke={1.8} />
                 </div>
               )}
@@ -3106,11 +3260,38 @@ export default function App() {
             ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
             ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Plan'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
-          ].map(([tab, label]) => (
-            <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => { setActiveTab(tab); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ display:'flex', alignItems:'center', gap:5 }}>
-              {label}
-            </button>
-          ))}
+          ].map(([tab, label, labelText]) => {
+            const isLocked = !user && (tab === 'recipes' || tab === 'mealplan');
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                className={`tab-btn ${isActive ? 'active' : ''} ${isLocked ? 'tab-btn-locked' : ''}`}
+                onClick={() => {
+                  if (isLocked) {
+                    // #region agent log
+                    debugLog({
+                      runId: 'pre-repro',
+                      hypothesisId: 'H3',
+                      location: 'App.jsx:tabs',
+                      message: 'Locked tab clicked while unauthenticated',
+                      data: { tab },
+                    });
+                    // #endregion
+                    setAuthInitMode('register');
+                    setShowAuthModal(true);
+                    return;
+                  }
+                  setActiveTab(tab);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{ display:'flex', alignItems:'center', gap:5 }}
+              >
+                {label}
+                {isLocked && <span className="tab-lock-indicator">🔒</span>}
+              </button>
+            );
+          })}
         </div>
 
         {/* ════ LIST TAB ════ */}
@@ -3857,7 +4038,24 @@ export default function App() {
 
       {/* ── Smart Route — Floating button + Fullscreen map ── */}
       <FloatingMapButton
-        onClick={() => setShowSmartRoute(true)}
+        onClick={() => {
+          // #region agent log
+          debugLog({
+            runId: 'pre-repro',
+            hypothesisId: 'H1',
+            location: 'App.jsx:floatingMapButton',
+            message: 'Open SmartRoute overlay',
+            data: {
+              showAuthModal,
+              showSplitModal,
+              showListsModal,
+              showFriendsPanel,
+              showChatPanel,
+            },
+          });
+          // #endregion
+          setShowSmartRoute(true);
+        }}
         itemCount={uniqueStoresInList}
       />
       <SmartRouteMap
