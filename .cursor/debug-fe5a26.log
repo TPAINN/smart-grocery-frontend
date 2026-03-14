@@ -4,3 +4,5 @@
 {"sessionId":"fe5a26","timestamp":1773515850665,"runId":"pre-repro","hypothesisId":"H3","location":"App.jsx:tabs","message":"Locked tab clicked while unauthenticated","data":{"tab":"recipes"}}
 {"sessionId":"fe5a26","timestamp":1773515855262,"runId":"pre-repro","hypothesisId":"H1","location":"App.jsx:listsActionUnauthed","message":"Open AuthModal from lists action","data":{"showSmartRoute":false,"showSplitModal":false,"showListsModal":false,"showFriendsPanel":false,"showChatPanel":false}}
 {"sessionId":"fe5a26","timestamp":1773515857599,"runId":"pre-repro","hypothesisId":"H1","location":"App.jsx:headerLogin","message":"Open AuthModal from header login","data":{"showSmartRoute":false,"showSplitModal":false,"showListsModal":false,"showFriendsPanel":false,"showChatPanel":false}}
+{"sessionId":"fe5a26","timestamp":1773516229248,"runId":"pre-repro","hypothesisId":"H1","location":"App.jsx:mount","message":"App mounted","data":{"width":900,"height":698}}
+{"sessionId":"fe5a26","timestamp":1773516229254,"runId":"pre-repro","hypothesisId":"H1","location":"App.jsx:mount","message":"App mounted","data":{"width":900,"height":698}}
