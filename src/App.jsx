@@ -1971,21 +1971,31 @@ function BarcodeScannerModal({ isOpen, onClose }) {
   );
 }
 
-// ─── Recipe Popup ────────────────────────────────────────────────────────────
+// ─── Recipe Popup — Premium Edition ──────────────────────────────────────────
 function RecipePopup({ recipe, onClose, onAddToList }) {
-  const[showDetails, setShowDetails] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [activeSection, setActiveSection] = useState('ingredients');
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowDetails(true), 500);
+    const timer = setTimeout(() => setShowDetails(true), 400);
     document.body.style.overflow = 'hidden';
     return () => { clearTimeout(timer); document.body.style.overflow = ''; };
-  },[]);
+  }, []);
 
   const handleClose = () => {
     setIsClosing(true);
     setTimeout(() => onClose(), 350);
   };
+
+  const macros = [
+    { label: 'Θερμίδες', value: recipe.calories, unit: '', color: '#f97316', icon: '🔥' },
+    { label: 'Πρωτεΐνη', value: recipe.protein, unit: 'g', color: '#10b981', icon: '💪' },
+    { label: 'Υδατάνθ.', value: recipe.carbs, unit: 'g', color: '#3b82f6', icon: '⚡' },
+    { label: 'Λιπαρά', value: recipe.fat, unit: 'g', color: '#eab308', icon: '🫒' },
+  ];
+
+  const diffColor = recipe.difficulty === 'Εύκολη' ? '#10b981' : recipe.difficulty === 'Δύσκολη' ? '#ef4444' : '#f59e0b';
 
   return createPortal(
     <div className={`recipe-popup-overlay ${isClosing ? 'closing' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && handleClose()}>
@@ -1995,58 +2005,112 @@ function RecipePopup({ recipe, onClose, onAddToList }) {
         {recipe.image ? (
           <div className="recipe-popup-hero" style={{ backgroundImage: `url(${recipe.image})` }}>
             <div className="recipe-popup-hero-overlay">
+              <div style={{ display:'flex', gap:6, marginBottom:8, flexWrap:'wrap' }}>
+                {recipe.cuisine && recipe.cuisine !== 'Διεθνής' && (
+                  <span className="recipe-popup-tag">{recipe.cuisine}</span>
+                )}
+                {recipe.category && (
+                  <span className="recipe-popup-tag">{recipe.category}</span>
+                )}
+              </div>
               <h2 className="recipe-popup-title">{recipe.title}</h2>
-              <p className="recipe-popup-chef">{recipe.time || 30}' λεπτά • Clean Diet</p>
+              <div className="recipe-popup-meta-inline">
+                <span>⏱️ {recipe.time || 30} λεπτά</span>
+                <span>•</span>
+                <span>🍽️ {recipe.servings || 4} μερίδες</span>
+                <span>•</span>
+                <span style={{ color: diffColor }}>{recipe.difficulty || 'Μέτρια'}</span>
+              </div>
             </div>
           </div>
         ) : (
           <div className="recipe-popup-header-noimg">
             <h2 className="recipe-popup-title">{recipe.title}</h2>
-            <p className="recipe-popup-chef">{recipe.time || 30}' λεπτά • Clean Diet</p>
+            <div className="recipe-popup-meta-inline" style={{ color:'var(--text-muted)' }}>
+              <span>⏱️ {recipe.time || 30} λεπτά</span>
+              <span>•</span>
+              <span>🍽️ {recipe.servings || 4} μερίδες</span>
+            </div>
           </div>
         )}
 
         <div className="recipe-popup-body">
-          {/* Real Nutrition Dashboard */}
-          <div className="recipe-nutri-dashboard">
-            <div className="nutri-circle">
-              <div className="nutri-circle-val" style={{color:'#f97316'}}>{recipe.calories || '-'}</div>
-              <div className="nutri-circle-label">Θερμίδες</div>
-            </div>
-            <div className="nutri-circle">
-              <div className="nutri-circle-val" style={{color:'#10b981'}}>{recipe.protein || '-'}<span>g</span></div>
-              <div className="nutri-circle-label">Πρωτεΐνη</div>
-            </div>
-            <div className="nutri-circle">
-              <div className="nutri-circle-val" style={{color:'#3b82f6'}}>{recipe.carbs || '-'}<span>g</span></div>
-              <div className="nutri-circle-label">Υδατάνθ.</div>
-            </div>
-            <div className="nutri-circle">
-              <div className="nutri-circle-val" style={{color:'#eab308'}}>{recipe.fat || '-'}<span>g</span></div>
-              <div className="nutri-circle-label">Λιπαρά</div>
-            </div>
+          {recipe.description && (
+            <p style={{ fontSize:13, lineHeight:1.65, color:'var(--text-secondary)', margin:'0 0 16px', paddingBottom:16, borderBottom:'1px solid var(--border-light)' }}>{recipe.description}</p>
+          )}
+
+          <div className="recipe-nutri-dashboard" style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:14 }}>
+            {macros.map((m, i) => (
+              <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'12px 6px', borderRadius:14, background:'var(--bg-subtle)', border:'1px solid var(--border-light)', transition:'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}>
+                <div style={{ width:28, height:28, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, background:`${m.color}15`, color:m.color }}>{m.icon}</div>
+                <div style={{ fontSize:17, fontWeight:900, lineHeight:1.1, color:m.color }}>{m.value || '-'}{m.unit && <span style={{ fontSize:10, opacity:0.6, marginLeft:1 }}>{m.unit}</span>}</div>
+                <div style={{ fontSize:9, textTransform:'uppercase', fontWeight:800, color:'var(--text-muted)', letterSpacing:0.5 }}>{m.label}</div>
+              </div>
+            ))}
           </div>
+
+          {(recipe.fiber || recipe.sugar) && (
+            <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:14 }}>
+              {recipe.fiber && <span style={{ fontSize:11, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', padding:'5px 10px', borderRadius:8, border:'1px solid var(--border-light)' }}>🥦 Φυτικές Ίνες: {recipe.fiber}g</span>}
+              {recipe.sugar && <span style={{ fontSize:11, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', padding:'5px 10px', borderRadius:8, border:'1px solid var(--border-light)' }}>🍬 Ζάχαρη: {recipe.sugar}g</span>}
+            </div>
+          )}
+
+          {recipe.tags && recipe.tags.length > 0 && (
+            <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:14 }}>
+              {recipe.tags.map((tag, i) => (
+                <span key={i} style={{ fontSize:10.5, fontWeight:700, color:'var(--accent)', background:'rgba(99,102,241,0.08)', padding:'5px 10px', borderRadius:8, border:'1px solid rgba(99,102,241,0.15)', whiteSpace:'nowrap' }}>{
+                  tag === 'high-protein' ? '💪 High Protein' :
+                  tag === 'low-carb' ? '🥑 Low Carb' :
+                  tag === 'quick' ? '⚡ Γρήγορη' :
+                  tag === 'vegan' ? '🌱 Vegan' :
+                  tag === 'vegetarian' ? '🥬 Χορτοφαγική' :
+                  tag === 'gluten-free' ? '🌾 Χωρίς Γλουτένη' :
+                  tag === 'dairy-free' ? '🥛 Χωρίς Γαλακτοκομικά' :
+                  tag === 'healthy' ? '💚 Υγιεινή' :
+                  tag === 'budget' ? '💰 Οικονομική' :
+                  tag === 'low-fat' ? '🫒 Low Fat' :
+                  tag
+                }</span>
+              ))}
+            </div>
+          )}
 
           <button className="add-recipe-btn" onClick={(e) => { e.stopPropagation(); onAddToList(); }}>
             🛒 Προσθήκη Υλικών στη Λίστα
           </button>
 
           <div className={`recipe-popup-details ${showDetails ? 'visible' : ''}`}>
-            <div className="recipe-section">
-              <h5 className="section-title">🥗 Υλικά</h5>
-              <ul className="ing-list-pro">
-                {recipe.ingredients && recipe.ingredients.map((ing, i) => (
-                  <li key={i} className="ing-item-clean">
-                    <span className="ing-bullet" />
-                    <span>{ing}</span>
-                  </li>
-                ))}
-              </ul>
+            <div style={{ display:'flex', gap:0, marginBottom:16, borderRadius:12, overflow:'hidden', border:'1.5px solid var(--border)', background:'var(--bg-subtle)' }}>
+              <button
+                onClick={() => setActiveSection('ingredients')}
+                style={{ flex:1, padding:'10px 8px', border:'none', background:activeSection === 'ingredients' ? 'var(--bg-card)' : 'transparent', color:activeSection === 'ingredients' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize:13, fontWeight:700, fontFamily:'var(--font)', cursor:'pointer', transition:'background 0.25s, color 0.25s', boxShadow:activeSection === 'ingredients' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none', WebkitTapHighlightColor:'transparent' }}
+              >
+                🥗 Υλικά ({recipe.ingredients?.length || 0})
+              </button>
+              <button
+                onClick={() => setActiveSection('instructions')}
+                style={{ flex:1, padding:'10px 8px', border:'none', background:activeSection === 'instructions' ? 'var(--bg-card)' : 'transparent', color:activeSection === 'instructions' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize:13, fontWeight:700, fontFamily:'var(--font)', cursor:'pointer', transition:'background 0.25s, color 0.25s', boxShadow:activeSection === 'instructions' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none', WebkitTapHighlightColor:'transparent' }}
+              >
+                👨‍🍳 Εκτέλεση ({recipe.instructions?.length || 0})
+              </button>
             </div>
 
-            {recipe.instructions && recipe.instructions.length > 0 && (
-              <div className="recipe-section" style={{ marginTop: 20 }}>
-                <h5 className="section-title">👨‍🍳 Εκτέλεση</h5>
+            {activeSection === 'ingredients' && (
+              <div className="recipe-section">
+                <ul className="ing-list-pro">
+                  {recipe.ingredients && recipe.ingredients.map((ing, i) => (
+                    <li key={i} className="ing-item-clean">
+                      <span className="ing-bullet" />
+                      <span>{ing}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {activeSection === 'instructions' && recipe.instructions && recipe.instructions.length > 0 && (
+              <div className="recipe-section">
                 <div className="instructions-timeline">
                   {recipe.instructions.map((step, i) => (
                     <div key={i} className="step-row">
@@ -2126,11 +2190,17 @@ export default function App() {
   const [isScraping, setIsScraping]       = useState(false);
   const [isServerWaking, setIsServerWaking] = useState(false);
   const [isListening, setIsListening]     = useState(false);
-  const [recipes, setRecipes]             = useState([]);
+  const [recipes, setRecipes]               = useState([]);
   const [recipesLoading, setRecipesLoading] = useState(true);
-  const [recipeFilter, setRecipeFilter]   = useState('all');
+  const [recipeFilter, setRecipeFilter]     = useState('all');
   const [expandedRecipe, setExpandedRecipe] = useState(null);
-  const [fridgeQuery, setFridgeQuery]     = useState('');
+  const [fridgeQuery, setFridgeQuery]       = useState('');
+  const [recipePage, setRecipePage]         = useState(1);
+  const [recipeTotalPages, setRecipeTotalPages] = useState(1);
+  const [recipeCategory, setRecipeCategory] = useState('');
+  const [recipeCuisine, setRecipeCuisine]   = useState('');
+  const [recipeSearchDebounced, setRecipeSearchDebounced] = useState('');
+  const recipeFridgeTimer = useRef(null);
   const [showScanner, setShowScanner]     = useState(false);
   const [showSmartRoute, setShowSmartRoute] = useState(false);
   const [currentTime, setCurrentTime]     = useState(new Date());
@@ -2407,44 +2477,86 @@ export default function App() {
   }, [showSplitModal]);
 
   // ── Recipes ────────────────────────────────────────────────────────────────
-  const fetchRecipes = useCallback(async () => {
-    setRecipesLoading(true);
-    
-    // 1. Έλεγχος Cache
-    const ck = cacheGet('recipes');
-    if (ck) {
-      // Υποστήριξη και για παλιά (array) και για νέα (object) δομή cache
-      const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
-      if (cachedData.length > 0) {
-        setRecipes(cachedData);
-        setRecipesLoading(false);
-        if (!ck.stale) return;
+  const fetchRecipes = useCallback(async (page = 1, append = false) => {
+    if (!append) setRecipesLoading(true);
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: '20',
+      ...(recipeCategory && { category: recipeCategory }),
+      ...(recipeCuisine  && { cuisine: recipeCuisine }),
+      ...(recipeSearchDebounced && { search: recipeSearchDebounced }),
+    });
+
+    // Try cache first (only for page 1, no filters)
+    if (page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
+      const ck = cacheGet('recipes');
+      if (ck && !ck.stale) {
+        const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
+        if (cachedData.length > 0) {
+          setRecipes(cachedData);
+          setRecipesLoading(false);
+          return;
+        }
       }
     }
 
     try {
-      const r = await fetch(`${API_BASE}/api/recipes`);
+      const r = await fetch(`${API_BASE}/api/recipes?${params}`);
       if (r.ok) {
         const d = await r.json();
-        
-        // 🟢 FIX: Παίρνουμε το array από το κλειδί "recipes" αν υπάρχει, αλλιώς το d
-        const actualRecipes = d.recipes || d; 
-
-        if (Array.isArray(actualRecipes) && actualRecipes.length > 0) {
-          cacheSet('recipes', actualRecipes);
-          setRecipes(actualRecipes);
+        const actualRecipes = d.recipes || d;
+        if (Array.isArray(actualRecipes)) {
+          if (page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
+            cacheSet('recipes', actualRecipes);
+          }
+          if (append) {
+            setRecipes(prev => [...prev, ...actualRecipes]);
+          } else {
+            setRecipes(actualRecipes);
+          }
+          setRecipeTotalPages(d.pages || 1);
+          setRecipePage(d.page || page);
         }
       }
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error('❌ fetchRecipes:', err);
+      if (recipes.length === 0) {
+        const ck = cacheGet('recipes');
+        if (ck) {
+          const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
+          setRecipes(cachedData);
+        }
+      }
     }
     setRecipesLoading(false);
-  }, []);
+  }, [recipeCategory, recipeCuisine, recipeSearchDebounced]);
 
+  // Refetch when filters change
   useEffect(() => {
     if (!isOnline) { setRecipesLoading(false); return; }
-    fetchRecipes();
+    fetchRecipes(1);
+  }, [isOnline, fetchRecipes]);
 
+  // Debounce fridge search → server-side
+  useEffect(() => {
+    if (recipeFridgeTimer.current) clearTimeout(recipeFridgeTimer.current);
+    recipeFridgeTimer.current = setTimeout(() => {
+      setRecipeSearchDebounced(fridgeQuery.trim());
+    }, 400);
+    return () => clearTimeout(recipeFridgeTimer.current);
+  }, [fridgeQuery]);
+
+  // Load more recipes (pagination)
+  const loadMoreRecipes = useCallback(() => {
+    if (recipePage < recipeTotalPages && !recipesLoading) {
+      fetchRecipes(recipePage + 1, true);
+    }
+  }, [recipePage, recipeTotalPages, recipesLoading, fetchRecipes]);
+
+  // Server status check
+  useEffect(() => {
+    if (!isOnline) return;
     const checkStatus = async () => {
       try {
         const startT  = Date.now();
@@ -2463,7 +2575,7 @@ export default function App() {
     checkStatus();
     const iv = setInterval(checkStatus, 15000);
     return () => clearInterval(iv);
-  }, [isOnline, fetchRecipes]);
+  }, [isOnline]);
 
   useEffect(() => {
     localStorage.setItem('proGroceryItems_real', JSON.stringify(items));
@@ -2965,27 +3077,28 @@ export default function App() {
       const protein = r.protein || 0;
       const carbs = r.carbs || 0;
       const time = r.time || 30;
-      const tags = r.tags ||[];
+      const tags = r.tags || [];
 
       if (recipeFilter === 'protein' && protein < 25) return false; 
       if (recipeFilter === 'nosugar' && carbs > 15) return false;
       if (recipeFilter === 'fast' && time > 30) return false;
       if (recipeFilter === 'budget' && (r.ingredients?.length || 0) > 6) return false;
-      if (recipeFilter === 'breakfast' && !tags.includes('breakfast')) return false;
-      if (recipeFilter === 'snack' && !tags.includes('snack')) return false;
+      if (recipeFilter === 'breakfast' && !tags.includes('breakfast') && r.category !== 'Πρωινό') return false;
+      if (recipeFilter === 'snack' && !tags.includes('snack') && r.category !== 'Σνακ') return false;
+      if (recipeFilter === 'vegan' && !tags.includes('vegan')) return false;
       
-      if (fridgeQuery.trim()) {
-        // Split by comma or space — user can type multiple ingredients
+      // Fridge search — client-side fallback for cached/offline data
+      if (fridgeQuery.trim() && !recipeSearchDebounced) {
         const terms = fridgeQuery.split(/[,\s]+/).map(t => greeklishToGreek(normalizeText(t))).filter(t => t.length > 1);
-        if (!terms.length) return true;
-        const ings = Array.isArray(r.ingredients) ? r.ingredients.map(i => greeklishToGreek(normalizeText(String(i)))) : [];
-        const titleN = greeklishToGreek(normalizeText(r.title || ''));
-        const tagsN  = (r.tags || []).map(t => greeklishToGreek(normalizeText(t)));
-        // Match if ANY term is found in ingredients, title, or tags
-        return terms.some(term =>
-          ings.some(ing => ing.includes(term) || term.includes(ing.substring(0, Math.max(3, ing.length - 2)))) ||
-          titleN.includes(term) || tagsN.some(t => t.includes(term))
-        );
+        if (terms.length) {
+          const ings = Array.isArray(r.ingredients) ? r.ingredients.map(i => greeklishToGreek(normalizeText(String(i)))) : [];
+          const titleN = greeklishToGreek(normalizeText(r.title || ''));
+          const tagsN  = (r.tags || []).map(t => greeklishToGreek(normalizeText(t)));
+          return terms.some(term =>
+            ings.some(ing => ing.includes(term) || term.includes(ing.substring(0, Math.max(3, ing.length - 2)))) ||
+            titleN.includes(term) || tagsN.some(t => t.includes(term))
+          );
+        }
       }
       return true;
     });
@@ -3754,7 +3867,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ════ RECIPES TAB ════ */}
+        {/* ════ RECIPES TAB — PREMIUM ════ */}
         {activeTab === 'recipes' && (
           <div className="tab-content recipes-tab">
             {!user ? (
@@ -3764,45 +3877,94 @@ export default function App() {
                 {!isOnline && (
                   <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:10, fontSize:13 }}>
                     <span>📡</span>
-                    <div><strong>Offline mode</strong> — Συνταγές από τελευταία φόρτωση. Υλικά χωρίς τιμές.</div>
+                    <div><strong>Offline mode</strong> — Συνταγές από τελευταία φόρτωση.</div>
                   </div>
                 )}
 
-                <div className="fridge-ai-box">
-                  <span className="fridge-icon">🧊</span>
-                  <input type="text" placeholder="Τι έχεις στο ψυγείο;" value={fridgeQuery} onChange={(e) => setFridgeQuery(e.target.value)} className="fridge-input" />
+                {/* ── Search Bar ── */}
+                <div className="recipe-search-bar">
+                  <div className="recipe-search-inner">
+                    <IconSearch size={18} stroke={2} style={{ color:'var(--text-muted)', flexShrink:0 }} />
+                    <input
+                      type="text"
+                      placeholder="Αναζήτηση συνταγής ή υλικού..."
+                      value={fridgeQuery}
+                      onChange={(e) => setFridgeQuery(e.target.value)}
+                      className="recipe-search-input"
+                    />
+                    {fridgeQuery && (
+                      <button
+                        onClick={() => setFridgeQuery('')}
+                        style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', padding:4, display:'flex' }}
+                      >
+                        <IconX size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
+                {/* ── Category Pills ── */}
+                <div className="recipe-category-scroll">
+                  {[
+                    { id: '', label: '🍽️ Όλες' },
+                    { id: 'Κυρίως', label: '🥘 Κυρίως' },
+                    { id: 'Σαλάτες', label: '🥗 Σαλάτες' },
+                    { id: 'Σούπες', label: '🍲 Σούπες' },
+                    { id: 'Πρωινό', label: '🍳 Πρωινό' },
+                    { id: 'Σνακ', label: '🍏 Σνακ' },
+                    { id: 'Επιδόρπια', label: '🍰 Επιδόρπια' },
+                    { id: 'Συνοδευτικά', label: '🥗 Συνοδευτικά' },
+                  ].map(cat => (
+                    <button
+                      key={cat.id}
+                      className={`recipe-cat-pill ${recipeCategory === cat.id ? 'active' : ''}`}
+                      onClick={() => { setRecipeCategory(cat.id); setRecipePage(1); }}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ── Filter Chips ── */}
                 <div className="recipe-filters">
                   {[
-                    {id:'all', label:'🍽️ Όλες'},
+                    {id:'all', label:'Όλες'},
                     {id:'protein', label:'💪 High Protein'},
                     {id:'nosugar', label:'🚫 No Sugar'},
                     {id:'fast', label:'⏱️ Γρήγορες'},
-                    {id:'breakfast', label:'🍳 Πρωινό'},
-                    {id:'snack', label:'🍏 Σνακ'},
+                    {id:'vegan', label:'🌱 Vegan'},
                     {id:'budget', label:'💰 Οικονομικές'}
                   ].map(f => (
                     <button key={f.id} className={`filter-btn ${recipeFilter === f.id ? 'active' : ''}`} onClick={() => setRecipeFilter(f.id)}>{f.label}</button>
                   ))}
                 </div>
 
+                {/* ── Results count ── */}
+                {!recipesLoading && filteredRecipes.length > 0 && (
+                  <div style={{ fontSize:12, color:'var(--text-muted)', padding:'0 2px 12px', fontWeight:500 }}>
+                    {filteredRecipes.length} συνταγ{filteredRecipes.length === 1 ? 'ή' : 'ές'}
+                    {recipeCategory && <span> στην κατηγορία <strong style={{ color:'var(--text-secondary)' }}>{recipeCategory}</strong></span>}
+                    {fridgeQuery && <span> για «<strong style={{ color:'var(--text-secondary)' }}>{fridgeQuery}</strong>»</span>}
+                  </div>
+                )}
+
                 {/* ── Loading skeletons ── */}
                 {recipesLoading && recipes.length === 0 && (
                   <div className="recipes-grid">
-                    <div style={{ textAlign:'center', padding:'16px 0 8px', fontSize:13, color:'var(--text-secondary)', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                    <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'16px 0 8px', fontSize:13, color:'var(--text-secondary)', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
                       <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--accent)', animation:'pulseDot 1.4s ease-in-out infinite' }} />
                       {isServerWaking ? 'Ο server ξυπνάει (~15 δευτ.)...' : 'Φόρτωση συνταγών...'}
                     </div>
-                    {[1,2,3].map(i => (
-                      <div key={i} style={{ background:'var(--bg-card)', borderRadius:16, border:'1px solid var(--border)', overflow:'hidden' }}>
-                        <div className="skeleton" style={{ height:160, borderRadius:0 }} />
-                        <div style={{ padding:'14px 18px', display:'flex', flexDirection:'column', gap:8 }}>
-                          <div className="skeleton" style={{ height:14, width:'70%', borderRadius:8 }} />
-                          <div className="skeleton" style={{ height:11, width:'40%', borderRadius:8 }} />
-                          <div style={{ display:'flex', gap:6, marginTop:4 }}>
-                            <div className="skeleton" style={{ height:24, width:60, borderRadius:20 }} />
-                            <div className="skeleton" style={{ height:24, width:70, borderRadius:20 }} />
+                    {[1,2,3,4].map(i => (
+                      <div key={i} style={{ background:'var(--bg-card)', borderRadius:18, border:'1px solid var(--border)', overflow:'hidden' }}>
+                        <div className="skeleton" style={{ height:135, borderRadius:0 }} />
+                        <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:8 }}>
+                          <div className="skeleton" style={{ height:14, width:'80%', borderRadius:8 }} />
+                          <div className="skeleton" style={{ height:11, width:'50%', borderRadius:8 }} />
+                          <div style={{ display:'flex', gap:5, marginTop:6 }}>
+                            <div className="skeleton" style={{ height:26, width:55, borderRadius:10 }} />
+                            <div className="skeleton" style={{ height:26, width:55, borderRadius:10 }} />
+                            <div className="skeleton" style={{ height:26, width:55, borderRadius:10 }} />
                           </div>
                         </div>
                       </div>
@@ -3812,55 +3974,91 @@ export default function App() {
 
                 {/* ── Empty / error state ── */}
                 {!recipesLoading && filteredRecipes.length === 0 && (
-                  <div style={{ textAlign:'center', padding:'48px 20px', background:'var(--bg-surface)', border:'2px dashed var(--border-light)', borderRadius:16 }}>
-                    <div style={{ fontSize:44, marginBottom:12 }}>🍽️</div>
+                  <div style={{ textAlign:'center', padding:'48px 20px', background:'var(--bg-surface)', border:'2px dashed var(--border-light)', borderRadius:20 }}>
+                    <div style={{ fontSize:52, marginBottom:16 }}>🍽️</div>
                     {recipes.length === 0 ? (
                       <>
-                        <h3 style={{ margin:'0 0 8px', fontSize:16 }}>Δεν φορτώθηκαν συνταγές</h3>
+                        <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Δεν φορτώθηκαν συνταγές</h3>
                         <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>
                           {isOnline ? 'Ο server μπορεί να ξυπνάει (~15 δευτ.)' : 'Δεν υπάρχει σύνδεση'}
                         </p>
                         {isOnline && (
-                          <button
-                            className="submit-btn"
-                            style={{ padding:'10px 24px', fontSize:13 }}
-                            onClick={fetchRecipes}
-                          >🔄 Δοκιμή ξανά</button>
+                          <button className="submit-btn" style={{ padding:'10px 24px', fontSize:13 }} onClick={() => fetchRecipes(1)}>
+                            🔄 Δοκιμή ξανά
+                          </button>
                         )}
                       </>
                     ) : (
                       <>
-                        <h3 style={{ margin:'0 0 8px', fontSize:16 }}>Κανένα αποτέλεσμα</h3>
-                        <p style={{ fontSize:13, color:'var(--text-secondary)' }}>Δοκίμασε διαφορετικό φίλτρο</p>
+                        <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Κανένα αποτέλεσμα</h3>
+                        <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Δοκίμασε διαφορετικό φίλτρο ή αναζήτηση</p>
+                        <button className="submit-btn" style={{ padding:'10px 24px', fontSize:13 }} onClick={() => { setRecipeFilter('all'); setRecipeCategory(''); setFridgeQuery(''); }}>
+                          ↩️ Εμφάνιση Όλων
+                        </button>
                       </>
                     )}
                   </div>
                 )}
 
-                {/* ── Real Recipes grid ── */}
+                {/* ── Recipe Cards Grid — Premium v2 ── */}
                 {filteredRecipes.length > 0 && (
-                  <div className="recipes-grid">
-                    {filteredRecipes.map(recipe => (
-                      <div key={recipe._id || recipe.title} className="recipe-card" onClick={() => setExpandedRecipe(recipe._id)}>
-                        {recipe.image && (
-                          <div className="recipe-image" style={{ backgroundImage:`url(${recipe.image})` }}>
-                            <span style={{ position:'absolute', top:8, right:8, background:'rgba(0,0,0,0.65)', color:'white', padding:'4px 8px', borderRadius:8, fontSize:10, fontWeight:700, backdropFilter:'blur(4px)'}}>
-                              ⏱️ {recipe.time || 30}'
-                            </span>
+                  <>
+                    <div className="recipes-grid">
+                      {filteredRecipes.map((recipe, idx) => (
+                        <div
+                          key={recipe._id || recipe.title}
+                          className="recipe-card-v2"
+                          onClick={() => setExpandedRecipe(recipe._id)}
+                          style={{ animationDelay: `${Math.min(idx * 0.06, 0.5)}s` }}
+                        >
+                          <div className="recipe-card-img-wrap">
+                            {recipe.image ? (
+                              <div className="recipe-card-img" style={{ backgroundImage: `url(${recipe.image})` }} />
+                            ) : (
+                              <div className="recipe-card-img" style={{ height:135, background:'linear-gradient(135deg, var(--bg-subtle), var(--bg-card))', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                <span style={{ fontSize:36, opacity:0.3 }}>🍽️</span>
+                              </div>
+                            )}
+                            <div className="recipe-card-time-badge">⏱️ {recipe.time || 30}'</div>
+                            <div style={{ position:'absolute', top:10, left:10, width:8, height:8, borderRadius:'50%', zIndex:2, background: recipe.difficulty === 'Εύκολη' ? '#10b981' : recipe.difficulty === 'Δύσκολη' ? '#ef4444' : '#f59e0b' }} />
                           </div>
-                        )}
-                        <div className="recipe-info">
-                          <h4>{recipe.title}</h4>
-                          <p className="recipe-chef" style={{marginTop: 4, marginBottom: 10}}>{recipe.ingredients?.length || 0} υλικά • Clean Diet</p>
-                          
-                          <div style={{ display:'flex', gap:6, marginTop:'auto', flexWrap:'wrap' }}>
-                            {recipe.calories && <span className="macro-badge kcal">🔥 {recipe.calories} kcal</span>}
-                            {recipe.protein && <span className="macro-badge protein">💪 {recipe.protein}g Πρωτεΐνη</span>}
+
+                          <div className="recipe-card-body">
+                            <h4 className="recipe-card-title">{recipe.title}</h4>
+                            <div className="recipe-card-meta">
+                              <span>{recipe.ingredients?.length || 0} υλικά</span>
+                              {recipe.cuisine && recipe.cuisine !== 'Διεθνής' && (
+                                <>
+                                  <span style={{ opacity:0.4 }}>·</span>
+                                  <span>{recipe.cuisine}</span>
+                                </>
+                              )}
+                            </div>
+                            <div className="recipe-card-macros">
+                              {recipe.calories && <span className="macro-pill macro-kcal">🔥 {recipe.calories}</span>}
+                              {recipe.protein && <span className="macro-pill macro-protein">💪 {recipe.protein}g</span>}
+                              {recipe.carbs && <span className="macro-pill macro-carbs">⚡ {recipe.carbs}g</span>}
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+
+                    {/* ── Load More ── */}
+                    {recipePage < recipeTotalPages && (
+                      <div style={{ textAlign:'center', padding:'20px 0 8px' }}>
+                        <button
+                          onClick={loadMoreRecipes}
+                          disabled={recipesLoading}
+                          style={{ padding:'12px 28px', background:'var(--bg-card)', border:'1.5px solid var(--border)', borderRadius:14, color:'var(--text-primary)', fontSize:13, fontWeight:700, fontFamily:'var(--font)', cursor:'pointer', transition:'all 0.3s cubic-bezier(0.34,1.56,0.64,1)', WebkitTapHighlightColor:'transparent', opacity:recipesLoading?0.6:1 }}
+                          onMouseEnter={e => { if(!recipesLoading) { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)'; } }}
+                          onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}
+                        >
+                          {recipesLoading ? '⏳ Φόρτωση...' : '📜 Περισσότερες Συνταγές'}
+                        </button>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
 
                 {/* ── Recipe Popup Modal ── */}
