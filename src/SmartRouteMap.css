@@ -5,7 +5,7 @@
   width: 52px; height: 52px; border-radius: 16px; border: none;
   background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff;
   display: flex; align-items: center; justify-content: center;
-  cursor: grab; position: relative; overflow: hidden;
+  cursor: grab; position: relative;
   box-shadow: 0 4px 16px rgba(99,102,241,.35), 0 2px 6px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.2);
   transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease;
   -webkit-tap-highlight-color: transparent;
@@ -28,6 +28,13 @@
   animation: badgePop .35s cubic-bezier(.34,1.56,.64,1);
 }
 @keyframes badgePop { from{transform:scale(0)} to{transform:scale(1)} }
+
+/* Inner wrapper – clips the ripple without clipping the badge */
+.smart-route-fab-inner {
+  position: absolute; inset: 0; border-radius: inherit;
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
 
 /* Ripple on tap */
 .fab-ripple {

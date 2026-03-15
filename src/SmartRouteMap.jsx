@@ -168,9 +168,11 @@ export function FloatingMapButton({ onClick, itemCount = 0 }) {
       onMouseDown={e => { e.preventDefault(); handleStart(e.clientX, e.clientY); }}
       aria-label="Smart Route"
     >
-      <IconMap2 size={22} stroke={2.2} />
+      <span className="smart-route-fab-inner">
+        <IconMap2 size={22} stroke={2.2} />
+        {ripple && <span className="fab-ripple" />}
+      </span>
       {itemCount > 0 && <span className="smart-route-fab-badge">{itemCount > 9 ? '9+' : itemCount}</span>}
-      {ripple && <span className="fab-ripple" />}
     </button>
   );
 }
