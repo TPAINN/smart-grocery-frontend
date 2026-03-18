@@ -26,26 +26,7 @@ const API_BASE      = 'https://my-smart-grocery-api.onrender.com';
 const CACHE_VERSION = 'v3';
 const CACHE_TTL_MS  = 10 * 60 * 1000; // 10 min
 
-// #region agent log
-const debugLog = (payload) => {
-  try {
-    fetch('http://127.0.0.1:7511/ingest/af701115-fec6-479a-b09b-c1d32de6d5c8', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': 'fe5a26',
-      },
-      body: JSON.stringify({
-        sessionId: 'fe5a26',
-        timestamp: Date.now(),
-        ...payload,
-      }),
-    }).catch(() => {});
-  } catch {
-    // swallow
-  }
-};
-// #endregion
+const debugLog = () => {};
 
 // ─── Smart Cache (memory + localStorage, stale-while-revalidate) ──────────────
 const memCache = new Map();
@@ -3171,7 +3152,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({
           shareKey: user.shareKey,
-          items: items.map(i => ({ name: i.name, price: i.price || 0, quantity: i.quantity || 1, store: i.store || '' })),
+          items: items.map(i => ({ name: i.text, price: i.price || 0, quantity: i.quantity || 1, store: i.store || '' })),
           partnerIds: selectedSplitPartners.map(p => p.partnerId._id || p.partnerId),
           splitType,
         }),
@@ -3580,7 +3561,7 @@ export default function App() {
                       <div style={{ position:'fixed', inset:0, zIndex:99 }} onClick={() => setShowProfileMenu(false)} />
                       <div className="profile-dropdown">
                         <div className="dropdown-info" style={{ padding:'15px', borderBottom:'1px solid var(--border-light)' }}>
-                          <strong style={{ display:'block', fontSize:'14px' }}>{user.name}</strong>
+                          <strong className="greeting-name" style={{ display:'block', fontSize:'14px' }}>{user.name}</strong>
                           <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'8px' }}>
                             <span style={{ color:'var(--text-secondary)', fontSize:'12px' }}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
                             <button onClick={handleCopyShareKey} style={{ background:'var(--bg-surface-hover)', border:'1px solid var(--border-light)', cursor:'pointer', fontSize:'14px', padding:'4px 8px', borderRadius:'6px' }}>📋</button>
@@ -3668,15 +3649,11 @@ export default function App() {
         {activeTab === 'list' && (
           <div className="tab-content list-tab">
             {items.length > 0 && (
-              <div style={{
-                background:'var(--bg-surface)', padding:'15px', borderRadius:'14px',
-                border:'1px solid var(--border-light)', marginBottom:'12px',
-                display:'flex', justifyContent:'space-between', alignItems:'center',
-              }}>
+              <div className="list-summary-bar">
                 <div>
-                  {user && <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>Κόστος</div>}
-                  {user && <div className="budget-amount" style={{ fontSize:'22px', fontWeight:'bold', color:'var(--brand-primary)' }}>{totalCost.toFixed(2)}€</div>}
-                  <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop: user ? 2 : 0 }}>{items.length} προϊόντα</div>
+                  {user && <div className="cost-label">Κόστος</div>}
+                  {user && <div className="budget-amount">{totalCost.toFixed(2)}€</div>}
+                  <div className="item-count">{items.length} προϊόντα</div>
                 </div>
                 <div style={{ display:'flex', gap:'8px' }}>
                   <button onClick={handleMassClear} style={{ background:'rgba(239,68,68,0.1)', color:'var(--brand-danger)', border:'none', padding:'10px', borderRadius:'10px', cursor:'pointer', fontSize:18 }} title="Αδείασμα">🗑️</button>
@@ -3687,17 +3664,15 @@ export default function App() {
 
             {/* Split Bill Quick Access Banner */}
             {user && items.length > 0 && (
-              <div onClick={openSplitModal} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.08))', border:'1.5px solid rgba(99,102,241,0.2)', borderRadius:12, padding:'10px 14px', marginBottom:10, cursor:'pointer', transition:'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.background='linear-gradient(135deg,rgba(99,102,241,0.14),rgba(139,92,246,0.14))'}
-                onMouseLeave={e => e.currentTarget.style.background='linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.08))'}>
+              <div className="split-bill-banner" onClick={openSplitModal}>
                 <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:34, height:34, borderRadius:9, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>💳</div>
+                  <div style={{ width:34, height:34, borderRadius:9, background:'linear-gradient(135deg,var(--accent),var(--accent-2))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>💳</div>
                   <div>
                     <div style={{ fontWeight:700, fontSize:13, color:'var(--text-primary)' }}>Split the Bill</div>
                     <div style={{ fontSize:11, color:'var(--text-secondary)' }}>Διαμοίρασε τη λίστα με partners · Biometric + Stripe</div>
                   </div>
                 </div>
-                <div style={{ fontSize:13, color:'var(--brand-primary)', fontWeight:700 }}>→</div>
+                <span className="split-bill-arrow">→</span>
               </div>
             )}
 
@@ -4462,28 +4437,17 @@ export default function App() {
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(140px, 1fr))', gap:12 }}>
               {Object.entries(BROCHURE_LINKS).map(([name, url]) => (
-                <a
-                  key={name} href={url} target="_blank" rel="noopener noreferrer"
-                  style={{
-                    display:'flex', flexDirection:'column', alignItems:'center', gap:10,
-                    background:'var(--bg-surface)', border:'1px solid var(--border-light)',
-                    borderRadius:16, padding:'18px 12px', textDecoration:'none',
-                    color:'var(--text-primary)', fontWeight:700, fontSize:13,
-                    transition:'transform 0.15s, box-shadow 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
-                >
-                  <img
-                    src={SUPERMARKET_LOGOS[name] || ''}
-                    alt={name}
-                    style={{ width:60, height:60, objectFit:'contain', borderRadius:12, background:'#fff', padding:4 }}
-                    onError={e => { e.target.style.display = 'none'; }}
-                  />
-                  <span style={{ textAlign:'center', lineHeight:1.3 }}>{name}</span>
-                  <span style={{ fontSize:10, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:99, padding:'3px 8px', fontWeight:500 }}>
-                    Δες Φυλλάδιο →
-                  </span>
+                <a key={name} href={url} target="_blank" rel="noopener noreferrer" className="brochure-card">
+                  <div className="brochure-logo-wrap">
+                    <img
+                      src={SUPERMARKET_LOGOS[name] || ''}
+                      alt={name}
+                      style={{ width:52, height:52, objectFit:'contain' }}
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
+                  </div>
+                  <span className="brochure-name">{name}</span>
+                  <span className="brochure-cta">Δες Φυλλάδιο →</span>
                 </a>
               ))}
             </div>
@@ -4647,7 +4611,6 @@ const SplitBillModal = memo(function SplitBillModal({
                       );
                       // Match selected by shareKey
                       const isSel = selectedSplitPartners.some(s => s.shareKey === friend.shareKey);
-                      const splitCount = selectedSplitPartners.length + 1;
 
                       return (
                         <div key={friend.shareKey}

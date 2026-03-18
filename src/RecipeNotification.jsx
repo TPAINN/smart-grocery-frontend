@@ -24,10 +24,10 @@ export default function RecipeNotification({ show, message, onClose }) {
           </svg>
         </div>
         <div className="notification-content">
-          <h4></h4>
           <p>{message}</p>
         </div>
         <button className="close-notify-btn" onClick={onClose}>×</button>
+        <div className="notification-progress" />
       </div>
     </div>
   );

@@ -49,6 +49,17 @@
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --smooth: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Standardised transition durations */
+  --transition-fast: 0.15s;
+  --transition-base: 0.25s;
+  --transition-slow: 0.4s;
+
+  /* RGB equivalents for rgba() usage */
+  --accent-rgb:   37, 99, 235;
+  --success-rgb:  16, 185, 129;
+  --danger-rgb:   239, 68, 68;
+  --accent-2-rgb: 124, 58, 237;
+
   --brand-primary:  #2563eb;
   --brand-danger:   #ef4444;
   --brand-success:  #10b981;
@@ -92,6 +103,10 @@ body.dark-mode {
   --bg-surface:     rgba(14, 21, 40, 0.96);
   --bg-surface-hover: rgba(20, 31, 56, 0.92);
   --border-light:   rgba(28, 42, 70, 0.95);
+
+  /* RGB equivalents — dark mode */
+  --accent-rgb:   79, 142, 247;
+  --accent-2-rgb: 139, 92, 246;
 }
 
 /* ════════════════════════════════════════════════════════
@@ -131,17 +146,19 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 900px 700px at 15% 8%,  rgba(37,99,235,.065)  0%, transparent 65%),
-    radial-gradient(ellipse 700px 600px at 85% 85%, rgba(124,58,237,.045) 0%, transparent 65%),
-    radial-gradient(ellipse 800px 500px at 50% 45%, rgba(16,185,129,.03)  0%, transparent 70%);
+    radial-gradient(ellipse 900px 700px at 15% 8%,  rgba(37,99,235,.08)   0%, transparent 65%),
+    radial-gradient(ellipse 700px 600px at 85% 85%, rgba(124,58,237,.06)  0%, transparent 65%),
+    radial-gradient(ellipse 600px 500px at 60% 20%, rgba(124,58,237,.03)  0%, transparent 60%),
+    radial-gradient(ellipse 800px 500px at 50% 45%, rgba(16,185,129,.04)  0%, transparent 70%);
   animation: meshDrift 30s ease-in-out infinite alternate;
 }
 
 body.dark-mode::before {
   background:
-    radial-gradient(ellipse 900px 700px at 15% 8%,  rgba(79,142,247,.08)  0%, transparent 65%),
-    radial-gradient(ellipse 700px 600px at 85% 85%, rgba(124,58,237,.065) 0%, transparent 65%),
-    radial-gradient(ellipse 800px 500px at 50% 45%, rgba(16,185,129,.04)  0%, transparent 70%);
+    radial-gradient(ellipse 900px 700px at 15% 8%,  rgba(79,142,247,.10)  0%, transparent 65%),
+    radial-gradient(ellipse 700px 600px at 85% 85%, rgba(124,58,237,.08)  0%, transparent 65%),
+    radial-gradient(ellipse 600px 500px at 60% 20%, rgba(139,92,246,.05)  0%, transparent 60%),
+    radial-gradient(ellipse 800px 500px at 50% 45%, rgba(16,185,129,.05)  0%, transparent 70%);
 }
 
 @keyframes meshDrift {
