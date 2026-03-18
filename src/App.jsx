@@ -1972,7 +1972,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 }
 
 // ─── Recipe Popup — Premium Edition ──────────────────────────────────────────
-function RecipePopup({ recipe, onClose, onAddToList }) {
+function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorite }) {
   const [showDetails, setShowDetails] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [activeSection, setActiveSection] = useState('ingredients');
@@ -2001,6 +2001,13 @@ function RecipePopup({ recipe, onClose, onAddToList }) {
     <div className={`recipe-popup-overlay ${isClosing ? 'closing' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && handleClose()}>
       <div className={`recipe-popup-card ${isClosing ? 'closing' : ''}`}>
         <button className="recipe-popup-close" onClick={handleClose}>✕</button>
+        <button
+          className={`recipe-popup-fav ${isFavorite ? 'is-fav' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(); }}
+          aria-label={isFavorite ? 'Αφαίρεση από αγαπημένα' : 'Προσθήκη στα αγαπημένα'}
+        >
+          {isFavorite ? '❤️' : '🤍'}
+        </button>
 
         {recipe.image ? (
           <div className="recipe-popup-hero" style={{ backgroundImage: `url(${recipe.image})` }}>
@@ -2195,6 +2202,16 @@ export default function App() {
   const [recipeFilter, setRecipeFilter]     = useState('all');
   const [expandedRecipe, setExpandedRecipe] = useState(null);
   const [fridgeQuery, setFridgeQuery]       = useState('');
+
+  // ── Favorites (persistent + offline) ─────────────────────────────────────
+  const [favoriteIds, setFavoriteIds]           = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sg_favorite_ids') || '[]'); } catch { return []; }
+  });
+  const [favoriteRecipes, setFavoriteRecipes]   = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sg_favorite_recipes') || '[]'); } catch { return []; }
+  });
+  const [favoritesLoaded, setFavoritesLoaded]   = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [recipePage, setRecipePage]         = useState(1);
   const [recipeTotalPages, setRecipeTotalPages] = useState(1);
   const [recipeCategory, setRecipeCategory] = useState('');
@@ -2553,6 +2570,74 @@ export default function App() {
       fetchRecipes(recipePage + 1, true);
     }
   }, [recipePage, recipeTotalPages, recipesLoading, fetchRecipes]);
+
+  // ── Favorites: sync with backend + persist in localStorage ────────────────
+  const syncFavorites = useCallback(async () => {
+    if (!user) return;
+    try {
+      const token = localStorage.getItem('smart_grocery_token');
+      const r = await fetch(`${API_BASE}/api/favorites`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const ids = (d.favorites || []).map(f => f._id);
+        setFavoriteIds(ids);
+        setFavoriteRecipes(d.favorites || []);
+        localStorage.setItem('sg_favorite_ids', JSON.stringify(ids));
+        localStorage.setItem('sg_favorite_recipes', JSON.stringify(d.favorites || []));
+      }
+    } catch {
+      // offline — keep localStorage data
+    }
+    setFavoritesLoaded(true);
+  }, [user]);
+
+  useEffect(() => { if (user) syncFavorites(); }, [user, syncFavorites]);
+
+  const toggleFavorite = useCallback(async (recipeId) => {
+    if (!user) { setAuthInitMode('register'); setShowAuthModal(true); return; }
+    const isFav = favoriteIds.includes(recipeId);
+    const token = localStorage.getItem('smart_grocery_token');
+
+    // Optimistic update
+    if (isFav) {
+      const newIds = favoriteIds.filter(id => id !== recipeId);
+      setFavoriteIds(newIds);
+      setFavoriteRecipes(prev => prev.filter(r => r._id !== recipeId));
+      localStorage.setItem('sg_favorite_ids', JSON.stringify(newIds));
+    } else {
+      const newIds = [...favoriteIds, recipeId];
+      setFavoriteIds(newIds);
+      localStorage.setItem('sg_favorite_ids', JSON.stringify(newIds));
+      // Add recipe snapshot for offline
+      const recipe = recipes.find(r => r._id === recipeId);
+      if (recipe) {
+        setFavoriteRecipes(prev => {
+          const updated = [{ ...recipe, addedAt: new Date().toISOString() }, ...prev];
+          localStorage.setItem('sg_favorite_recipes', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    }
+
+    // Sync with backend
+    try {
+      if (isFav) {
+        await fetch(`${API_BASE}/api/favorites/${recipeId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await fetch(`${API_BASE}/api/favorites/${recipeId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        });
+      }
+    } catch {
+      // offline — optimistic update is already applied
+    }
+  }, [user, favoriteIds, recipes]);
 
   // Server status check
   useEffect(() => {
@@ -3071,8 +3156,11 @@ export default function App() {
     setChatInput('');
   };
 
-  const filteredRecipes = recipes
-    .filter(r => r && r.title) 
+  // When showing favorites, use the offline-safe favoriteRecipes array
+  const baseRecipes = showFavoritesOnly ? favoriteRecipes : recipes;
+
+  const filteredRecipes = baseRecipes
+    .filter(r => r && r.title)
     .filter(r => {
       const protein = r.protein || 0;
       const carbs = r.carbs || 0;
@@ -3905,6 +3993,12 @@ export default function App() {
 
                 {/* ── Category Pills ── */}
                 <div className="recipe-category-scroll">
+                  <button
+                    className={`recipe-cat-pill fav-pill ${showFavoritesOnly ? 'active' : ''}`}
+                    onClick={() => { setShowFavoritesOnly(!showFavoritesOnly); setRecipeCategory(''); }}
+                  >
+                    ❤️ Αγαπημένα {favoriteIds.length > 0 && <span className="fav-count">{favoriteIds.length}</span>}
+                  </button>
                   {[
                     { id: '', label: '🍽️ Όλες' },
                     { id: 'Κυρίως', label: '🥘 Κυρίως' },
@@ -3917,8 +4011,8 @@ export default function App() {
                   ].map(cat => (
                     <button
                       key={cat.id}
-                      className={`recipe-cat-pill ${recipeCategory === cat.id ? 'active' : ''}`}
-                      onClick={() => { setRecipeCategory(cat.id); setRecipePage(1); }}
+                      className={`recipe-cat-pill ${recipeCategory === cat.id && !showFavoritesOnly ? 'active' : ''}`}
+                      onClick={() => { setRecipeCategory(cat.id); setShowFavoritesOnly(false); setRecipePage(1); }}
                     >
                       {cat.label}
                     </button>
@@ -3975,8 +4069,16 @@ export default function App() {
                 {/* ── Empty / error state ── */}
                 {!recipesLoading && filteredRecipes.length === 0 && (
                   <div style={{ textAlign:'center', padding:'48px 20px', background:'var(--bg-surface)', border:'2px dashed var(--border-light)', borderRadius:20 }}>
-                    <div style={{ fontSize:52, marginBottom:16 }}>🍽️</div>
-                    {recipes.length === 0 ? (
+                    <div style={{ fontSize:52, marginBottom:16 }}>{showFavoritesOnly ? '❤️' : '🍽️'}</div>
+                    {showFavoritesOnly ? (
+                      <>
+                        <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Δεν έχεις αγαπημένες συνταγές</h3>
+                        <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Πάτα το 🤍 σε μια συνταγή για να την αποθηκεύσεις</p>
+                        <button className="submit-btn" style={{ padding:'10px 24px', fontSize:13 }} onClick={() => setShowFavoritesOnly(false)}>
+                          🍽️ Εξερεύνηση Συνταγών
+                        </button>
+                      </>
+                    ) : recipes.length === 0 ? (
                       <>
                         <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Δεν φορτώθηκαν συνταγές</h3>
                         <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>
@@ -4021,6 +4123,13 @@ export default function App() {
                             )}
                             <div className="recipe-card-time-badge">⏱️ {recipe.time || 30}'</div>
                             <div style={{ position:'absolute', top:10, left:10, width:8, height:8, borderRadius:'50%', zIndex:2, background: recipe.difficulty === 'Εύκολη' ? '#10b981' : recipe.difficulty === 'Δύσκολη' ? '#ef4444' : '#f59e0b' }} />
+                            <button
+                              className={`recipe-fav-btn ${favoriteIds.includes(recipe._id) ? 'is-fav' : ''}`}
+                              onClick={(e) => { e.stopPropagation(); toggleFavorite(recipe._id); }}
+                              aria-label={favoriteIds.includes(recipe._id) ? 'Αφαίρεση από αγαπημένα' : 'Προσθήκη στα αγαπημένα'}
+                            >
+                              {favoriteIds.includes(recipe._id) ? '❤️' : '🤍'}
+                            </button>
                           </div>
 
                           <div className="recipe-card-body">
@@ -4045,7 +4154,7 @@ export default function App() {
                     </div>
 
                     {/* ── Load More ── */}
-                    {recipePage < recipeTotalPages && (
+                    {!showFavoritesOnly && recipePage < recipeTotalPages && (
                       <div style={{ textAlign:'center', padding:'20px 0 8px' }}>
                         <button
                           onClick={loadMoreRecipes}
@@ -4063,13 +4172,15 @@ export default function App() {
 
                 {/* ── Recipe Popup Modal ── */}
                 {expandedRecipe && (() => {
-                  const recipe = recipes.find(r => r._id === expandedRecipe);
+                  const recipe = recipes.find(r => r._id === expandedRecipe) || favoriteRecipes.find(r => r._id === expandedRecipe);
                   if (!recipe) return null;
                   return (
                     <RecipePopup
                       recipe={recipe}
                       onClose={() => setExpandedRecipe(null)}
                       onAddToList={() => addRecipeToList(recipe)}
+                      isFavorite={favoriteIds.includes(recipe._id)}
+                      onToggleFavorite={() => toggleFavorite(recipe._id)}
                     />
                   );
                 })()}

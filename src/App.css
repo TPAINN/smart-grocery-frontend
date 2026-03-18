@@ -4197,6 +4197,111 @@ body.dark-mode .delete-btn {
   z-index: 2;
 }
 
+/* ── Favorite heart button on cards ── */
+.recipe-fav-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s;
+  padding: 0;
+  line-height: 1;
+}
+
+.recipe-fav-btn:hover {
+  transform: scale(1.2);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.recipe-fav-btn:active {
+  transform: scale(0.85);
+}
+
+.recipe-fav-btn.is-fav {
+  animation: heartPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes heartPop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.4); }
+  60%  { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+/* ── Favorite button in RecipePopup ── */
+.recipe-popup-fav {
+  position: absolute;
+  top: 12px;
+  right: 56px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  font-size: 17px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s;
+  padding: 0;
+  line-height: 1;
+}
+
+.recipe-popup-fav:hover {
+  transform: scale(1.15);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.recipe-popup-fav:active {
+  transform: scale(0.85);
+}
+
+.recipe-popup-fav.is-fav {
+  animation: heartPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Favorites pill styling ── */
+.recipe-cat-pill.fav-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.recipe-cat-pill.fav-pill .fav-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 0 5px;
+}
+
+.recipe-cat-pill.fav-pill.active .fav-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
 /* Difficulty dot */
 .recipe-card-diff-dot {
   position: absolute;
