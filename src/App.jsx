@@ -1063,8 +1063,8 @@ function AddFriendModal({ isOpen, onAdd, onClose, existingFriends = [] }) {
   const handleAdd = (friendData) => {
     const target = friendData || (
       preview && preview !== 'not_found' && preview !== 'offline'
-        ? { shareKey: preview.shareKey, username: preview.name, addedAt: Date.now() }
-        : key.trim() ? { shareKey: key.trim().toUpperCase(), username: key.trim().toUpperCase(), addedAt: Date.now() } : null
+        ? { shareKey: preview.shareKey, username: preview.name || preview.username || 'Φίλος', addedAt: Date.now() }
+        : key.trim() ? { shareKey: key.trim().toUpperCase(), username: 'Φίλος', addedAt: Date.now() } : null
     );
     if (!target) return;
     onAdd(target);
@@ -2197,6 +2197,7 @@ export default function App() {
   const [showChatPanel, setShowChatPanel] = useState(false);
   const[unreadChat, setUnreadChat] = useState(0);
   const [chatInput, setChatInput] = useState('');
+  const [dmTarget, setDmTarget] = useState(null); // null = group, friend object = private DM
   const chatEndRef = useRef(null);
 
   // ── Friends state ──────────────────────────────────────────────────────────
@@ -2328,7 +2329,7 @@ export default function App() {
     // 2. Update local state with confirmed (or optimistic) data
     const normalizedFriend = confirmedFriend || {
       shareKey: friend.shareKey,
-      username: friend.username || friend.name || friend.shareKey,
+      username: friend.username || friend.name || 'Φίλος',
       addedAt: Date.now(),
     };
 
@@ -2466,7 +2467,7 @@ export default function App() {
         socketRef.current.emit('join_cart', data.from.shareKey);
         setNotification({ show:true, message:`🤝 ${data.from.username || data.from.name} σε πρόσθεσε στο καλάθι!` });
         if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
-        const newFriend = { shareKey: data.from.shareKey, username: data.from.username || data.from.name, addedAt: Date.now() };
+        const newFriend = { shareKey: data.from.shareKey, username: data.from.username || data.from.name || 'Φίλος', addedAt: Date.now() };
         // Reload chat to include their messages
         setTimeout(() => loadGroupChat([...prev, newFriend]), 300);
         return [...prev, newFriend];
@@ -3187,6 +3188,8 @@ export default function App() {
       text:            chatInput.trim(),
       createdAt:       new Date(),
       friendShareKeys: friends.map(f => f.shareKey).filter(Boolean),
+      // If DM target is selected, send only to that friend
+      targetShareKey:  dmTarget ? dmTarget.shareKey : null,
     };
     socketRef.current.emit('send_message', msgData);
     setChatMessages(prev => [...prev, { ...msgData, _id: 'local_' + Date.now() }]);
@@ -3343,7 +3346,10 @@ export default function App() {
                       {showSenderName && (
                         <div style={{ fontSize:10, color:'var(--text-secondary)', fontWeight:600, marginLeft:12, marginBottom:3 }}>{m.senderName}</div>
                       )}
-                      <div className={`chat-bubble ${isMine ? 'chat-mine' : 'chat-other'}`} style={{ maxWidth:'78%', wordBreak:'break-word' }}>
+                      <div className={`chat-bubble ${isMine ? 'chat-mine' : 'chat-other'}`} style={{ maxWidth:'78%', wordBreak:'break-word', border: m.targetShareKey ? '1px solid rgba(16,185,129,0.35)' : 'none' }}>
+                        {m.targetShareKey && (
+                          <div style={{ fontSize:9, color:'#10b981', fontWeight:700, marginBottom:3, opacity:0.85 }}>🔒 Ιδιωτικό</div>
+                        )}
                         <div style={{ fontSize:14 }}>{m.text}</div>
                         <div style={{ display:'flex', alignItems:'center', justifyContent: isMine ? 'flex-end' : 'flex-start', gap:4, marginTop:3 }}>
                           <span style={{ fontSize:10, opacity:0.6 }}>{msgTime}</span>
@@ -3357,13 +3363,49 @@ export default function App() {
               <div ref={chatEndRef} />
             </div>
 
-            <div style={{ padding:'16px', borderTop:'1px solid var(--border-light)', background:'var(--bg-surface)' }}>
+            <div style={{ padding:'12px 16px 16px', borderTop:'1px solid var(--border-light)', background:'var(--bg-surface)' }}>
+              {/* DM Target Picker — who receives this message */}
+              {friends.length > 0 && (
+                <div style={{ display:'flex', gap:6, marginBottom:10, flexWrap:'wrap', alignItems:'center' }}>
+                  <span style={{ fontSize:10, color:'var(--text-secondary)', fontWeight:600, textTransform:'uppercase', letterSpacing:0.4 }}>Προς:</span>
+                  <button
+                    onClick={() => setDmTarget(null)}
+                    style={{
+                      padding:'4px 10px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border:'none',
+                      background: dmTarget === null ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'var(--bg-subtle)',
+                      color: dmTarget === null ? '#fff' : 'var(--text-secondary)',
+                      transition:'all 0.15s',
+                    }}
+                  >👥 Όλοι</button>
+                  {friends.map(f => (
+                    <button
+                      key={f.shareKey}
+                      onClick={() => setDmTarget(dmTarget?.shareKey === f.shareKey ? null : f)}
+                      style={{
+                        padding:'4px 10px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border:'none',
+                        background: dmTarget?.shareKey === f.shareKey ? 'linear-gradient(135deg,#10b981,#059669)' : 'var(--bg-subtle)',
+                        color: dmTarget?.shareKey === f.shareKey ? '#fff' : 'var(--text-secondary)',
+                        transition:'all 0.15s',
+                        display:'flex', alignItems:'center', gap:5,
+                      }}
+                    >
+                      <span style={{ width:16, height:16, borderRadius:'50%', background: getAvatarColor(f.shareKey), display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:8, color:'#fff', fontWeight:800 }}>
+                        {getInitials(f.username)}
+                      </span>
+                      {f.username}
+                    </button>
+                  ))}
+                </div>
+              )}
               <form onSubmit={handleSendMessage} style={{ display:'flex', gap:'8px' }}>
-                <input 
-                  type="text" placeholder="Γράψε μήνυμα..." value={chatInput} onChange={e => setChatInput(e.target.value)}
-                  style={{ flex:1, padding:'12px 16px', borderRadius:'14px', border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text-primary)', outline:'none' }}
+                <input
+                  type="text"
+                  placeholder={dmTarget ? `Ιδιωτικό σε ${dmTarget.username}...` : 'Μήνυμα σε όλους...'}
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  style={{ flex:1, padding:'12px 16px', borderRadius:'14px', border:`1px solid ${dmTarget ? '#10b981' : 'var(--border)'}`, background:'var(--bg-input)', color:'var(--text-primary)', outline:'none', transition:'border-color 0.2s' }}
                 />
-                <button type="submit" disabled={!chatInput.trim()} style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'white', border:'none', borderRadius:'14px', width:'46px', cursor: chatInput.trim() ? 'pointer' : 'not-allowed', opacity: chatInput.trim() ? 1 : 0.5, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' }}>
+                <button type="submit" disabled={!chatInput.trim()} style={{ background: dmTarget ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'white', border:'none', borderRadius:'14px', width:'46px', cursor: chatInput.trim() ? 'pointer' : 'not-allowed', opacity: chatInput.trim() ? 1 : 0.5, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' }}>
                   <IconArrowRight size={18} stroke={2.5}/>
                 </button>
               </form>

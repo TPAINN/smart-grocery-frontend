@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "smart-grocery-frontend",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "npm run dev -- --port 5174"],
       "port": 5174
     }
   ]
