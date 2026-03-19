@@ -2596,9 +2596,14 @@ export default function App() {
   useEffect(() => { if (user) syncFavorites(); }, [user, syncFavorites]);
 
   const toggleFavorite = useCallback(async (recipeId) => {
+    if (!recipeId) return;
     if (!user) { setAuthInitMode('register'); setShowAuthModal(true); return; }
     const isFav = favoriteIds.includes(recipeId);
     const token = localStorage.getItem('smart_grocery_token');
+
+    // Save previous state for rollback
+    const prevIds     = [...favoriteIds];
+    const prevRecipes = [...favoriteRecipes];
 
     // Optimistic update
     if (isFav) {
@@ -2606,38 +2611,43 @@ export default function App() {
       setFavoriteIds(newIds);
       setFavoriteRecipes(prev => prev.filter(r => r._id !== recipeId));
       localStorage.setItem('sg_favorite_ids', JSON.stringify(newIds));
+      localStorage.setItem('sg_favorite_recipes', JSON.stringify(prevRecipes.filter(r => r._id !== recipeId)));
     } else {
       const newIds = [...favoriteIds, recipeId];
       setFavoriteIds(newIds);
       localStorage.setItem('sg_favorite_ids', JSON.stringify(newIds));
-      // Add recipe snapshot for offline
-      const recipe = recipes.find(r => r._id === recipeId);
+      // Find recipe from current page OR from existing favorites
+      const recipe = recipes.find(r => r._id === recipeId) || favoriteRecipes.find(r => r._id === recipeId);
       if (recipe) {
-        setFavoriteRecipes(prev => {
-          const updated = [{ ...recipe, addedAt: new Date().toISOString() }, ...prev];
-          localStorage.setItem('sg_favorite_recipes', JSON.stringify(updated));
-          return updated;
-        });
+        const updated = [{ ...recipe, addedAt: new Date().toISOString() }, ...favoriteRecipes];
+        setFavoriteRecipes(updated);
+        localStorage.setItem('sg_favorite_recipes', JSON.stringify(updated));
       }
     }
 
-    // Sync with backend
+    // Sync with backend — rollback on server errors (but not network failures)
     try {
-      if (isFav) {
-        await fetch(`${API_BASE}/api/favorites/${recipeId}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      } else {
-        await fetch(`${API_BASE}/api/favorites/${recipeId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        });
+      const res = isFav
+        ? await fetch(`${API_BASE}/api/favorites/${recipeId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        : await fetch(`${API_BASE}/api/favorites/${recipeId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          });
+
+      if (!res.ok && res.status >= 400) {
+        // Server rejected — rollback optimistic update
+        setFavoriteIds(prevIds);
+        setFavoriteRecipes(prevRecipes);
+        localStorage.setItem('sg_favorite_ids', JSON.stringify(prevIds));
+        localStorage.setItem('sg_favorite_recipes', JSON.stringify(prevRecipes));
       }
     } catch {
-      // offline — optimistic update is already applied
+      // Network offline — keep optimistic update, will sync on next login
     }
-  }, [user, favoriteIds, recipes]);
+  }, [user, favoriteIds, favoriteRecipes, recipes]);
 
   // Server status check
   useEffect(() => {
@@ -3137,6 +3147,8 @@ export default function App() {
     localStorage.removeItem('smart_grocery_token');
     localStorage.removeItem('smart_grocery_user');
     localStorage.removeItem('sg_welcomed_v2');
+    localStorage.removeItem('sg_favorite_ids');
+    localStorage.removeItem('sg_favorite_recipes');
     window.location.reload();
   };
   const handleCopyShareKey = () => { if (user?.shareKey) { navigator.clipboard.writeText(user.shareKey); setNotification({ show:true, message:`📋 Αντιγράφηκε: ${user.shareKey}` }); } };
@@ -3995,9 +4007,9 @@ export default function App() {
                 <div className="recipe-category-scroll">
                   <button
                     className={`recipe-cat-pill fav-pill ${showFavoritesOnly ? 'active' : ''}`}
-                    onClick={() => { setShowFavoritesOnly(!showFavoritesOnly); setRecipeCategory(''); }}
+                    onClick={() => { setShowFavoritesOnly(v => !v); setRecipeCategory(''); setRecipePage(1); }}
                   >
-                    ❤️ Αγαπημένα {favoriteIds.length > 0 && <span className="fav-count">{favoriteIds.length}</span>}
+                    ❤️ Αγαπημένα {favoriteRecipes.length > 0 && <span className="fav-count">{favoriteRecipes.length}</span>}
                   </button>
                   {[
                     { id: '', label: '🍽️ Όλες' },
@@ -4110,7 +4122,7 @@ export default function App() {
                         <div
                           key={recipe._id || recipe.title}
                           className="recipe-card-v2"
-                          onClick={() => setExpandedRecipe(recipe._id)}
+                          onClick={() => recipe._id && setExpandedRecipe(recipe._id)}
                           style={{ animationDelay: `${Math.min(idx * 0.06, 0.5)}s` }}
                         >
                           <div className="recipe-card-img-wrap">
