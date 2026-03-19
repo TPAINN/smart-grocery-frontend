@@ -41,20 +41,31 @@ const loadLeaflet = () => {
 
 // ─── APIs ────────────────────────────────────────────────────────────────────
 let _overpassCache = null;
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+];
 const searchOverpass = async (lat, lng, r=5000) => {
   const k = `${lat.toFixed(3)},${lng.toFixed(3)},${r}`;
-  if (_overpassCache?.k === k && Date.now() - _overpassCache.t < 120000) return _overpassCache.d;
-  const q = `[out:json][timeout:12];(node["shop"="supermarket"](around:${r},${lat},${lng});way["shop"="supermarket"](around:${r},${lat},${lng}););out center body;`;
-  const resp = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
-  if (!resp.ok) throw new Error('Overpass error');
-  const data = await resp.json();
-  const d = data.elements.map(e => ({
-    id:e.id, name:e.tags?.name||'Σούπερ Μάρκετ', brand:e.tags?.brand||e.tags?.operator||'',
-    lat:e.lat||e.center?.lat, lng:e.lon||e.center?.lon,
-    address:[e.tags?.['addr:street'],e.tags?.['addr:housenumber']].filter(Boolean).join(' ')||'',
-  })).filter(s => s.lat && s.lng);
-  _overpassCache = { k, d, t:Date.now() };
-  return d;
+  if (_overpassCache?.k === k && Date.now() - _overpassCache.t < 180000) return _overpassCache.d;
+  const q = `[out:json][timeout:15];(node["shop"="supermarket"](around:${r},${lat},${lng});way["shop"="supermarket"](around:${r},${lat},${lng}););out center body;`;
+  let lastErr;
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const resp = await fetch(`${endpoint}?data=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(14000) });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      const d = data.elements.map(e => ({
+        id:e.id, name:e.tags?.name||'Σούπερ Μάρκετ', brand:e.tags?.brand||e.tags?.operator||'',
+        lat:e.lat||e.center?.lat, lng:e.lon||e.center?.lon,
+        address:[e.tags?.['addr:street'],e.tags?.['addr:housenumber']].filter(Boolean).join(' ')||'',
+      })).filter(s => s.lat && s.lng);
+      _overpassCache = { k, d, t:Date.now() };
+      return d;
+    } catch (err) { lastErr = err; }
+  }
+  throw lastErr || new Error('Overpass unavailable');
 };
 
 const osrmRoute = async (coords, p='driving') => {
@@ -220,7 +231,11 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         setStatus('loading'); setErr('');
         await loadLeaflet();
         if (dead) return;
-        const pos = await new Promise((ok,fail) => navigator.geolocation.getCurrentPosition(p=>ok({lat:p.coords.latitude,lng:p.coords.longitude}),fail,{enableHighAccuracy:true,timeout:12000}));
+        const pos = await new Promise((ok,fail) => navigator.geolocation.getCurrentPosition(
+          p=>ok({lat:p.coords.latitude,lng:p.coords.longitude}),
+          fail,
+          {enableHighAccuracy:true,timeout:10000,maximumAge:60000}
+        ));
         if (dead) return;
         setUserLoc(pos);
         if (containerRef.current && !mapRef.current) {
@@ -288,8 +303,8 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
       const pts=[userLoc,...selected.map(s=>({lat:s.lat,lng:s.lng})),userLoc];
       const r = selected.length===1 ? await osrmRoute(pts,mode) : await osrmTrip(pts,mode);
       const coords=r.geometry.coordinates.map(c=>[c[1],c[0]]);
-      // Animated route drawing
-      const line = L.polyline([],{color:'#6366f1',weight:5,opacity:.85,smoothFactor:1,lineCap:'round',dashArray:'8 12'}).addTo(map);
+      // Animated route drawing — smoothFactor:0 so line follows roads exactly
+      const line = L.polyline([],{color:'#6366f1',weight:5,opacity:.88,smoothFactor:0,lineCap:'round',dashArray:'8 12'}).addTo(map);
       routeLayerRef.current=line;
       // Animate: add points progressively
       const step=Math.max(1,Math.floor(coords.length/40));

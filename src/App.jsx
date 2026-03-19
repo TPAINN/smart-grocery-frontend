@@ -10,7 +10,7 @@ import './SmartRouteMap.css';
 import { io } from 'socket.io-client';
 import {
   IconShoppingCart, IconQrcode, IconUsers, IconMessage,
-  IconCreditCard, IconNotes, IconUser, IconLogout,
+  IconNotes, IconUser, IconLogout,
   IconSun, IconMoon, IconSearch, IconPlus, IconTrash,
   IconStar, IconStarFilled, IconChefHat, IconBook2,
   IconBuildingStore, IconScan, IconWifi, IconWifiOff,
@@ -2170,24 +2170,6 @@ export default function App() {
 
   const [user, setUser]   = useState(() => JSON.parse(localStorage.getItem('smart_grocery_user')) || null);
   const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('proGroceryItems_real')) || []);
-  // ── Split Bill state ───────────────────────────────────────────────────────
-  const [showSplitModal, setShowSplitModal]       = useState(false);
-  const [splitStep, setSplitStep]                 = useState('setup');
-  const [starredPartners, setStarredPartners]     = useState([]);
-  const [selectedSplitPartners, setSelectedSplitPartners] = useState([]);
-  const [splitSession, setSplitSession]           = useState(null);
-  const [splitLoading, setSplitLoading]           = useState(false);
-  const [splitType, setSplitType]                 = useState('equal');
-  const [splitSessions, setSplitSessions]         = useState([]);
-  const [showAddPartnerModal, setShowAddPartnerModal] = useState(false);
-  const [addPartnerUsername, setAddPartnerUsername] = useState('');
-  const [addPartnerNickname, setAddPartnerNickname] = useState('');
-  const [addPartnerSplit, setAddPartnerSplit]     = useState(50);
-  const [biometricSupported, setBiometricSupported] = useState(false);
-  const [consentToken, setConsentToken]           = useState(null);
-  const [stripeCardSaved, setStripeCardSaved]     = useState(false);
-  const [splitHistory, setSplitHistory]           = useState([]);
-
   const [inputValue, setInputValue]       = useState('');
   const [activeTab, setActiveTab]         = useState('list');
   const [notification, setNotification]   = useState({ show:false, message:'' });
@@ -2271,6 +2253,12 @@ export default function App() {
     });
   }, []);
   // #endregion
+
+  // ── Auth header helper ─────────────────────────────────────────────────────
+  const authHeader = () => {
+    const token = localStorage.getItem('smart_grocery_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   // ── Persist friends ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -2488,10 +2476,9 @@ export default function App() {
 
   // ── Clock ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (showSplitModal) return; // ← pause clock while split modal is open (prevents re-renders)
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
-  }, [showSplitModal]);
+  }, []);
 
   // ── Recipes ────────────────────────────────────────────────────────────────
   const fetchRecipes = useCallback(async (page = 1, append = false) => {
@@ -3090,7 +3077,6 @@ export default function App() {
       message: 'Open AuthModal from welcome',
       data: {
         showSmartRoute,
-        showSplitModal,
         showListsModal,
         showFriendsPanel,
         showChatPanel,
@@ -3112,7 +3098,6 @@ export default function App() {
       message: 'Open AuthModal (register) from welcome',
       data: {
         showSmartRoute,
-        showSplitModal,
         showListsModal,
         showFriendsPanel,
         showChatPanel,
@@ -3207,181 +3192,10 @@ export default function App() {
   const timeGreeting = hour < 5 ? 'Καλό βράδυ' : hour < 12 ? 'Καλημέρα' : hour < 18 ? 'Καλό απόγευμα' : 'Καλησπέρα';
   const timeIcon     = hour < 5 ? '🌙' : hour < 12 ? '☀️' : hour < 18 ? '☕' : '🌙';
 
-  // ─── Split Bill Functions ──────────────────────────────────────────────────
-  const authHeader = () => {
-    const token = localStorage.getItem('smart_grocery_token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
-
-  const loadStarredPartners = async () => {
-    if (!user) return;
-    try {
-      const r = await fetch(`${API_BASE}/api/split/partners`, { headers: authHeader() });
-      if (r.ok) { const d = await r.json(); setStarredPartners(d.partners || []); }
-    } catch {}
-  };
-
-  const loadSplitHistory = async () => {
-    if (!user) return;
-    try {
-      const r = await fetch(`${API_BASE}/api/split/history`, { headers: authHeader() });
-      if (r.ok) { const d = await r.json(); setSplitHistory(d.sessions || []); }
-    } catch {}
-  };
-
-  const addStarredPartner = async () => {
-    if (!addPartnerUsername.trim()) return;
-    setSplitLoading(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/split/partners`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify({ username: addPartnerUsername, nickname: addPartnerNickname, defaultSplitPercent: addPartnerSplit }),
-      });
-      const d = await r.json();
-      if (r.ok) {
-        setNotification({ show: true, message: d.message });
-        setShowAddPartnerModal(false);
-        setAddPartnerUsername('');
-        setAddPartnerNickname('');
-        setAddPartnerSplit(50);
-        loadStarredPartners();
-      } else {
-        setNotification({ show: true, message: `❌ ${d.message}` });
-      }
-    } catch { setNotification({ show: true, message: '❌ Σφάλμα σύνδεσης.' }); }
-    setSplitLoading(false);
-  };
-
-  const removeStarredPartner = async (id) => {
-    try {
-      await fetch(`${API_BASE}/api/split/partners/${id}`, { method: 'DELETE', headers: authHeader() });
-      setStarredPartners(prev => prev.filter(p => p._id !== id));
-      setNotification({ show: true, message: '🗑️ Partner αφαιρέθηκε.' });
-    } catch {}
-  };
-
-  const createSplitSession = async () => {
-    if (!selectedSplitPartners.length) { setNotification({ show: true, message: '⚠️ Επίλεξε τουλάχιστον έναν partner.' }); return; }
-    if (!items.length) { setNotification({ show: true, message: '⚠️ Η λίστα είναι κενή.' }); return; }
-    setSplitLoading(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/split/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify({
-          shareKey: user.shareKey,
-          items: items.map(i => ({ name: i.name, price: i.price || 0, quantity: i.quantity || 1, store: i.store || '' })),
-          partnerIds: selectedSplitPartners.map(p => p.partnerId._id || p.partnerId),
-          splitType,
-        }),
-      });
-      const d = await r.json();
-      if (r.ok) {
-        setSplitSession(d.session);
-        setSplitStep('biometric');
-        if (socketRef.current) socketRef.current.emit('split_join', d.session._id);
-      } else {
-        setNotification({ show: true, message: `❌ ${d.message}` });
-      }
-    } catch { setNotification({ show: true, message: '❌ Σφάλμα σύνδεσης.' }); }
-    setSplitLoading(false);
-  };
-
-  const requestBiometricConsent = async () => {
-    if (!splitSession) return;
-    setSplitLoading(true);
-    try {
-      const cr = await fetch(`${API_BASE}/api/split/webauthn/challenge`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify({ sessionId: splitSession._id }),
-      });
-      const { challenge, rpId } = await cr.json();
-      let consentTok = null;
-      try {
-        const credential = await navigator.credentials.get({
-          publicKey: {
-            challenge: Uint8Array.from(atob(challenge.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)),
-            rpId: rpId || window.location.hostname,
-            userVerification: 'required',
-            timeout: 60000,
-          },
-        });
-        const clientDataJSON = btoa(String.fromCharCode(...new Uint8Array(credential.response.clientDataJSON)));
-        const vr = await fetch(`${API_BASE}/api/split/webauthn/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeader() },
-          body: JSON.stringify({ sessionId: splitSession._id, clientDataJSON, challenge }),
-        });
-        const vd = await vr.json();
-        if (vr.ok) consentTok = vd.consentToken;
-        else { setNotification({ show: true, message: `❌ ${vd.message}` }); setSplitLoading(false); return; }
-      } catch (bioErr) {
-        // Fallback for unsupported devices
-        const vr = await fetch(`${API_BASE}/api/split/webauthn/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeader() },
-          body: JSON.stringify({ sessionId: splitSession._id, challenge }),
-        });
-        const vd = await vr.json();
-        if (vr.ok) consentTok = vd.consentToken;
-        else { setNotification({ show: true, message: `❌ ${vd.message}` }); setSplitLoading(false); return; }
-      }
-      setConsentToken(consentTok);
-      setSplitStep('waiting');
-      setNotification({ show: true, message: '✅ Επαλήθευση επιτυχής!' });
-      if (socketRef.current) socketRef.current.emit('split_consent_update', { sessionId: splitSession._id, userId: user._id, username: user.name, status: 'accepted' });
-    } catch (err) {
-      setNotification({ show: true, message: `❌ ${err.message}` });
-    }
-    setSplitLoading(false);
-  };
-
-  const executeSplitPayment = async () => {
-    if (!splitSession) return;
-    setSplitLoading(true);
-    try {
-      const r = await fetch(`${API_BASE}/api/split/sessions/${splitSession._id}/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader() },
-        body: JSON.stringify({ consentToken }),
-      });
-      const d = await r.json();
-      if (r.ok) {
-        setSplitStep('done');
-        setNotification({ show: true, message: d.message });
-        loadSplitHistory();
-      } else {
-        setNotification({ show: true, message: `❌ ${d.message}` });
-      }
-    } catch { setNotification({ show: true, message: '❌ Σφάλμα σύνδεσης.' }); }
-    setSplitLoading(false);
-  };
-
   // ── Smart Route: count unique stores in user's list ──────────────────────
   const uniqueStoresInList = [...new Set(
     items.filter(i => i.store && i.store !== 'Άγνωστο').map(i => i.store)
   )].length;
-
-  const openSplitModal = () => {
-    if (!user) { setNotification({ show: true, message: '⚠️ Συνδέσου πρώτα.' }); return; }
-    setBiometricSupported('credentials' in navigator && 'PublicKeyCredential' in window);
-    loadStarredPartners();
-    setSplitStep('setup');
-    setSplitSession(null);
-    setConsentToken(null);
-    setSelectedSplitPartners([]);
-    setShowSplitModal(true);
-  };
-
-
-  // ─── Split Bill Modal ─────────────────────────────────────────────────────
-  // SplitBillModal is defined above the App component — prevents re-mount bug
-
-    // ─── Add Starred Partner Modal (shows friends as quick-select) ─────────────
-  // AddPartnerModal defined above App — prevents re-mount bug
-
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -3399,43 +3213,6 @@ export default function App() {
       <RecipeNotification show={notification.show} message={notification.message} onClose={() => setNotification({ show:false, message:'' })} />
       <RecipeAddModal isOpen={recipeAddModal.open} recipeName={recipeAddModal.recipeName} progress={recipeAddModal.progress} total={recipeAddModal.total} onClose={closeRecipeAddModal} />
       <BarcodeScannerModal isOpen={showScanner} onClose={() => setShowScanner(false)} />
-      {showSplitModal && (
-        <SplitBillModal
-          items={items}
-          friends={friends}
-          user={user}
-          splitStep={splitStep}
-          setSplitStep={setSplitStep}
-          splitSession={splitSession}
-          setSplitSession={setSplitSession}
-          splitLoading={splitLoading}
-          splitType={splitType}
-          setSplitType={setSplitType}
-          selectedSplitPartners={selectedSplitPartners}
-          setSelectedSplitPartners={setSelectedSplitPartners}
-          starredPartners={starredPartners}
-          biometricSupported={biometricSupported}
-          setShowSplitModal={setShowSplitModal}
-          createSplitSession={createSplitSession}
-          executeSplitPayment={executeSplitPayment}
-        />
-      )}
-      {showAddPartnerModal && (
-        <AddPartnerModal
-          friends={friends}
-          starredPartners={starredPartners}
-          splitLoading={splitLoading}
-          addPartnerUsername={addPartnerUsername}
-          setAddPartnerUsername={setAddPartnerUsername}
-          addPartnerNickname={addPartnerNickname}
-          setAddPartnerNickname={setAddPartnerNickname}
-          addPartnerSplit={addPartnerSplit}
-          setAddPartnerSplit={setAddPartnerSplit}
-          setShowAddPartnerModal={setShowAddPartnerModal}
-          addStarredPartner={addStarredPartner}
-        />
-      )}
-
       {/* Friend modals & panel */}
       <FriendPickerModal isOpen={friendPicker.open} friends={friends} item={friendPicker.item} onSend={handlePickerSend} onClose={() => setFriendPicker({ open:false, item:null })} />
       <AddFriendModal isOpen={showAddFriendModal} onAdd={addFriend} onClose={() => setShowAddFriendModal(false)} existingFriends={friends} />
@@ -3635,11 +3412,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* Split Bill Button */}
-              <div className={`action-btn-new${showSplitModal ? ' split-btn-open' : ''}`} onClick={openSplitModal} title="Split the Bill" style={{ position:'relative', background: showSplitModal ? 'rgba(99,102,241,0.15)' : undefined, border: showSplitModal ? '1.5px solid rgba(99,102,241,0.4)' : undefined, boxShadow: showSplitModal ? '0 0 0 3px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.15)' : undefined }}>
-                <IconCreditCard size={20} stroke={1.8} />
-              </div>
-
               <div
                 className="action-btn-new"
                 onClick={() => {
@@ -3652,7 +3424,6 @@ export default function App() {
                       message: 'Open AuthModal from lists action',
                       data: {
                         showSmartRoute,
-                        showSplitModal,
                         showListsModal,
                         showFriendsPanel,
                         showChatPanel,
@@ -3704,7 +3475,6 @@ export default function App() {
                       message: 'Open AuthModal from header login',
                       data: {
                         showSmartRoute,
-                        showSplitModal,
                         showListsModal,
                         showFriendsPanel,
                         showChatPanel,
@@ -3782,22 +3552,6 @@ export default function App() {
                   <button onClick={handleMassClear} style={{ background:'rgba(239,68,68,0.1)', color:'var(--brand-danger)', border:'none', padding:'10px', borderRadius:'10px', cursor:'pointer', fontSize:18 }} title="Αδείασμα">🗑️</button>
                   {user && <button onClick={saveCurrentList} style={{ background:'linear-gradient(135deg,#059669,#10b981)', color:'white', border:'none', padding:'10px 16px', borderRadius:'10px', cursor:'pointer', fontWeight:'bold', fontSize:13 }} title="Αποθήκευση">💾 Αποθήκευση</button>}
                 </div>
-              </div>
-            )}
-
-            {/* Split Bill Quick Access Banner */}
-            {user && items.length > 0 && (
-              <div onClick={openSplitModal} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.08))', border:'1.5px solid rgba(99,102,241,0.2)', borderRadius:12, padding:'10px 14px', marginBottom:10, cursor:'pointer', transition:'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.background='linear-gradient(135deg,rgba(99,102,241,0.14),rgba(139,92,246,0.14))'}
-                onMouseLeave={e => e.currentTarget.style.background='linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.08))'}>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:34, height:34, borderRadius:9, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>💳</div>
-                  <div>
-                    <div style={{ fontWeight:700, fontSize:13, color:'var(--text-primary)' }}>Split the Bill</div>
-                    <div style={{ fontSize:11, color:'var(--text-secondary)' }}>Διαμοίρασε τη λίστα με partners · Biometric + Stripe</div>
-                  </div>
-                </div>
-                <div style={{ fontSize:13, color:'var(--brand-primary)', fontWeight:700 }}>→</div>
               </div>
             )}
 
@@ -4625,7 +4379,6 @@ export default function App() {
             message: 'Open SmartRoute overlay',
             data: {
               showAuthModal,
-              showSplitModal,
               showListsModal,
               showFriendsPanel,
               showChatPanel,
@@ -4644,500 +4397,3 @@ export default function App() {
     </div>
   );
 }
-
-// ─── SplitBillModal — OUTSIDE App + memo'd to prevent re-render from App's 1s timer ──
-const SplitBillModal = memo(function SplitBillModal({
-  items, friends, user,
-  splitStep, setSplitStep,
-  splitSession, setSplitSession,
-  splitLoading,
-  splitType, setSplitType,
-  selectedSplitPartners, setSelectedSplitPartners,
-  starredPartners,
-  biometricSupported,
-  setShowSplitModal,
-  createSplitSession,
-  executeSplitPayment,
-}) {
-  const totalAmount = items.reduce((s, i) => s + (i.price > 0 ? i.price : 0), 0);
-  const splitCount  = selectedSplitPartners.length + 1;
-
-  // Lock body scroll while modal is open — prevents main menu scrolling behind
-  useEffect(() => {
-    const scrollY = window.scrollY;
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    document.body.classList.add('split-modal-open');
-    return () => {
-      document.body.classList.remove('split-modal-open');
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, scrollY);
-    };
-  }, []);
-
-
-  return createPortal(
-    <div className="split-overlay-enter" style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.65)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)' }}
-      onClick={e => { if (e.target === e.currentTarget) setShowSplitModal(false); }}>
-      <div className="split-panel-enter" style={{ width:'100%', maxWidth:520, maxHeight:'92vh', overflowY:'auto', background:'var(--bg-card)', borderRadius:'24px 24px 0 0', padding:'0 0 32px 0', boxShadow:'0 -8px 60px rgba(99,102,241,0.25), 0 -2px 24px rgba(0,0,0,0.4)' }}>
-
-        {/* Drag handle */}
-        <div style={{ display:'flex', justifyContent:'center', padding:'12px 0 0' }}>
-          <div style={{ width:36, height:4, borderRadius:4, background:'var(--border-light)' }} />
-        </div>
-
-        {/* Header */}
-        <div style={{ padding:'12px 20px 0', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div style={{ width:42, height:42, borderRadius:12, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20 }}>💳</div>
-            <div>
-              <div style={{ fontWeight:700, fontSize:17, color:'var(--text-primary)' }}>Split the Bill</div>
-              <div style={{ fontSize:11, color:'var(--text-secondary)' }}>Ασφαλής διαμοιρασμός · Stripe + Biometric</div>
-            </div>
-          </div>
-          <button onClick={() => setShowSplitModal(false)} style={{ background:'var(--bg-surface)', border:'none', borderRadius:10, width:34, height:34, cursor:'pointer', fontSize:16, color:'var(--text-secondary)', transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)', display:'flex', alignItems:'center', justifyContent:'center' }} onMouseOver={e=>e.currentTarget.style.transform='scale(1.12) rotate(90deg)'} onMouseOut={e=>e.currentTarget.style.transform='scale(1) rotate(0)'}>✕</button>
-        </div>
-
-        {/* Progress bar */}
-        <div style={{ display:'flex', gap:4, padding:'14px 20px 0' }}>
-          {['setup','biometric','waiting','payment','done'].map((step, i) => {
-            const steps = ['setup','biometric','waiting','payment','done'];
-            const active = steps.indexOf(splitStep) >= i;
-            return (
-              <div key={step} style={{ flex:1 }}>
-                <div style={{ height:3, borderRadius:4, background: active ? '#6366f1' : 'var(--border-light)', transition:'background 0.3s' }} />
-                <div style={{ fontSize:9, color: active ? '#6366f1' : 'var(--text-secondary)', marginTop:3, fontWeight:600, textTransform:'uppercase', letterSpacing:0.3, textAlign:'center' }}>
-                  {['Ρύθμιση','Biometric','Αναμονή','Πληρωμή','Τέλος'][i]}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ padding:'16px 20px 0' }}>
-
-          {/* ══ STEP: SETUP ══ */}
-          {splitStep === 'setup' && (
-            <div>
-              {/* ── Cart summary ── */}
-              <div style={{ background:'var(--bg-surface)', borderRadius:14, padding:'12px 16px', marginBottom:14, border:'1px solid var(--border-light)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <div>
-                  <div style={{ fontSize:12, color:'var(--text-secondary)' }}>{items.length} προϊόντα στο καλάθι</div>
-                  <div style={{ fontWeight:800, fontSize:26, color:'var(--brand-primary)', letterSpacing:-0.5, lineHeight:1.1 }}>{totalAmount.toFixed(2)}€</div>
-                </div>
-                <div style={{ display:'flex', gap:7 }}>
-                  {[['equal','⚖️ Ίσα'], ['custom','✏️ Custom']].map(([val, label]) => (
-                    <button key={val} onClick={() => setSplitType(val)}
-                      style={{ padding:'7px 12px', borderRadius:9, border:`1.5px solid ${splitType===val?'#6366f1':'var(--border-light)'}`, background:splitType===val?'rgba(99,102,241,0.12)':'var(--bg-surface)', color:splitType===val?'#6366f1':'var(--text-secondary)', cursor:'pointer', fontWeight:700, fontSize:12, transition:'all 0.2s' }}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── Friends list (primary selection) ── */}
-              <div style={{ marginBottom:14 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-                  <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>
-                    Επίλεξε με ποιον μοιράζεις
-                  </div>
-                  {selectedSplitPartners.length > 0 && (
-                    <div style={{ fontSize:12, fontWeight:700, color:'#6366f1', background:'rgba(99,102,241,0.1)', borderRadius:20, padding:'3px 10px' }}>
-                      {selectedSplitPartners.length} επιλεγμέν{selectedSplitPartners.length===1?'ος':'οι'}
-                    </div>
-                  )}
-                </div>
-
-                {friends.length === 0 ? (
-                  <div style={{ background:'var(--bg-surface)', borderRadius:14, padding:24, textAlign:'center', border:'1.5px dashed var(--border-light)' }}>
-                    <div style={{ fontSize:36, marginBottom:8 }}>👥</div>
-                    <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>Δεν έχεις φίλους ακόμα</div>
-                    <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5 }}>
-                      Πρόσθεσε φίλους από το panel επάνω δεξιά για να μοιράσεις τα έξοδα μαζί τους.
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                    {friends.map(friend => {
-                      // Check if this friend is also a starred partner (for extra info)
-                      const starred = starredPartners.find(sp =>
-                        sp.partnerName === friend.username || sp.partnerShareKey === friend.shareKey
-                      );
-                      // Match selected by shareKey
-                      const isSel = selectedSplitPartners.some(s => s.shareKey === friend.shareKey);
-                      const splitCount = selectedSplitPartners.length + 1;
-
-                      return (
-                        <div key={friend.shareKey}
-                          onClick={() => {
-                            setSelectedSplitPartners(prev =>
-                              isSel
-                                ? prev.filter(s => s.shareKey !== friend.shareKey)
-                                : [...prev, {
-                                    // Adapt friend to the shape createSplitSession expects
-                                    _id:                friend.shareKey,
-                                    shareKey:           friend.shareKey,
-                                    partnerName:        friend.username,
-                                    nickname:           friend.username,
-                                    defaultSplitPercent: starred?.defaultSplitPercent || 50,
-                                    partnerId:          { shareKey: friend.shareKey },
-                                  }]
-                            );
-                          }}
-                          style={{
-                            display:'flex', alignItems:'center', gap:12,
-                            background: isSel ? 'rgba(99,102,241,0.08)' : 'var(--bg-surface)',
-                            border: `1.5px solid ${isSel ? '#6366f1' : 'var(--border-light)'}`,
-                            borderRadius:14, padding:'11px 13px', cursor:'pointer',
-                            transition:'all 0.2s',
-                            boxShadow: isSel ? '0 0 0 3px rgba(99,102,241,0.12)' : 'none',
-                          }}>
-                          {/* Avatar */}
-                          <div style={{
-                            width:44, height:44, borderRadius:13, flexShrink:0,
-                            background: getAvatarColor(friend.shareKey),
-                            display:'flex', alignItems:'center', justifyContent:'center',
-                            color:'#fff', fontWeight:800, fontSize:16,
-                            boxShadow:`0 4px 10px ${getAvatarColor(friend.shareKey)}55`,
-                          }}>
-                            {getInitials(friend.username)}
-                          </div>
-                          {/* Info */}
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontWeight:800, fontSize:15, color:'var(--text-primary)', display:'flex', alignItems:'center', gap:6 }}>
-                              {friend.username}
-                              {starred && (
-                                <span style={{ fontSize:10, background:'rgba(245,158,11,0.15)', color:'#f59e0b', borderRadius:6, padding:'2px 6px', fontWeight:700 }}>⭐ Partner</span>
-                              )}
-                            </div>
-                            <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop:2 }}>
-                              #{friend.shareKey}
-                              {starred?.defaultSplitPercent && ` · ${starred.defaultSplitPercent}% προεπιλογή`}
-                            </div>
-                          </div>
-                          {/* Right side: amount + checkbox */}
-                          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0 }}>
-                            {isSel && splitType === 'equal' && (
-                              <div style={{ fontWeight:900, fontSize:15, color:'#6366f1' }}>
-                                {(totalAmount / splitCount).toFixed(2)}€
-                              </div>
-                            )}
-                            <div style={{
-                              width:24, height:24, borderRadius:7,
-                              background: isSel ? '#6366f1' : 'transparent',
-                              border: `2px solid ${isSel ? '#6366f1' : 'var(--border-light)'}`,
-                              display:'flex', alignItems:'center', justifyContent:'center',
-                              color:'#fff', fontSize:13, transition:'all 0.2s',
-                              transform: isSel ? 'scale(1.1)' : 'scale(1)',
-                            }}>
-                              {isSel ? '✓' : ''}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* ── Split preview ── */}
-              {selectedSplitPartners.length > 0 && (() => {
-                const count = selectedSplitPartners.length + 1;
-                const share = totalAmount / count;
-                return (
-                  <div style={{ background:'linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.08))', border:'1.5px solid rgba(99,102,241,0.25)', borderRadius:14, padding:'14px 16px', marginBottom:14 }}>
-                    <div style={{ fontSize:11, color:'#6366f1', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Προεπισκόπηση Διαμοιρασμού</div>
-                    <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
-                      {/* Me */}
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                          <div style={{ width:28, height:28, borderRadius:8, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:11, fontWeight:800 }}>
-                            {getInitials(user?.name||'Εγώ')}
-                          </div>
-                          <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Εγώ</span>
-                        </div>
-                        <span style={{ fontWeight:900, fontSize:17, color:'#6366f1' }}>{share.toFixed(2)}€</span>
-                      </div>
-                      {/* Friends */}
-                      {selectedSplitPartners.map(p => (
-                        <div key={p.shareKey} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                            <div style={{ width:28, height:28, borderRadius:8, background:getAvatarColor(p.shareKey), display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:11, fontWeight:800 }}>
-                              {getInitials(p.partnerName)}
-                            </div>
-                            <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{p.partnerName}</span>
-                          </div>
-                          <span style={{ fontWeight:900, fontSize:17, color:'#6366f1' }}>{share.toFixed(2)}€</span>
-                        </div>
-                      ))}
-                      <div style={{ borderTop:'1px solid rgba(99,102,241,0.2)', paddingTop:8, marginTop:2, display:'flex', justifyContent:'space-between' }}>
-                        <span style={{ fontSize:12, color:'var(--text-secondary)', fontWeight:700 }}>Σύνολο</span>
-                        <span style={{ fontSize:13, fontWeight:900, color:'var(--text-primary)' }}>{totalAmount.toFixed(2)}€</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ── Security badges ── */}
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:16 }}>
-                {[['🔒','PCI-DSS L1'],['🔬','Zero-Knowledge'],['👆',biometricSupported?'Face ID':'Secure'],['🔑','Smart Consent']].map(([icon,label])=>(
-                  <div key={label} style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(16,185,129,0.08)', border:'1px solid rgba(16,185,129,0.2)', borderRadius:8, padding:'4px 9px' }}>
-                    <span style={{ fontSize:11 }}>{icon}</span>
-                    <span style={{ fontSize:10, color:'#10b981', fontWeight:700 }}>{label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button onClick={createSplitSession}
-                disabled={splitLoading || !selectedSplitPartners.length || !items.length}
-                style={{
-                  width:'100%', padding:15,
-                  background: selectedSplitPartners.length && items.length
-                    ? 'linear-gradient(135deg,#6366f1,#8b5cf6)'
-                    : 'var(--bg-surface)',
-                  color: selectedSplitPartners.length && items.length ? '#fff' : 'var(--text-secondary)',
-                  border:'none', borderRadius:14, fontWeight:800, fontSize:15,
-                  cursor: selectedSplitPartners.length ? 'pointer' : 'not-allowed',
-                  opacity: splitLoading ? 0.7 : 1, transition:'all 0.25s',
-                  display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-                  boxShadow: selectedSplitPartners.length ? '0 4px 20px rgba(99,102,241,0.35)' : 'none',
-                }}>
-                {splitLoading
-                  ? <><div style={{ width:18, height:18, border:'2.5px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.8s linear infinite' }}/> Δημιουργία session...</>
-                  : <>💳 Έναρξη Split · {selectedSplitPartners.length + 1} άτομα · {totalAmount.toFixed(2)}€</>
-                }
-              </button>
-            </div>
-          )}
-
-                      {/* ══ STEP: BIOMETRIC ══ */}
-          {splitStep === 'biometric' && splitSession && (
-            <div style={{ textAlign:'center', padding:'8px 0' }}>
-              <div style={{ fontSize:72, marginBottom:12 }}>{biometricSupported?'👆':'🔑'}</div>
-              <div style={{ fontWeight:700, fontSize:19, color:'var(--text-primary)', marginBottom:8 }}>
-                {biometricSupported ? 'Biometric Επαλήθευση' : 'Επαλήθευση Ταυτότητας'}
-              </div>
-              <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:20, lineHeight:1.6 }}>
-                {biometricSupported
-                  ? 'Χρησιμοποίησε Face ID ή δακτυλικό αποτύπωμα για να εξουσιοδοτήσεις τον διαμοιρασμό.'
-                  : 'Το device σου δεν υποστηρίζει biometrics. Θα χρησιμοποιηθεί ασφαλής εναλλακτική μέθοδος.'}
-              </div>
-              <div style={{ background:'var(--bg-surface)', borderRadius:12, padding:14, marginBottom:16, textAlign:'left' }}>
-                <div style={{ fontSize:11, color:'var(--text-secondary)', marginBottom:8, fontWeight:700, textTransform:'uppercase' }}>Ανακεφαλαίωση πληρωμής</div>
-                {splitSession.participants?.map((p,i)=>(
-                  <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', fontSize:13, borderBottom: i<splitSession.participants.length-1?'1px solid var(--border-light)':undefined }}>
-                    <span style={{ color:'var(--text-primary)', fontWeight:600 }}>{p.username}</span>
-                    <span style={{ fontWeight:800, color:'#6366f1' }}>{p.shareAmount?.toFixed(2)}€</span>
-                  </div>
-                ))}
-              </div>
-              <button onClick={requestBiometricConsent} disabled={splitLoading}
-                style={{ width:'100%', padding:14, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', border:'none', borderRadius:14, fontWeight:700, fontSize:15, cursor:'pointer', opacity:splitLoading?0.7:1 }}>
-                {splitLoading ? '⏳ Επαλήθευση...' : biometricSupported ? '👆 Επιβεβαίωσε με Biometric' : '🔑 Επιβεβαίωσε'}
-              </button>
-            </div>
-          )}
-
-          {/* ══ STEP: WAITING ══ */}
-          {splitStep === 'waiting' && (
-            <div style={{ textAlign:'center', padding:'8px 0' }}>
-              <div style={{ fontSize:64, marginBottom:12 }}>⏳</div>
-              <div style={{ fontWeight:700, fontSize:18, color:'var(--text-primary)', marginBottom:6 }}>Αναμονή Αποδοχής</div>
-              <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:18, lineHeight:1.6 }}>
-                Οι partners έχουν λάβει ειδοποίηση. Μόλις αποδεχθούν με biometric, η πληρωμή εκτελείται.
-              </div>
-              {splitSession?.participants?.map((p,i)=>(
-                <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--bg-surface)', borderRadius:10, padding:'10px 12px', marginBottom:6 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, fontSize:14 }}>
-                      {p.username?.[0]?.toUpperCase()}
-                    </div>
-                    <span style={{ fontSize:13, color:'var(--text-primary)', fontWeight:600 }}>{p.username}</span>
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ fontWeight:800, fontSize:14, color:'#6366f1' }}>{p.shareAmount?.toFixed(2)}€</span>
-                    <div style={{ padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, background:p.status==='accepted'?'rgba(16,185,129,0.15)':'rgba(245,158,11,0.15)', color:p.status==='accepted'?'#10b981':'#f59e0b' }}>
-                      {p.status==='accepted'?'✅ OK':'⏳ Pending'}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <button onClick={()=>setSplitStep('payment')} style={{ width:'100%', marginTop:14, padding:14, background:'linear-gradient(135deg,#10b981,#059669)', color:'#fff', border:'none', borderRadius:14, fontWeight:700, fontSize:15, cursor:'pointer' }}>
-                🚀 Εκτέλεση Πληρωμής
-              </button>
-            </div>
-          )}
-
-          {/* ══ STEP: PAYMENT ══ */}
-          {splitStep === 'payment' && (
-            <div style={{ textAlign:'center', padding:'8px 0' }}>
-              <div style={{ fontSize:64, marginBottom:12 }}>💳</div>
-              <div style={{ fontWeight:700, fontSize:18, color:'var(--text-primary)', marginBottom:8 }}>Εκτέλεση Πληρωμής</div>
-              <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:18 }}>
-                Το Stripe χρεώνει κάθε συμμετέχοντα το μερίδιό του — με πλήρη PCI-DSS ασφάλεια.
-              </div>
-              <div style={{ background:'rgba(245,158,11,0.07)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:12, marginBottom:16, fontSize:12, color:'#f59e0b', lineHeight:1.5 }}>
-                ⚠️ <strong>Test Mode:</strong> Για πραγματικές πληρωμές πρόσθεσε <code style={{ background:'rgba(245,158,11,0.15)', padding:'1px 4px', borderRadius:4 }}>STRIPE_SECRET_KEY</code> στο .env
-              </div>
-              <button onClick={executeSplitPayment} disabled={splitLoading} style={{ width:'100%', padding:14, background:'linear-gradient(135deg,#f59e0b,#d97706)', color:'#fff', border:'none', borderRadius:14, fontWeight:700, fontSize:15, cursor:'pointer', opacity:splitLoading?0.7:1 }}>
-                {splitLoading ? '⏳ Επεξεργασία Stripe...' : '💳 Εκτέλεση Πληρωμής'}
-              </button>
-            </div>
-          )}
-
-          {/* ══ STEP: DONE ══ */}
-          {splitStep === 'done' && (
-            <div style={{ textAlign:'center', padding:'16px 0' }}>
-              <div style={{ fontSize:72, marginBottom:12 }}>🎉</div>
-              <div style={{ fontWeight:800, fontSize:22, color:'var(--text-primary)', marginBottom:8 }}>Ολοκληρώθηκε!</div>
-              <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:24, lineHeight:1.6 }}>
-                Ο διαμοιρασμός εκτελέστηκε επιτυχώς. Κάθε συμμετέχων χρεώθηκε το μερίδιό του.
-              </div>
-              <button onClick={()=>{setShowSplitModal(false);setSplitStep('setup');setSplitSession(null);}}
-                style={{ width:'100%', padding:14, background:'linear-gradient(135deg,#10b981,#059669)', color:'#fff', border:'none', borderRadius:14, fontWeight:700, fontSize:16, cursor:'pointer' }}>
-                ✅ Τέλεια, Κλείσιμο!
-              </button>
-            </div>
-          )}
-
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-});
-
-
-// ─── AddPartnerModal — outside App + memo'd to prevent re-mount ──────────────────────
-const AddPartnerModal = memo(function AddPartnerModal({
-  friends, starredPartners, splitLoading,
-  addPartnerUsername, setAddPartnerUsername,
-  addPartnerNickname, setAddPartnerNickname,
-  addPartnerSplit, setAddPartnerSplit,
-  setShowAddPartnerModal,
-  addStarredPartner,
-}) {
-  // Auto-populate from friends list, filter out already-starred
-  const starredIds = starredPartners.map(p => p.partnerName);
-  const friendSuggestions = friends.filter(f => !starredIds.includes(f.username));
-
-  const selectFriend = (f) => {
-    setAddPartnerUsername(f.username);
-    // Auto-set nickname as username if empty
-    if (!addPartnerNickname) setAddPartnerNickname(f.username);
-  };
-
-  return createPortal(
-    <div style={{ position:'fixed', inset:0, zIndex:10000, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.7)', backdropFilter:'blur(8px)' }}
-      onClick={e=>{if(e.target===e.currentTarget)setShowAddPartnerModal(false);}}>
-      <div style={{ width:'100%', maxWidth:480, background:'var(--bg-card)', borderRadius:'24px 24px 0 0', padding:'0 0 32px', boxShadow:'0 -8px 40px rgba(0,0,0,0.4)' }}>
-        {/* Drag handle */}
-        <div style={{ display:'flex', justifyContent:'center', padding:'12px 0 0' }}>
-          <div style={{ width:36, height:4, borderRadius:4, background:'var(--border-light)' }} />
-        </div>
-
-        {/* Header */}
-        <div style={{ padding:'12px 20px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid var(--border-light)' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div style={{ width:40, height:40, borderRadius:11, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <IconStarFilled size={18} color="#fff" />
-            </div>
-            <div>
-              <div style={{ fontWeight:800, fontSize:16, color:'var(--text-primary)' }}>Νέος Starred Partner</div>
-              <div style={{ fontSize:11, color:'var(--text-secondary)' }}>Για αυτόματο Split Bill</div>
-            </div>
-          </div>
-          <button onClick={()=>setShowAddPartnerModal(false)} style={{ background:'var(--bg-surface)', border:'none', borderRadius:9, width:32, height:32, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
-            <IconX size={16}/>
-          </button>
-        </div>
-
-        <div style={{ padding:'16px 20px 0' }}>
-          {/* Quick select from friends */}
-          {friendSuggestions.length > 0 && (
-            <div style={{ marginBottom:16 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>
-                Από τους φίλους σου
-              </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
-                {friendSuggestions.map(f => {
-                  const isSelected = addPartnerUsername === f.username;
-                  return (
-                    <div key={f.shareKey} onClick={() => selectFriend(f)}
-                      style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 12px', borderRadius:12, border:`1.5px solid ${isSelected?'#6366f1':'var(--border-light)'}`, background:isSelected?'rgba(99,102,241,0.08)':'var(--bg-surface)', cursor:'pointer', transition:'all 0.2s' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        <div style={{ width:36, height:36, borderRadius:10, background:getAvatarColor(f.shareKey), display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:800, fontSize:14, flexShrink:0 }}>
-                          {getInitials(f.username)}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight:700, fontSize:14, color:'var(--text-primary)' }}>{f.username}</div>
-                          <div style={{ fontSize:11, color:'var(--text-secondary)' }}>#{f.shareKey}</div>
-                        </div>
-                      </div>
-                      <div style={{ width:22, height:22, borderRadius:6, background:isSelected?'#6366f1':'transparent', border:`2px solid ${isSelected?'#6366f1':'var(--border-light)'}`, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' }}>
-                        {isSelected && <IconCheck size={12} color="#fff" />}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Manual username input */}
-          <div style={{ marginBottom:10 }}>
-            <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:7 }}>
-              {friendSuggestions.length > 0 ? 'Ή πληκτρολόγησε username' : 'Username χρήστη'}
-            </div>
-            <div style={{ position:'relative' }}>
-              <div style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-secondary)', pointerEvents:'none' }}>
-                <IconUser size={15}/>
-              </div>
-              <input value={addPartnerUsername} onChange={e=>setAddPartnerUsername(e.target.value)}
-                placeholder="username..."
-                style={{ width:'100%', padding:'11px 14px 11px 36px', background:'var(--bg-surface)', border:`1.5px solid ${addPartnerUsername?'#6366f1':'var(--border-light)'}`, borderRadius:10, color:'var(--text-primary)', fontSize:14, boxSizing:'border-box', outline:'none', transition:'border 0.2s' }} />
-            </div>
-          </div>
-
-          {/* Nickname input */}
-          <div style={{ position:'relative', marginBottom:14 }}>
-            <div style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'var(--text-secondary)', pointerEvents:'none' }}>
-              <IconEdit size={15}/>
-            </div>
-            <input value={addPartnerNickname} onChange={e=>setAddPartnerNickname(e.target.value)}
-              placeholder='Nickname (π.χ. "Σύντροφος", "Μαμά")...'
-              style={{ width:'100%', padding:'11px 14px 11px 36px', background:'var(--bg-surface)', border:'1.5px solid var(--border-light)', borderRadius:10, color:'var(--text-primary)', fontSize:14, boxSizing:'border-box', outline:'none' }} />
-          </div>
-
-          {/* Split slider */}
-          <div style={{ marginBottom:18 }}>
-            <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom:7 }}>
-              Προεπιλεγμένο split: <strong style={{ color:'#6366f1' }}>Εσύ {addPartnerSplit}% / Partner {100-addPartnerSplit}%</strong>
-            </div>
-            <input type="range" min={1} max={99} value={addPartnerSplit} onChange={e=>setAddPartnerSplit(Number(e.target.value))}
-              style={{ width:'100%', accentColor:'#6366f1' }} />
-            <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--text-secondary)', marginTop:3 }}>
-              <span>Εσύ: {addPartnerSplit}%</span>
-              <span>Partner: {100-addPartnerSplit}%</span>
-            </div>
-          </div>
-
-          <div style={{ display:'flex', gap:8 }}>
-            <button onClick={()=>setShowAddPartnerModal(false)} style={{ flex:1, padding:12, background:'var(--bg-surface)', border:'1px solid var(--border-light)', borderRadius:12, color:'var(--text-secondary)', cursor:'pointer', fontWeight:600, fontSize:14 }}>Ακύρωση</button>
-            <button onClick={addStarredPartner} disabled={splitLoading||!addPartnerUsername.trim()}
-              style={{ flex:2, padding:12, background:addPartnerUsername.trim()?'linear-gradient(135deg,#6366f1,#8b5cf6)':'var(--bg-surface)', color:addPartnerUsername.trim()?'#fff':'var(--text-secondary)', border:'none', borderRadius:12, fontWeight:700, cursor:addPartnerUsername.trim()?'pointer':'not-allowed', opacity:splitLoading?0.7:1, fontSize:14, transition:'all 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-              {splitLoading ? '⏳...' : <><IconStarFilled size={14}/> Προσθήκη Partner</>}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-});

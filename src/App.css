@@ -3220,11 +3220,6 @@ body:not(.dark-mode) .budget-banner {
   transform: scale(0.92);
 }
 
-/* Split bill button pulse when active */
-.split-btn-active {
-  animation: pulse 2s infinite;
-}
-
 /* Tab active indicator */
 .tab-btn.active::after {
   animation: tabIndicator 0.2s ease;
@@ -3270,9 +3265,6 @@ body:not(.dark-mode) .budget-banner {
   animation: slideUpFadeIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-/* Split bill step transitions */
-.split-step { animation: scaleIn 0.25s cubic-bezier(0.34,1.3,0.64,1); }
-
 /* ════════════════════════════════════════════════════════════════════════════
    PREMIUM ANIMATION UPGRADE — Session 3
    ════════════════════════════════════════════════════════════════════════════ */
@@ -3310,37 +3302,6 @@ button, [role="button"], .action-btn-new, .tab-btn, .chip, .store-chip,
   box-shadow: none !important;
   transition-duration: 0.08s !important;
 }
-
-/* Split bill button — pulse ring when active */
-@keyframes splitBtnActive {
-  0%   { transform: scale(0.88); }
-  40%  { transform: scale(1.18); }
-  65%  { transform: scale(0.96); }
-  80%  { transform: scale(1.06); }
-  100% { transform: scale(1.0); }
-}
-@keyframes splitRingPulse {
-  0%   { box-shadow: 0 0 0 0   rgba(99,102,241,0.5); }
-  60%  { box-shadow: 0 0 0 8px rgba(99,102,241,0); }
-  100% { box-shadow: 0 0 0 0   rgba(99,102,241,0); }
-}
-.split-btn-glow {
-  animation: splitRingPulse 1.8s var(--ease-out-expo) infinite;
-}
-
-/* ── Split Bill panel slide-up ─────────────────────────────────────────────── */
-@keyframes splitPanelSlideUp {
-  from { opacity: 0; transform: translateY(24px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
-}
-.split-panel-enter {
-  animation: splitPanelSlideUp 0.5s var(--spring-bouncy) forwards;
-}
-@keyframes splitStepIn {
-  from { opacity: 0; transform: translateX(18px) scale(0.97); }
-  to   { opacity: 1; transform: translateX(0)    scale(1); }
-}
-.split-step { animation: splitStepIn 0.4s var(--spring-bouncy) forwards; }
 
 /* ── Dismiss / close buttons ───────────────────────────────────────────────── */
 .close-btn, .recipe-popup-close, .close-panel-btn, .close-notify-btn,
@@ -3509,61 +3470,6 @@ button[title="Κλείσιμο"], button[title="Κλείσε"], button[aria-labe
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-
-/* ════════════════════════════════════════════════════════════════════════════
-   SPLIT BILL — Swipe-up + Body scroll lock + No-glitch animations
-   ════════════════════════════════════════════════════════════════════════════ */
-
-/* Lock body scroll when split modal is open */
-/* Lock body scroll when split modal is open — position/top handled by JS to prevent scroll jump */
-body.split-modal-open {
-  overflow: hidden !important;
-  /* position: fixed and top are set dynamically by JS to preserve scroll position */
-}
-
-/* The panel slides up from bottom — ONE-TIME on mount */
-@keyframes splitSheetUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0.6;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-/* Remove old class — replace with new */
-.split-panel-enter {
-  animation: splitSheetUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
-}
-
-/* Split bill button — use CSS class, not inline animation (prevents re-trigger) */
-.split-btn-open {
-  /* Static glow — no animation, no re-trigger */
-  box-shadow: 0 0 0 3px rgba(99,102,241,0.2), 0 0 16px rgba(99,102,241,0.15) !important;
-  background: rgba(99,102,241,0.15) !important;
-  border-color: rgba(99,102,241,0.4) !important;
-}
-/* One-time bounce when it BECOMES active */
-.split-btn-open {
-  animation: splitBtnPop 0.4s cubic-bezier(0.34,1.56,0.64,1) 1 !important;
-}
-@keyframes splitBtnPop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.18); }
-  65%  { transform: scale(0.94); }
-  85%  { transform: scale(1.06); }
-  100% { transform: scale(1); }
-}
-
-/* Overlay fade */
-@keyframes splitOverlayIn {
-  from { opacity: 0; backdrop-filter: blur(0px); }
-  to   { opacity: 1; backdrop-filter: blur(10px); }
-}
-.split-overlay-enter {
-  animation: splitOverlayIn 0.3s ease forwards;
-}
 
 /* ════════════════════════════════════════════════════════════════════════════
    TABS — Premium redesign
