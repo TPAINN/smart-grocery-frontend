@@ -1972,10 +1972,35 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 }
 
 // ─── Recipe Popup — Premium Edition ──────────────────────────────────────────
+// ── Recipe text cleaning — strips HTML tags, decodes entities, removes junk ──
+function cleanRecipeText(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  return raw
+    .replace(/<[^>]*>/g, ' ')           // strip HTML tags → space
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&quot;/g, '"')
+    .replace(/&#\d+;/g, '')             // numeric HTML entities
+    .replace(/&[a-z]+;/g, '')           // named HTML entities
+    .replace(/\s{2,}/g, ' ')            // collapse multiple spaces
+    .trim();
+}
+
 function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorite }) {
   const [showDetails, setShowDetails] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [activeSection, setActiveSection] = useState('ingredients');
+
+  // Pre-clean ingredients and instructions once on mount
+  const cleanIngredients = (recipe.ingredients || [])
+    .map(cleanRecipeText)
+    .filter(s => s.length > 1);
+
+  const cleanInstructions = (recipe.instructions || [])
+    .map(s => cleanRecipeText(s).replace(/^\d+[\.\)]\s*/, '')) // strip leading "1. "
+    .filter(s => s.length > 5);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowDetails(true), 400);
@@ -2093,39 +2118,51 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
                 onClick={() => setActiveSection('ingredients')}
                 style={{ flex:1, padding:'10px 8px', border:'none', background:activeSection === 'ingredients' ? 'var(--bg-card)' : 'transparent', color:activeSection === 'ingredients' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize:13, fontWeight:700, fontFamily:'var(--font)', cursor:'pointer', transition:'background 0.25s, color 0.25s', boxShadow:activeSection === 'ingredients' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none', WebkitTapHighlightColor:'transparent' }}
               >
-                🥗 Υλικά ({recipe.ingredients?.length || 0})
+                🥗 Υλικά ({cleanIngredients.length})
               </button>
               <button
                 onClick={() => setActiveSection('instructions')}
                 style={{ flex:1, padding:'10px 8px', border:'none', background:activeSection === 'instructions' ? 'var(--bg-card)' : 'transparent', color:activeSection === 'instructions' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize:13, fontWeight:700, fontFamily:'var(--font)', cursor:'pointer', transition:'background 0.25s, color 0.25s', boxShadow:activeSection === 'instructions' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none', WebkitTapHighlightColor:'transparent' }}
               >
-                👨‍🍳 Εκτέλεση ({recipe.instructions?.length || 0})
+                👨‍🍳 Εκτέλεση ({cleanInstructions.length})
               </button>
             </div>
 
             {activeSection === 'ingredients' && (
               <div className="recipe-section">
-                <ul className="ing-list-pro">
-                  {recipe.ingredients && recipe.ingredients.map((ing, i) => (
-                    <li key={i} className="ing-item-clean">
-                      <span className="ing-bullet" />
-                      <span>{ing}</span>
-                    </li>
-                  ))}
-                </ul>
+                {cleanIngredients.length > 0 ? (
+                  <ul className="ing-list-pro">
+                    {cleanIngredients.map((ing, i) => (
+                      <li key={i} className="ing-item-clean">
+                        <span className="ing-bullet" />
+                        <span>{ing}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div style={{ textAlign:'center', color:'var(--text-muted)', padding:'24px 0', fontSize:13 }}>
+                    Δεν βρέθηκαν υλικά για αυτή τη συνταγή.
+                  </div>
+                )}
               </div>
             )}
 
-            {activeSection === 'instructions' && recipe.instructions && recipe.instructions.length > 0 && (
+            {activeSection === 'instructions' && (
               <div className="recipe-section">
-                <div className="instructions-timeline">
-                  {recipe.instructions.map((step, i) => (
-                    <div key={i} className="step-row">
-                      <span className="step-number">{i + 1}</span>
-                      <p className="step-text">{step}</p>
-                    </div>
-                  ))}
-                </div>
+                {cleanInstructions.length > 0 ? (
+                  <div className="instructions-timeline">
+                    {cleanInstructions.map((step, i) => (
+                      <div key={i} className="step-row">
+                        <span className="step-number">{i + 1}</span>
+                        <p className="step-text">{step}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign:'center', color:'var(--text-muted)', padding:'24px 0', fontSize:13 }}>
+                    Δεν βρέθηκαν οδηγίες για αυτή τη συνταγή.
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -2919,7 +2956,10 @@ export default function App() {
   };
 
   const addRecipeToList = async (recipe) => {
-    const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    // Clean ingredients before adding to list (strip HTML tags / entities)
+    const ingredients = (Array.isArray(recipe.ingredients) ? recipe.ingredients : [])
+      .map(cleanRecipeText)
+      .filter(s => s.length > 1);
     if (!ingredients.length) {
       setNotification({ show:true, message:'Δεν βρέθηκαν υλικά για αυτή τη συνταγή.' });
       return;
