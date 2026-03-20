@@ -815,7 +815,7 @@ function CalorieSummary({ items }) {
 }
 
 // ─── Swipeable Item ───────────────────────────────────────────────────────────
-function SwipeableItem({ item, onDelete, onSend, user }) {
+function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, user }) {
   const [offsetX, setOffsetX]     = useState(0);
   const [swiping, setSwiping]     = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -910,7 +910,7 @@ function SwipeableItem({ item, onDelete, onSend, user }) {
 
       {/* ── The actual card ── */}
       <div
-        className={`item-card ${swiping ? 'swiping' : ''}`}
+        className={`item-card ${swiping ? 'swiping' : ''} ${item.isChecked ? 'item-checked' : ''}`}
         style={{
           transform: `translateX(${offsetX}px) rotate(${offsetX * 0.018}deg)`,
           transformOrigin: offsetX > 0 ? 'right center' : 'left center',
@@ -929,8 +929,17 @@ function SwipeableItem({ item, onDelete, onSend, user }) {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="item-content">
-          <span className="item-text">{item.text}</span>
+        {/* Tap-to-check circle */}
+        <button
+          className={`check-circle ${item.isChecked ? 'checked' : ''}`}
+          onClick={() => onToggleCheck(item.id)}
+          title={item.isChecked ? 'Αγοράστηκε' : 'Σημείωσε ως αγορασμένο'}
+        >
+          {item.isChecked && <span style={{ fontSize:11, lineHeight:1 }}>✓</span>}
+        </button>
+
+        <div className="item-content" style={{ opacity: item.isChecked ? 0.45 : 1, transition:'opacity 0.2s' }}>
+          <span className="item-text" style={{ textDecoration: item.isChecked ? 'line-through' : 'none' }}>{item.text}</span>
           {item.recipeSource && (
             <span style={{
               display:'inline-block', fontSize:10, fontWeight:700,
@@ -952,7 +961,19 @@ function SwipeableItem({ item, onDelete, onSend, user }) {
           </div>
           )}
         </div>
-        <div className="item-actions">
+        <div className="item-actions" style={{ alignItems:'center', gap:4 }}>
+          {/* Quantity controls */}
+          <div style={{ display:'flex', alignItems:'center', gap:3, background:'var(--bg-subtle)', borderRadius:8, padding:'2px 3px' }}>
+            <button
+              onClick={() => onChangeQty(item.id, -1)}
+              style={{ width:20, height:20, border:'none', background:'transparent', cursor:'pointer', color:'var(--text-secondary)', fontSize:15, fontWeight:700, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:6, padding:0 }}
+            >−</button>
+            <span style={{ fontSize:12, fontWeight:800, color:'var(--text-primary)', minWidth:14, textAlign:'center' }}>{item.quantity || 1}</span>
+            <button
+              onClick={() => onChangeQty(item.id, +1)}
+              style={{ width:20, height:20, border:'none', background:'transparent', cursor:'pointer', color:'var(--text-secondary)', fontSize:15, fontWeight:700, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:6, padding:0 }}
+            >+</button>
+          </div>
           {user && <button className="send-friend-btn" onClick={() => onSend(item)} title="Στείλε σε φίλο">📤</button>}
           <button className="delete-btn" onClick={() => onDelete(item.id)} title="Διαγραφή">✕</button>
         </div>
@@ -1317,22 +1338,113 @@ function ConfirmModal({ isOpen, message, onConfirm, onCancel }) {
   );
 }
 
+// ─── Stripe Payment Link — αλλάζεις αυτό μόλις φτιάξεις το product στο Stripe Dashboard ─────
+const STRIPE_MONTHLY_LINK = 'https://buy.stripe.com/PLACEHOLDER_MONTHLY';
+const STRIPE_YEARLY_LINK  = 'https://buy.stripe.com/PLACEHOLDER_YEARLY';
+
+function PremiumModal({ isOpen, onClose, user }) {
+  const [billingCycle, setBillingCycle] = React.useState('monthly');
+  if (!isOpen) return null;
+
+  const price = billingCycle === 'monthly' ? '2,99€' : '24,99€';
+  const saving = billingCycle === 'yearly' ? '— Εξοικονόμηση 11€/χρόνο' : '';
+  const link   = billingCycle === 'monthly' ? STRIPE_MONTHLY_LINK : STRIPE_YEARLY_LINK;
+
+  const features = [
+    { icon:'📋', text:'Έως 10 αποθηκευμένες λίστες (αντί 2)' },
+    { icon:'🍽️', text:'Πλήρης πρόσβαση σε όλες τις συνταγές' },
+    { icon:'🤖', text:'AI Meal Plan χωρίς όρια' },
+    { icon:'🤝', text:'Κοινό καλάθι με απεριόριστους φίλους' },
+    { icon:'📊', text:'Ιστορικό αγορών & στατιστικά budget' },
+    { icon:'🔔', text:'Push notifications για φίλους & προσφορές' },
+    { icon:'📷', text:'Barcode scanner χωρίς διαφημίσεις' },
+    { icon:'⭐', text:'Προτεραιότητα στη νέα ύλη & features' },
+  ];
+
+  return (
+    <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal-content" style={{ maxWidth:420, padding:0, overflow:'hidden' }} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ background:'linear-gradient(135deg,#7c3aed,#a855f7,#6366f1)', padding:'24px 24px 20px', textAlign:'center', position:'relative' }}>
+          <button onClick={onClose} style={{ position:'absolute', top:12, right:12, background:'rgba(255,255,255,0.15)', border:'none', borderRadius:8, width:28, height:28, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+          <div style={{ fontSize:40, marginBottom:8 }}>⭐</div>
+          <h2 style={{ margin:0, color:'#fff', fontSize:22, fontWeight:900 }}>Καλαθάκι Premium</h2>
+          <p style={{ margin:'6px 0 0', color:'rgba(255,255,255,0.85)', fontSize:13 }}>Ξεκλείδωσε όλες τις δυνατότητες</p>
+        </div>
+
+        <div style={{ padding:'20px 24px' }}>
+          {/* Billing toggle */}
+          <div style={{ display:'flex', background:'var(--bg-subtle)', borderRadius:12, padding:4, marginBottom:20, gap:4 }}>
+            {['monthly','yearly'].map(c => (
+              <button key={c} onClick={() => setBillingCycle(c)} style={{
+                flex:1, padding:'9px 0', borderRadius:9, border:'none', cursor:'pointer', fontWeight:700, fontSize:13, transition:'all 0.2s',
+                background: billingCycle === c ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : 'transparent',
+                color: billingCycle === c ? '#fff' : 'var(--text-secondary)',
+              }}>
+                {c === 'monthly' ? '📅 Μηνιαία' : '🎯 Ετήσια'}
+              </button>
+            ))}
+          </div>
+
+          {/* Price */}
+          <div style={{ textAlign:'center', marginBottom:20 }}>
+            <div style={{ fontSize:38, fontWeight:900, color:'var(--text-primary)', lineHeight:1 }}>{price}</div>
+            <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:4 }}>
+              {billingCycle === 'monthly' ? 'ανά μήνα' : 'ανά χρόνο'}
+              {saving && <span style={{ color:'#10b981', fontWeight:700, marginLeft:6 }}>{saving}</span>}
+            </div>
+          </div>
+
+          {/* Features */}
+          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
+            {features.map(f => (
+              <div key={f.text} style={{ display:'flex', alignItems:'center', gap:10, fontSize:13 }}>
+                <span style={{ width:24, textAlign:'center', flexShrink:0 }}>{f.icon}</span>
+                <span style={{ color:'var(--text-primary)' }}>{f.text}</span>
+                <span style={{ marginLeft:'auto', color:'#10b981', fontWeight:800, flexShrink:0 }}>✓</span>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <a
+            href={`${link}${user?.email ? `?prefilled_email=${encodeURIComponent(user.email)}` : ''}`}
+            target="_blank" rel="noopener noreferrer"
+            style={{
+              display:'block', width:'100%', padding:'15px 0', borderRadius:14, textAlign:'center',
+              background:'linear-gradient(135deg,#7c3aed,#a855f7)', color:'#fff', fontWeight:800, fontSize:16,
+              textDecoration:'none', boxShadow:'0 4px 20px rgba(124,58,237,0.4)', transition:'transform 0.15s, box-shadow 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 8px 28px rgba(124,58,237,0.5)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow='0 4px 20px rgba(124,58,237,0.4)'; }}
+          >
+            🚀 Ξεκίνα το Premium
+          </a>
+          <p style={{ textAlign:'center', fontSize:11, color:'var(--text-secondary)', marginTop:10, marginBottom:0 }}>
+            Ασφαλής πληρωμή μέσω Stripe · Ακύρωση ανά πάσα στιγμή
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WelcomeModal({ onLogin, onRegister, onSkip }) {
   return (
     <div className="welcome-overlay">
       <div className="welcome-box">
         <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
-        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Smart Grocery Hub</span></h2>
-        <p className="welcome-subtitle">Το έξυπνο καλάθι αγορών που συγκρίνει τιμές από όλα τα σούπερ μάρκετ σε πραγματικό χρόνο.</p>
+        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>🛒 Καλαθάκι</span></h2>
+        <p className="welcome-subtitle">Ψώνια χωρίς άγχος — σύγκριση τιμών, συνταγές, κοινό καλάθι με φίλους.</p>
         <div className="welcome-features">
           {[
-            { icon:'🔍', title:'Έξυπνη Αναζήτηση',   sub:'Τιμές από ΑΒ, Σκλαβενίτη, MyMarket & άλλα', locked:true },
-            { icon:'🍽️', title:'Συνταγές & Υλικά',    sub:'Προσθήκη υλικών απευθείας στη λίστα', locked:true },
-            { icon:'📋', title:'Βασική Λίστα',         sub:'Δωρεάν για όλους', locked:false },
-            { icon:'🤝', title:'Κοινό Καλάθι',         sub:'Μοιράσου τη λίστα με φίλους', locked:true },
-            { icon:'✨', title:'...και πολλά άλλα',    sub:'Barcode scanner, θερμίδες, smart route', locked:true, isMore:true },
-          ].map(({ icon, title, sub, locked, isMore }) => (
-            <div key={title} className={`wf-row ${locked ? 'wf-locked' : ''} ${isMore ? 'wf-more' : ''}`}>
+            { icon:'💰', title:'Σύγκριση Τιμών',       sub:'Βρες το φθηνότερο σε ΑΒ, Σκλαβενίτη, MyMarket', locked:false },
+            { icon:'🍽️', title:'Συνταγές & Macros',    sub:'Υλικά απευθείας στη λίστα, θερμίδες & πρωτεΐνη', locked:true },
+            { icon:'🤝', title:'Κοινό Καλάθι',         sub:'Μοιράσου τη λίστα με φίλους real-time', locked:true },
+            { icon:'🤖', title:'AI Meal Plan',          sub:'Εβδομαδιαίο πλάνο διατροφής με AI', locked:true },
+            { icon:'📷', title:'Barcode Scanner',       sub:'Scan για τιμή, θερμίδες & αλλεργιογόνα', locked:true },
+          ].map(({ icon, title, sub, locked }) => (
+            <div key={title} className={`wf-row ${locked ? 'wf-locked' : ''}`}>
               <span className="wf-icon">{icon}</span>
               <div><strong>{title}</strong><span>{sub}</span></div>
               <span className={locked ? 'wf-lock' : 'wf-free'}>{locked ? '🔒' : '✓'}</span>
@@ -2198,6 +2310,13 @@ export default function App() {
   const[unreadChat, setUnreadChat] = useState(0);
   const [chatInput, setChatInput] = useState('');
   const [dmTarget, setDmTarget] = useState(null); // null = group, friend object = private DM
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [shoppingBudget, setShoppingBudget] = useState(() => {
+    const v = localStorage.getItem('sg_budget');
+    return v ? parseFloat(v) : null;
+  });
+  const [showBudgetInput, setShowBudgetInput] = useState(false);
+  const [budgetInputVal, setBudgetInputVal] = useState('');
   const chatEndRef = useRef(null);
 
   // ── Friends state ──────────────────────────────────────────────────────────
@@ -3105,6 +3224,19 @@ export default function App() {
   };
 
   const deleteItem = useCallback((id) => setItems(prev => prev.filter(i => i.id !== id)), []);
+  const toggleItemCheck = useCallback((id) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, isChecked: !i.isChecked } : i));
+    if (navigator.vibrate) navigator.vibrate(15);
+  }, []);
+
+  const changeItemQty = useCallback((id, delta) => {
+    setItems(prev => prev.map(i => {
+      if (i.id !== id) return i;
+      const newQty = Math.max(1, (i.quantity || 1) + delta);
+      return { ...i, quantity: newQty };
+    }));
+    if (navigator.vibrate) navigator.vibrate(10);
+  }, []);
 
   const handleWelcomeLogin    = () => {
     setShowWelcome(false);
@@ -3154,7 +3286,11 @@ export default function App() {
     acc[item.category].push(item);
     return acc;
   }, {});
-  const totalCost = items.reduce((s, i) => s + (i.price > 0 ? i.price : 0), 0);
+  const totalCost = items.reduce((s, i) => s + (i.price > 0 ? i.price * (i.quantity || 1) : 0), 0);
+  const checkedItems = items.filter(i => i.isChecked);
+  const checkedCost  = checkedItems.reduce((s, i) => s + (i.price > 0 ? i.price * (i.quantity || 1) : 0), 0);
+  const budgetPct    = shoppingBudget ? Math.min(1, totalCost / shoppingBudget) : 0;
+  const budgetColor  = budgetPct >= 1 ? '#ef4444' : budgetPct >= 0.8 ? '#f59e0b' : '#10b981';
 
   // Smart Shopping: group items by store, sorted by total value desc
   const smartStoreGroups = Object.entries(
@@ -3162,7 +3298,7 @@ export default function App() {
       const s = item.store;
       if (!acc[s]) acc[s] = { items: [], total: 0 };
       acc[s].items.push(item);
-      acc[s].total += item.price > 0 ? item.price : 0;
+      acc[s].total += item.price > 0 ? item.price * (item.quantity || 1) : 0;
       return acc;
     }, {})
   ).sort((a, b) => b[1].total - a[1].total);
@@ -3246,6 +3382,7 @@ export default function App() {
       <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} />
       {showWelcome && !user && <WelcomeModal onLogin={handleWelcomeLogin} onRegister={handleWelcomeRegister} onSkip={handleWelcomeSkip} />}
 
+      <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} user={user} />
       <SavedListsModal isOpen={showListsModal} onClose={() => setShowListsModal(false)} lists={savedLists} onDelete={deleteList} onToggleItem={toggleListItem} />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onLoginSuccess={(u) => {
           setUser(u);
@@ -3442,8 +3579,8 @@ export default function App() {
           </div>
 
           {/* Τίτλος */}
-          <h1 style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text", textAlign: 'center', marginTop: '15px' }}>
-            Smart Grocery Hub
+          <h1 style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text", textAlign: 'center', marginTop: '15px', letterSpacing:'-0.5px' }}>
+            🛒 Καλαθάκι
           </h1>
 
           {/* Κάτω: Κουμπιά κεντραρισμένα σε νέα σειρά */}
@@ -3452,6 +3589,23 @@ export default function App() {
               {!isOnline && (
                 <div style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:700, color:'#ef4444' }}>
                   📡 Offline
+                </div>
+              )}
+
+              {/* Premium button */}
+              {user && !user.isPremium && (
+                <div
+                  className="action-btn-new"
+                  onClick={() => setShowPremiumModal(true)}
+                  title="Premium"
+                  style={{ background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.12))', border:'1px solid rgba(124,58,237,0.3)' }}
+                >
+                  <span style={{ fontSize:15 }}>⭐</span>
+                </div>
+              )}
+              {user?.isPremium && (
+                <div style={{ display:'flex', alignItems:'center', gap:4, background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.12))', border:'1px solid rgba(124,58,237,0.3)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:800, color:'#a78bfa' }}>
+                  ⭐ Premium
                 </div>
               )}
 
@@ -3578,7 +3732,7 @@ export default function App() {
         {/* ── Tabs ── */}
         <div className="tabs-container">
           {[
-            ['list', <><IconShoppingCart size={16} stroke={2}/> Λίστα</>, 'Λίστα'],
+            ['list', <><IconShoppingCart size={16} stroke={2}/> Λίστα{items.length > 0 && <span className="tab-count-badge">{items.length}</span>}</>, 'Λίστα'],
             ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
             ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Plan'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
@@ -3623,16 +3777,84 @@ export default function App() {
               <div style={{
                 background:'var(--bg-surface)', padding:'15px', borderRadius:'14px',
                 border:'1px solid var(--border-light)', marginBottom:'12px',
-                display:'flex', justifyContent:'space-between', alignItems:'center',
               }}>
-                <div>
-                  {user && <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>Κόστος</div>}
-                  {user && <div className="budget-amount" style={{ fontSize:'22px', fontWeight:'bold', color:'var(--brand-primary)' }}>{totalCost.toFixed(2)}€</div>}
-                  <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop: user ? 2 : 0 }}>{items.length} προϊόντα</div>
-                </div>
-                <div style={{ display:'flex', gap:'8px' }}>
-                  <button onClick={handleMassClear} style={{ background:'rgba(239,68,68,0.1)', color:'var(--brand-danger)', border:'none', padding:'10px', borderRadius:'10px', cursor:'pointer', fontSize:18 }} title="Αδείασμα">🗑️</button>
-                  {user && <button onClick={saveCurrentList} style={{ background:'linear-gradient(135deg,#059669,#10b981)', color:'white', border:'none', padding:'10px 16px', borderRadius:'10px', cursor:'pointer', fontWeight:'bold', fontSize:13 }} title="Αποθήκευση">💾 Αποθήκευση</button>}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ display:'flex', alignItems:'baseline', gap:10, flexWrap:'wrap' }}>
+                      {user && (
+                        <div>
+                          <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>Σύνολο</div>
+                          <div className="budget-amount" style={{ fontSize:'22px', fontWeight:'bold', color: shoppingBudget ? budgetColor : 'var(--brand-primary)' }}>{totalCost.toFixed(2)}€</div>
+                        </div>
+                      )}
+                      {checkedItems.length > 0 && (
+                        <div>
+                          <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>Αγοράστηκαν</div>
+                          <div style={{ fontSize:16, fontWeight:800, color:'#10b981' }}>{checkedItems.length}/{items.length} · {checkedCost.toFixed(2)}€</div>
+                        </div>
+                      )}
+                      {checkedItems.length === 0 && (
+                        <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop: user ? 4 : 0, alignSelf:'center' }}>{items.length} προϊόντα</div>
+                      )}
+                    </div>
+                    {/* Budget progress bar */}
+                    {shoppingBudget && (
+                      <div style={{ marginTop:10 }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--text-secondary)', marginBottom:4 }}>
+                          <span>Budget: <strong style={{ color:budgetColor }}>{totalCost.toFixed(2)}€</strong> / {shoppingBudget.toFixed(2)}€</span>
+                          <span
+                            style={{ cursor:'pointer', color:'var(--text-muted)', fontSize:10 }}
+                            onClick={() => { setShoppingBudget(null); localStorage.removeItem('sg_budget'); }}
+                          >✕ Αφαίρεση</span>
+                        </div>
+                        <div className="budget-progress-bar">
+                          <div className="budget-progress-fill" style={{ width:`${(budgetPct * 100).toFixed(1)}%`, background:`linear-gradient(90deg, #10b981, ${budgetColor})` }} />
+                        </div>
+                        {budgetPct >= 1 && <div style={{ fontSize:11, color:'#ef4444', fontWeight:700, marginTop:4 }}>⚠️ Υπέρβαση budget κατά {(totalCost - shoppingBudget).toFixed(2)}€</div>}
+                      </div>
+                    )}
+                    {/* Set budget prompt */}
+                    {!shoppingBudget && user && (
+                      showBudgetInput ? (
+                        <div style={{ display:'flex', gap:6, marginTop:8, alignItems:'center' }}>
+                          <input
+                            type="number" min="1" step="1" placeholder="π.χ. 50"
+                            value={budgetInputVal}
+                            onChange={e => setBudgetInputVal(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter' && budgetInputVal) {
+                                const v = parseFloat(budgetInputVal);
+                                if (v > 0) { setShoppingBudget(v); localStorage.setItem('sg_budget', v); }
+                                setShowBudgetInput(false); setBudgetInputVal('');
+                              }
+                              if (e.key === 'Escape') { setShowBudgetInput(false); setBudgetInputVal(''); }
+                            }}
+                            autoFocus
+                            style={{ width:90, padding:'5px 10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-input)', color:'var(--text-primary)', fontSize:13, outline:'none' }}
+                          />
+                          <button
+                            onClick={() => {
+                              const v = parseFloat(budgetInputVal);
+                              if (v > 0) { setShoppingBudget(v); localStorage.setItem('sg_budget', v); }
+                              setShowBudgetInput(false); setBudgetInputVal('');
+                            }}
+                            style={{ padding:'5px 12px', borderRadius:8, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', border:'none', fontSize:12, fontWeight:700, cursor:'pointer' }}
+                          >OK</button>
+                          <button onClick={() => { setShowBudgetInput(false); setBudgetInputVal(''); }}
+                            style={{ padding:'5px 8px', borderRadius:8, background:'var(--bg-surface)', border:'1px solid var(--border)', color:'var(--text-secondary)', fontSize:12, cursor:'pointer' }}>✕</button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowBudgetInput(true)}
+                          style={{ marginTop:8, padding:'4px 10px', borderRadius:8, border:'1px dashed var(--border)', background:'transparent', color:'var(--text-secondary)', fontSize:11, cursor:'pointer', fontWeight:600 }}
+                        >💰 Βάλε budget</button>
+                      )
+                    )}
+                  </div>
+                  <div style={{ display:'flex', gap:'8px', marginLeft:12, alignItems:'center' }}>
+                    <button onClick={handleMassClear} style={{ background:'rgba(239,68,68,0.1)', color:'var(--brand-danger)', border:'none', padding:'10px', borderRadius:'10px', cursor:'pointer', fontSize:18 }} title="Αδείασμα">🗑️</button>
+                    {user && <button onClick={saveCurrentList} style={{ background:'linear-gradient(135deg,#059669,#10b981)', color:'white', border:'none', padding:'10px 16px', borderRadius:'10px', cursor:'pointer', fontWeight:'bold', fontSize:13 }} title="Αποθήκευση">💾 Αποθήκευση</button>}
+                  </div>
                 </div>
               </div>
             )}
@@ -3793,7 +4015,7 @@ export default function App() {
                     <h2 className="category-title">{cat}</h2>
                     <ul className="grocery-list">
                       {groupedItems[cat].map(item => (
-                        <SwipeableItem key={item.id} item={item} onDelete={deleteItem} onSend={handleSendToFriend} user={user} />
+                        <SwipeableItem key={item.id} item={item} onDelete={deleteItem} onSend={handleSendToFriend} onToggleCheck={toggleItemCheck} onChangeQty={changeItemQty} user={user} />
                       ))}
                     </ul>
                   </div>

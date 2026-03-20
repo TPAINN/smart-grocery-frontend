@@ -4573,3 +4573,75 @@ body.dark-mode .delete-btn {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+/* ══════════════════════════════════════════════════════════════════════════════
+   TAP-TO-CHECK SHOPPING MODE
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Check circle button */
+.check-circle {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  color: #fff;
+  font-weight: 800;
+  margin-right: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.check-circle:hover {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  transform: scale(1.1);
+}
+
+.check-circle.checked {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #059669;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+/* Checked item card style */
+.item-card.item-checked {
+  background: var(--bg-surface) !important;
+}
+
+/* Budget progress bar */
+.budget-progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-light);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Tab item count badge */
+.tab-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--brand-primary, #6366f1);
+  color: #fff;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 800;
+  margin-left: 5px;
+  line-height: 1;
+}
