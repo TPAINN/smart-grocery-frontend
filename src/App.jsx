@@ -1346,9 +1346,11 @@ function PremiumModal({ isOpen, onClose, user }) {
   const [billingCycle, setBillingCycle] = React.useState('monthly');
   if (!isOpen) return null;
 
-  const price = billingCycle === 'monthly' ? '2,99€' : '24,99€';
+  const price  = billingCycle === 'monthly' ? '2,99€' : '24,99€';
   const saving = billingCycle === 'yearly' ? '— Εξοικονόμηση 11€/χρόνο' : '';
   const link   = billingCycle === 'monthly' ? STRIPE_MONTHLY_LINK : STRIPE_YEARLY_LINK;
+  const onTrial = user?.isOnTrial;
+  const trialDays = user?.trialDaysLeft || 0;
 
   const features = [
     { icon:'📋', text:'Έως 10 αποθηκευμένες λίστες (αντί 2)' },
@@ -1365,11 +1367,27 @@ function PremiumModal({ isOpen, onClose, user }) {
     <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-content" style={{ maxWidth:420, padding:0, overflow:'hidden' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div style={{ background:'linear-gradient(135deg,#7c3aed,#a855f7,#6366f1)', padding:'24px 24px 20px', textAlign:'center', position:'relative' }}>
+        <div style={{
+          background: onTrial
+            ? 'linear-gradient(135deg,#059669,#10b981,#6366f1)'
+            : 'linear-gradient(135deg,#7c3aed,#a855f7,#6366f1)',
+          padding:'24px 24px 20px', textAlign:'center', position:'relative',
+        }}>
           <button onClick={onClose} style={{ position:'absolute', top:12, right:12, background:'rgba(255,255,255,0.15)', border:'none', borderRadius:8, width:28, height:28, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
-          <div style={{ fontSize:40, marginBottom:8 }}>⭐</div>
-          <h2 style={{ margin:0, color:'#fff', fontSize:22, fontWeight:900 }}>Καλαθάκι Premium</h2>
-          <p style={{ margin:'6px 0 0', color:'rgba(255,255,255,0.85)', fontSize:13 }}>Ξεκλείδωσε όλες τις δυνατότητες</p>
+          <div style={{ fontSize:40, marginBottom:8 }}>{onTrial ? '🎁' : '⭐'}</div>
+          {onTrial ? (
+            <>
+              <h2 style={{ margin:0, color:'#fff', fontSize:20, fontWeight:900 }}>Απολαμβάνεις Free Trial!</h2>
+              <p style={{ margin:'6px 0 0', color:'rgba(255,255,255,0.9)', fontSize:13 }}>
+                Απομένουν <strong>{trialDays} ημέρες</strong> — μετά χρειάζεσαι Premium για να συνεχίσεις
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 style={{ margin:0, color:'#fff', fontSize:22, fontWeight:900 }}>Καλαθάκι Premium</h2>
+              <p style={{ margin:'6px 0 0', color:'rgba(255,255,255,0.85)', fontSize:13 }}>Ξεκλείδωσε όλες τις δυνατότητες</p>
+            </>
+          )}
         </div>
 
         <div style={{ padding:'20px 24px' }}>
@@ -1436,6 +1454,9 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
         <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
         <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>🛒 Καλαθάκι</span></h2>
         <p className="welcome-subtitle">Ψώνια χωρίς άγχος — σύγκριση τιμών, συνταγές, κοινό καλάθι με φίλους.</p>
+        <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08))', border:'1.5px solid rgba(16,185,129,0.3)', borderRadius:99, padding:'6px 14px', marginBottom:12, fontSize:12, fontWeight:700, color:'#10b981' }}>
+          🎁 14 ημέρες δωρεάν Premium για νέους χρήστες
+        </div>
         <div className="welcome-features">
           {[
             { icon:'💰', title:'Σύγκριση Τιμών',       sub:'Βρες το φθηνότερο σε ΑΒ, Σκλαβενίτη, MyMarket', locked:false },
@@ -2616,6 +2637,18 @@ export default function App() {
   useEffect(() => {
     if (user) {
       loadFriendsFromDB();
+      // Refresh premium/trial status from DB (catches manual MongoDB grants + trial expiry)
+      fetch(`${API_BASE}/api/auth/refresh-premium`, { headers: authHeader() })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data?.user) return;
+          // Update stored user with fresh premium/trial info
+          const updated = { ...user, ...data.user };
+          setUser(updated);
+          localStorage.setItem('smart_grocery_user', JSON.stringify(updated));
+          if (data.token) localStorage.setItem('smart_grocery_token', data.token);
+        })
+        .catch(() => {});
     } else {
       setFriends([]);
     }
@@ -3592,18 +3625,27 @@ export default function App() {
                 </div>
               )}
 
-              {/* Premium button */}
+              {/* Premium / Trial badge */}
               {user && !user.isPremium && (
                 <div
                   className="action-btn-new"
                   onClick={() => setShowPremiumModal(true)}
-                  title="Premium"
+                  title="Αναβάθμιση σε Premium"
                   style={{ background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.12))', border:'1px solid rgba(124,58,237,0.3)' }}
                 >
                   <span style={{ fontSize:15 }}>⭐</span>
                 </div>
               )}
-              {user?.isPremium && (
+              {user?.isOnTrial && (
+                <div
+                  onClick={() => setShowPremiumModal(true)}
+                  title="Free Trial — Κλίκ για Premium"
+                  style={{ display:'flex', alignItems:'center', gap:4, background:'linear-gradient(135deg,rgba(16,185,129,0.15),rgba(5,150,105,0.12))', border:'1px solid rgba(16,185,129,0.35)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:800, color:'#10b981', cursor:'pointer' }}
+                >
+                  🎁 {user.trialDaysLeft}μ trial
+                </div>
+              )}
+              {user?.isRealPremium && (
                 <div style={{ display:'flex', alignItems:'center', gap:4, background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.12))', border:'1px solid rgba(124,58,237,0.3)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:800, color:'#a78bfa' }}>
                   ⭐ Premium
                 </div>
