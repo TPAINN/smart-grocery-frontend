@@ -3369,8 +3369,8 @@ export default function App() {
   const baseRecipes = showFavoritesOnly ? favoriteRecipes : recipes;
 
   const filteredRecipes = baseRecipes
-    .filter(r => r && r.title)
-    .filter(r => {
+      .filter(r => r && r.title && (r.ingredients?.length || 0) > 0)
+      .filter(r => {
       const protein = r.protein || 0;
       const carbs = r.carbs || 0;
       const time = r.time || 30;
@@ -3604,8 +3604,8 @@ export default function App() {
           </div>
 
           {/* Τίτλος */}
-          <h1 style={{ textAlign: 'center', marginTop: '12px', letterSpacing:'-0.5px', fontSize: '24px', fontWeight: 900, display:'flex', alignItems:'center', justifyContent:'center', gap: 6 }}>
-            <span style={{ fontSize: '22px' }}>🛒</span>
+          <h1 style={{ textAlign: 'center', marginTop: '12px', letterSpacing:'-0.5px', fontSize: '24px', fontWeight: 900, display:'flex', alignItems:'center', justifyContent:'center', gap: 6, marginBottom: '12px' }}>
+            <span style={{ fontSize: '22px' }}>Έξυπνο</span>
             <span style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
               Καλαθάκι
             </span>
