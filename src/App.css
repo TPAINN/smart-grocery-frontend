@@ -3148,23 +3148,23 @@ body:not(.dark-mode) .budget-banner {
 
 .header-actions-row {
   display: flex;
-  justify-content: center; /* Κεντράρισμα των κουμπιών */
+  justify-content: center;
   align-items: center;
   background: var(--bg-card);
-  padding: 10px;
-  border-radius: 20px;
+  padding: 8px 12px 10px;
+  border-radius: 18px;
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 20px;
+  box-shadow: var(--shadow-xs);
+  margin-bottom: 18px;
 }
 
 .header-actions { 
   display: flex; 
-  justify-content: center; /* Αυτό κεντράρει τα κουμπιά */
-  flex-wrap: wrap;         /* Αν δεν χωράνε, πάνε κάτω */
-  gap: 10px; 
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px; 
   align-items: center; 
-  margin-top: 15px;        /* Απόσταση από τον τίτλο */
+  margin-top: 10px;
 }
 /* ── Tabler Icons global reset ────────────────────────────────────────────── */
 .tabler-icon { flex-shrink: 0; }
@@ -4644,4 +4644,190 @@ body.dark-mode .delete-btn {
   font-weight: 800;
   margin-left: 5px;
   line-height: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   BARCODE SCANNER — UI REFINEMENTS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Scanner card — slightly larger max, smoother scrollbar */
+.scanner-card {
+  max-width: 440px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* Viewfinder — cleaner dark bg with subtle vignette */
+.scanner-viewfinder {
+  background: #080808;
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.45),
+    inset 0 0 80px rgba(0,0,0,0.6);
+}
+
+/* Scan hint — better visible text */
+.scanner-hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.2px;
+  margin-top: 14px;
+}
+
+/* Product header — fix image sizing */
+.product-img {
+  width: 68px;
+  height: 68px;
+  border-radius: 12px;
+}
+
+/* Nutrition grid — 2-row 3-col, more breathing room */
+.nutrition-grid {
+  gap: 7px;
+  margin-bottom: 16px;
+}
+.nutrition-cell {
+  border-radius: 12px;
+  padding: 11px 6px;
+}
+.nutrition-val {
+  font-size: 18px;
+}
+
+/* Warning chips — cleaner line height */
+.warning-chip {
+  font-size: 12.5px;
+  padding: 9px 12px;
+  border-radius: 11px;
+}
+
+/* History items — tighter gap */
+.history-list {
+  gap: 7px;
+}
+.history-item {
+  border-radius: 12px;
+  padding: 10px 13px;
+}
+
+/* Allergen grid — more compact */
+.allergen-toggle {
+  padding: 10px 13px;
+  border-radius: 12px;
+}
+
+/* Scanner tabs — slightly taller for better tap target */
+.scanner-tab {
+  padding: 12px 6px 14px;
+}
+
+/* ─── Scanner result empty state improvements ─── */
+.scanner-error {
+  gap: 12px;
+  padding: 48px 20px;
+}
+
+/* ─── Ingredients details (collapsible) cleanup ─── */
+.ingredients-details summary {
+  font-size: 12.5px;
+}
+.ingredients-details p {
+  font-size: 11.5px;
+  line-height: 1.75;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   HEADER — Final micro-polish
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Clock center: compact, no border */
+.header-clock-center .datetime-display {
+  text-align: center;
+  max-width: 220px;
+  background: transparent;
+  border: none;
+  padding: 6px 0;
+}
+
+.current-date {
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.current-time {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.current-clock {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* Action buttons: uniform small size in header row */
+.header-actions-row .action-btn-new {
+  width: 42px;
+  height: 42px;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MISC MICRO-REFINEMENTS
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Suggestion item — slightly tighter */
+.suggestion-item {
+  padding: 10px 14px;
+  gap: 10px;
+}
+
+/* Sug logo — cleaner */
+.sug-logo {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  padding: 2px;
+}
+
+/* Empty state chips — a touch more polished */
+.empty-cart-state button {
+  font-size: 12.5px;
+}
+
+/* Store chips — slightly reduced padding for better fit */
+.store-chip {
+  padding: 6px 13px;
+  font-size: 11.5px;
+}
+
+/* Budget progress bar — slightly taller */
+.budget-progress-bar {
+  height: 7px;
+  border-radius: 4px;
+}
+
+/* Profile dropdown — cleaner close animation */
+.profile-dropdown {
+  animation-duration: 0.35s;
+}
+
+/* Saved lists badge: align it precisely */
+.list-badge {
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+}
+
+/* Friends badge: consistent sizing */
+.action-btn-new span[style*="position:absolute"],
+.action-btn-new span[style*="position:'absolute'"] {
+  width: 15px !important;
+  height: 15px !important;
+  font-size: 8px !important;
 }

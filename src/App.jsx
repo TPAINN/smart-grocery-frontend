@@ -3600,20 +3600,15 @@ export default function App() {
               <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit' })}</div>
             </div>
 
-            {/* Streak Badge */}
-            {streak >= 2 && (
-              <div
-                className={`streak-badge${isNewStreakRecord ? ' new-record' : ''}`}
-                title={`${streak} μέρες στη σειρά! Καλύτερο: ${JSON.parse(localStorage.getItem('sg_streak')||'{}').best || streak}`}
-              >
-                🔥 <span>{streak}</span>
-              </div>
-            )}
+
           </div>
 
           {/* Τίτλος */}
-          <h1 style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text", textAlign: 'center', marginTop: '15px', letterSpacing:'-0.5px' }}>
-            🛒 Καλαθάκι
+          <h1 style={{ textAlign: 'center', marginTop: '12px', letterSpacing:'-0.5px', fontSize: '24px', fontWeight: 900, display:'flex', alignItems:'center', justifyContent:'center', gap: 6 }}>
+            <span style={{ fontSize: '22px' }}>🛒</span>
+            <span style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
+              Καλαθάκι
+            </span>
           </h1>
 
           {/* Κάτω: Κουμπιά κεντραρισμένα σε νέα σειρά */}
@@ -3626,28 +3621,50 @@ export default function App() {
               )}
 
               {/* Premium / Trial badge */}
-              {user && !user.isPremium && (
+              {user && !user.isPremium && !user.isOnTrial && (
                 <div
                   className="action-btn-new"
                   onClick={() => setShowPremiumModal(true)}
                   title="Αναβάθμιση σε Premium"
-                  style={{ background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.12))', border:'1px solid rgba(124,58,237,0.3)' }}
+                  style={{ background:'transparent', border:'1px solid rgba(124,58,237,0.2)', opacity: 0.75 }}
                 >
-                  <span style={{ fontSize:15 }}>⭐</span>
+                  <span style={{ fontSize:15, opacity: 0.8 }}>⭐</span>
                 </div>
               )}
-              {user?.isOnTrial && (
-                <div
-                  onClick={() => setShowPremiumModal(true)}
-                  title="Free Trial — Κλίκ για Premium"
-                  style={{ display:'flex', alignItems:'center', gap:4, background:'linear-gradient(135deg,rgba(16,185,129,0.15),rgba(5,150,105,0.12))', border:'1px solid rgba(16,185,129,0.35)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:800, color:'#10b981', cursor:'pointer' }}
-                >
-                  🎁 {user.trialDaysLeft}μ trial
-                </div>
-              )}
+              {user?.isOnTrial && (() => {
+                const urgent = (user.trialDaysLeft || 0) <= 3;
+                return (
+                  <div
+                    onClick={() => setShowPremiumModal(true)}
+                    title="Free Trial — Κλίκ για Premium"
+                    style={{
+                      display:'flex', alignItems:'center', gap:4,
+                      background: urgent
+                        ? 'linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.08))'
+                        : 'linear-gradient(135deg,rgba(16,185,129,0.1),rgba(5,150,105,0.07))',
+                      border: urgent
+                        ? '1px solid rgba(239,68,68,0.25)'
+                        : '1px solid rgba(16,185,129,0.2)',
+                      borderRadius:99, padding:'4px 9px',
+                      fontSize:11, fontWeight:700,
+                      color: urgent ? '#ef4444' : '#10b981',
+                      cursor:'pointer', opacity: 0.9,
+                    }}
+                  >
+                    {urgent ? '⚠️' : '🎁'} {user.trialDaysLeft}μ
+                  </div>
+                );
+              })()}
               {user?.isRealPremium && (
-                <div style={{ display:'flex', alignItems:'center', gap:4, background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(168,85,247,0.12))', border:'1px solid rgba(124,58,237,0.3)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:800, color:'#a78bfa' }}>
-                  ⭐ Premium
+                <div style={{
+                  display:'flex', alignItems:'center', gap:3,
+                  background:'transparent',
+                  border:'1px solid rgba(124,58,237,0.18)',
+                  borderRadius:99, padding:'4px 9px',
+                  fontSize:10, fontWeight:700,
+                  color:'rgba(167,139,250,0.8)', opacity:0.8,
+                }}>
+                  ⭐
                 </div>
               )}
 
@@ -3815,6 +3832,29 @@ export default function App() {
         {/* ════ LIST TAB ════ */}
         {activeTab === 'list' && (
           <div className="tab-content list-tab">
+            {/* Smart trial expiry banner */}
+            {user?.isOnTrial && (user.trialDaysLeft || 0) <= 3 && (
+              <div
+                onClick={() => setShowPremiumModal(true)}
+                style={{
+                  display:'flex', alignItems:'center', gap:12,
+                  background:'linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.04))',
+                  border:'1px solid rgba(239,68,68,0.2)',
+                  borderRadius:14, padding:'12px 16px', marginBottom:12,
+                  cursor:'pointer', transition:'all 0.2s',
+                }}
+              >
+                <span style={{ fontSize:22 }}>⚠️</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontWeight:800, fontSize:13, color:'#ef4444' }}>
+                    Το trial σου λήγει σε {user.trialDaysLeft} {user.trialDaysLeft === 1 ? 'μέρα' : 'μέρες'}!
+                  </div>
+                  <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop:2 }}>
+                    Αναβάθμισε σε Premium για να κρατήσεις πρόσβαση σε όλα τα features →
+                  </div>
+                </div>
+              </div>
+            )}
             {items.length > 0 && (
               <div style={{
                 background:'var(--bg-surface)', padding:'15px', borderRadius:'14px',
