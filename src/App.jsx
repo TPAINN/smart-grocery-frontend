@@ -1343,7 +1343,7 @@ const STRIPE_MONTHLY_LINK = 'https://buy.stripe.com/PLACEHOLDER_MONTHLY';
 const STRIPE_YEARLY_LINK  = 'https://buy.stripe.com/PLACEHOLDER_YEARLY';
 
 function PremiumModal({ isOpen, onClose, user }) {
-  const [billingCycle, setBillingCycle] = React.useState('monthly');
+  const [billingCycle, setBillingCycle] = useState('monthly');
   if (!isOpen) return null;
 
   const price  = billingCycle === 'monthly' ? '2,99€' : '24,99€';
