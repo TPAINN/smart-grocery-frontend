@@ -1452,7 +1452,7 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
     <div className="welcome-overlay">
       <div className="welcome-box">
         <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
-        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>🛒 Καλαθάκι</span></h2>
+        <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Έξυπνο Καλαθάκι</span></h2>
         <p className="welcome-subtitle">Ψώνια χωρίς άγχος — σύγκριση τιμών, συνταγές, κοινό καλάθι με φίλους.</p>
         <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08))', border:'1.5px solid rgba(16,185,129,0.3)', borderRadius:99, padding:'6px 14px', marginBottom:12, fontSize:12, fontWeight:700, color:'#10b981' }}>
           🎁 14 ημέρες δωρεάν Premium για νέους χρήστες
