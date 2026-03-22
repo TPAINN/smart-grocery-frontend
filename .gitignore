@@ -2,12 +2,15 @@
 .env
 .env.*
 !.env.example
+.env.example
 
 # ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules/
 
 # ── Build output (deploy via CI, not committed) ───────────────────────────────
 dist/
+.claude
+.cursor
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
