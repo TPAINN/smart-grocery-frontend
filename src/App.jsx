@@ -117,6 +117,12 @@ const greeklishToGreek = (text) => {
 
 const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** Αφαιρεί το prefix "FITNESS ΣΥΝΤΑΓΗ:" (και παραλλαγές) από τίτλους συνταγών */
+const cleanRecipeTitle = (title) => {
+  if (!title) return title;
+  return title.replace(/^(FITNESS\s+)?ΣΥΝΤΑΓ[ΗΉ]\s*(FITNESS\s*)?:\s*/i, '').trim();
+};
+
 const cleanIngredientText = (text) => {
   let cleaned = text.toLowerCase().replace(/[\d/½¼¾]+/g, ' ');
   const units = [
@@ -2178,7 +2184,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
                   <span className="recipe-popup-tag">{recipe.category}</span>
                 )}
               </div>
-              <h2 className="recipe-popup-title">{recipe.title}</h2>
+              <h2 className="recipe-popup-title">{cleanRecipeTitle(recipe.title)}</h2>
               <div className="recipe-popup-meta-inline">
                 <span>⏱️ {recipe.time || 30} λεπτά</span>
                 <span>•</span>
@@ -2190,7 +2196,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
           </div>
         ) : (
           <div className="recipe-popup-header-noimg">
-            <h2 className="recipe-popup-title">{recipe.title}</h2>
+            <h2 className="recipe-popup-title">{cleanRecipeTitle(recipe.title)}</h2>
             <div className="recipe-popup-meta-inline" style={{ color:'var(--text-muted)' }}>
               <span>⏱️ {recipe.time || 30} λεπτά</span>
               <span>•</span>
@@ -2686,14 +2692,9 @@ export default function App() {
     if (page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
       const ck = cacheGet('recipes');
       if (ck && !ck.stale) {
-        // BUG FIX: cache now stores full response {recipes, pages, page}
-        // Support both old (array) and new (object) cache format
-        const cachedData  = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
-        const cachedPages = Array.isArray(ck.data) ? 1       : (ck.data.pages   || 1);
+        const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
         if (cachedData.length > 0) {
           setRecipes(cachedData);
-          setRecipeTotalPages(cachedPages); // ← BUG FIX: restore pagination from cache
-          setRecipePage(1);
           setRecipesLoading(false);
           return;
         }
@@ -2707,8 +2708,7 @@ export default function App() {
         const actualRecipes = d.recipes || d;
         if (Array.isArray(actualRecipes)) {
           if (page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
-            // BUG FIX: cache full response object so pages info is preserved
-            cacheSet('recipes', { recipes: actualRecipes, pages: d.pages || 1, page: d.page || 1 });
+            cacheSet('recipes', actualRecipes);
           }
           if (append) {
             setRecipes(prev => [...prev, ...actualRecipes]);
@@ -4291,7 +4291,7 @@ export default function App() {
                           </div>
 
                           <div className="recipe-card-body">
-                            <h4 className="recipe-card-title">{recipe.title}</h4>
+                            <h4 className="recipe-card-title">{cleanRecipeTitle(recipe.title)}</h4>
                             <div className="recipe-card-meta">
                               <span>{recipe.ingredients?.length || 0} υλικά</span>
                               {recipe.cuisine && recipe.cuisine !== 'Διεθνής' && (
