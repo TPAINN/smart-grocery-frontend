@@ -2384,6 +2384,7 @@ export default function App() {
   const [recipeCuisine, setRecipeCuisine]   = useState('');
   const [recipeSearchDebounced, setRecipeSearchDebounced] = useState('');
   const recipeFridgeTimer = useRef(null);
+  const recipesSentinelRef = useRef(null); // Infinite scroll sentinel
   const [showScanner, setShowScanner]     = useState(false);
   const [showSmartRoute, setShowSmartRoute] = useState(false);
   const [currentTime, setCurrentTime]     = useState(new Date());
@@ -2396,6 +2397,7 @@ export default function App() {
   const [mealPlanError,      setMealPlanError]       = useState('');
   const [activeMealDay,      setActiveMealDay]       = useState(0);
   const [mealPlanStats,      setMealPlanStats]       = useState(null);
+  const [mealPlanSummary,    setMealPlanSummary]     = useState(null);
   const [mealPlanShoppingList, setMealPlanShoppingList] = useState([]);
   const [mealPlanPrefs,      setMealPlanPrefs]       = useState({
     persons: 2, days: 7, budget: 80, goal: 'balanced', restrictions: []
@@ -2412,6 +2414,9 @@ export default function App() {
   const [tdeeGoal,     setTdeeGoal]     = useState(null);
   const [showTdeeCalc, setShowTdeeCalc] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Macro ratio targets for meal plan (must sum to 100)
+  const [macroRatios, setMacroRatios] = useState({ protein: 30, carbs: 40, fat: 30 });
 
   const [showSmartShopping, setShowSmartShopping] = useState(false);
 
@@ -2753,6 +2758,24 @@ export default function App() {
       fetchRecipes(recipePage + 1, true);
     }
   }, [recipePage, recipeTotalPages, recipesLoading, fetchRecipes]);
+
+  // ── Infinite Scroll: παρατηρεί το sentinel div και φορτώνει αυτόματα ────────
+  useEffect(() => {
+    const sentinel = recipesSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreRecipes();
+        }
+      },
+      { rootMargin: '200px', threshold: 0 } // φορτώνει 200px πριν φτάσει ο χρήστης στο τέλος
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMoreRecipes]);
 
   // ── Favorites: sync with backend + persist in localStorage ────────────────
   const syncFavorites = useCallback(async () => {
@@ -3225,6 +3248,7 @@ export default function App() {
           weight: tdeeWeight,
           height: tdeeHeight,
           activityLevel: tdeeActivity,
+          macroRatios,
         }),
       });
       const data = await res.json();
@@ -3232,6 +3256,7 @@ export default function App() {
       setMealPlan(data.plan);
       setMealPlanStats(data.stats);
       setMealPlanShoppingList(data.shoppingList || []);
+      setMealPlanSummary(data.summary || null);
       setActiveMealDay(0);
     } catch (e) {
       setMealPlanError(e.message);
@@ -4311,18 +4336,20 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* ── Load More ── */}
-                    {!showFavoritesOnly && recipePage < recipeTotalPages && (
-                      <div style={{ textAlign:'center', padding:'20px 0 8px' }}>
-                        <button
-                          onClick={loadMoreRecipes}
-                          disabled={recipesLoading}
-                          style={{ padding:'12px 28px', background:'var(--bg-card)', border:'1.5px solid var(--border)', borderRadius:14, color:'var(--text-primary)', fontSize:13, fontWeight:700, fontFamily:'var(--font)', cursor:'pointer', transition:'all 0.3s cubic-bezier(0.34,1.56,0.64,1)', WebkitTapHighlightColor:'transparent', opacity:recipesLoading?0.6:1 }}
-                          onMouseEnter={e => { if(!recipesLoading) { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)'; } }}
-                          onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}
-                        >
-                          {recipesLoading ? '⏳ Φόρτωση...' : '📜 Περισσότερες Συνταγές'}
-                        </button>
+                    {/* ── Infinite Scroll Sentinel ── */}
+                    {!showFavoritesOnly && (
+                      <div ref={recipesSentinelRef} style={{ padding:'16px 0', textAlign:'center', minHeight:40 }}>
+                        {recipesLoading && (
+                          <div style={{ display:'inline-flex', alignItems:'center', gap:8, color:'var(--text-muted)', fontSize:13, fontWeight:600 }}>
+                            <div style={{ width:16, height:16, borderRadius:'50%', border:'2.5px solid var(--border)', borderTopColor:'#6366f1', animation:'spin 0.7s linear infinite' }} />
+                            Φόρτωση συνταγών...
+                          </div>
+                        )}
+                        {!recipesLoading && recipePage >= recipeTotalPages && recipes.length > 0 && (
+                          <div style={{ fontSize:12, color:'var(--text-muted)', fontWeight:500 }}>
+                            ✓ Εμφανίζονται όλες οι συνταγές
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
@@ -4609,6 +4636,70 @@ export default function App() {
                   </div>
                 )}
 
+                {/* Macro Ratio Targets */}
+                <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'14px 16px' }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>
+                    ⚖️ Αναλογία Macros
+                    <span style={{ fontWeight:500, marginLeft:8, color: macroRatios.protein + macroRatios.carbs + macroRatios.fat === 100 ? '#10b981' : '#ef4444', fontSize:11 }}>
+                      ({macroRatios.protein + macroRatios.carbs + macroRatios.fat}% / 100%)
+                    </span>
+                  </div>
+
+                  {/* Preset buttons */}
+                  <div style={{ display:'flex', gap:6, marginBottom:12, flexWrap:'wrap' }}>
+                    {[
+                      { label:'⚖️ Ισορροπία', p:30, c:40, f:30 },
+                      { label:'💪 Μυϊκή', p:35, c:45, f:20 },
+                      { label:'🔥 Keto', p:25, c:5, f:70 },
+                      { label:'🏃 Αθλητής', p:25, c:55, f:20 },
+                    ].map(preset => {
+                      const active = macroRatios.protein===preset.p && macroRatios.carbs===preset.c && macroRatios.fat===preset.f;
+                      return (
+                        <button key={preset.label} onClick={() => setMacroRatios({ protein:preset.p, carbs:preset.c, fat:preset.f })}
+                          style={{ padding:'6px 12px', borderRadius:20, border:`1.5px solid ${active?'#6366f1':'var(--border)'}`, background:active?'rgba(99,102,241,0.1)':'var(--bg-surface)', color:active?'#6366f1':'var(--text-secondary)', fontWeight:700, fontSize:11, cursor:'pointer', transition:'all 0.2s' }}>
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Sliders */}
+                  {[
+                    { key:'protein', label:'Πρωτεΐνη', color:'#6366f1', emoji:'💪' },
+                    { key:'carbs',   label:'Υδατάνθρακες', color:'#10b981', emoji:'⚡' },
+                    { key:'fat',     label:'Λιπαρά', color:'#f59e0b', emoji:'🥑' },
+                  ].map(({ key, label, color, emoji }) => (
+                    <div key={key} style={{ marginBottom:10 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                        <span style={{ fontSize:12, fontWeight:700, color:'var(--text-primary)' }}>{emoji} {label}</span>
+                        <span style={{ fontSize:13, fontWeight:800, color }}>{macroRatios[key]}%</span>
+                      </div>
+                      <input type="range" min={5} max={80} step={5}
+                        value={macroRatios[key]}
+                        onChange={e => {
+                          const val = parseInt(e.target.value);
+                          setMacroRatios(prev => ({ ...prev, [key]: val }));
+                        }}
+                        style={{ width:'100%', accentColor:color, cursor:'pointer' }}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Visual bar */}
+                  <div style={{ height:8, borderRadius:99, overflow:'hidden', display:'flex', marginTop:4 }}>
+                    <div style={{ width:`${macroRatios.protein}%`, background:'#6366f1', transition:'width 0.2s' }} />
+                    <div style={{ width:`${macroRatios.carbs}%`, background:'#10b981', transition:'width 0.2s' }} />
+                    <div style={{ width:`${macroRatios.fat}%`, background:'#f59e0b', transition:'width 0.2s' }} />
+                  </div>
+                  <div style={{ display:'flex', gap:12, marginTop:6, justifyContent:'center' }}>
+                    {[['#6366f1','Πρωτεΐνη'],['#10b981','Υδατάνθρακες'],['#f59e0b','Λιπαρά']].map(([c,l]) => (
+                      <div key={l} style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, color:'var(--text-muted)', fontWeight:600 }}>
+                        <div style={{ width:8, height:8, borderRadius:'50%', background:c }} />{l}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <button onClick={generateMealPlan} disabled={mealPlanLoading}
                   style={{ width:'100%', padding:16, background:mealPlanLoading?'var(--bg-surface)':'linear-gradient(135deg,#6366f1,#8b5cf6)', color:mealPlanLoading?'var(--text-secondary)':'#fff', border:'none', borderRadius:16, fontWeight:800, fontSize:16, cursor:mealPlanLoading?'not-allowed':'pointer', opacity:mealPlanLoading?0.75:1, display:'flex', alignItems:'center', justifyContent:'center', gap:10, transition:'all 0.2s', boxShadow:mealPlanLoading?'none':'0 4px 24px rgba(99,102,241,0.35)' }}>
                   {mealPlanLoading
@@ -4634,6 +4725,39 @@ export default function App() {
                         <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:700, marginTop:2 }}>{s.label}</div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Macro ratio achieved */}
+                {mealPlanSummary?.macroRatioAchieved && (
+                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:14, padding:'12px 14px' }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:8 }}>⚖️ Αναλογία Macros (Μ.Ο. Ημέρας)</div>
+                    <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                      {[
+                        { label:'Πρωτεΐνη', val: mealPlanSummary.macroRatioAchieved.protein, color:'#6366f1', target: macroRatios.protein },
+                        { label:'Υδατ/κες', val: mealPlanSummary.macroRatioAchieved.carbs,   color:'#10b981', target: macroRatios.carbs },
+                        { label:'Λιπαρά',   val: mealPlanSummary.macroRatioAchieved.fat,     color:'#f59e0b', target: macroRatios.fat },
+                      ].map(({ label, val, color, target }) => (
+                        <div key={label} style={{ flex:1, textAlign:'center', background:`${color}12`, borderRadius:10, padding:'8px 4px', border:`1px solid ${color}30` }}>
+                          <div style={{ fontWeight:900, fontSize:16, color }}>{val}%</div>
+                          <div style={{ fontSize:9, color:'var(--text-muted)', fontWeight:600 }}>{label}</div>
+                          <div style={{ fontSize:9, color: Math.abs(val-target)<=3 ? '#10b981' : '#f59e0b', fontWeight:700, marginTop:2 }}>
+                            στόχος {target}%
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Bar */}
+                    <div style={{ height:6, borderRadius:99, overflow:'hidden', display:'flex' }}>
+                      <div style={{ width:`${mealPlanSummary.macroRatioAchieved.protein}%`, background:'#6366f1', transition:'width 0.3s' }} />
+                      <div style={{ width:`${mealPlanSummary.macroRatioAchieved.carbs}%`,   background:'#10b981', transition:'width 0.3s' }} />
+                      <div style={{ width:`${mealPlanSummary.macroRatioAchieved.fat}%`,     background:'#f59e0b', transition:'width 0.3s' }} />
+                    </div>
+                    {mealPlanSummary.avgKcalPerDay && (
+                      <div style={{ textAlign:'center', marginTop:6, fontSize:11, fontWeight:700, color:'var(--text-secondary)' }}>
+                        Μ.Ο. {mealPlanSummary.avgKcalPerDay} kcal/ημέρα
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -4711,7 +4835,7 @@ export default function App() {
                     style={{ padding:'13px 10px', background:'linear-gradient(135deg,#10b981,#059669)', color:'#fff', border:'none', borderRadius:14, fontWeight:800, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:7, boxShadow:'0 4px 16px rgba(16,185,129,0.3)' }}>
                     <IconShoppingCart size={16} stroke={2}/> Στη Λίστα
                   </button>
-                  <button onClick={() => { setMealPlan(null); setMealPlanStats(null); setMealPlanShoppingList([]); }}
+                  <button onClick={() => { setMealPlan(null); setMealPlanStats(null); setMealPlanShoppingList([]); setMealPlanSummary(null); }}
                     style={{ padding:'13px 10px', background:'var(--bg-card)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:14, fontWeight:800, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
                     <IconRefresh size={16} stroke={2}/> Νέο Πλάνο
                   </button>
