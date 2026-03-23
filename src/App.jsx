@@ -2686,9 +2686,14 @@ export default function App() {
     if (page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
       const ck = cacheGet('recipes');
       if (ck && !ck.stale) {
-        const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
+        // BUG FIX: cache now stores full response {recipes, pages, page}
+        // Support both old (array) and new (object) cache format
+        const cachedData  = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
+        const cachedPages = Array.isArray(ck.data) ? 1       : (ck.data.pages   || 1);
         if (cachedData.length > 0) {
           setRecipes(cachedData);
+          setRecipeTotalPages(cachedPages); // ← BUG FIX: restore pagination from cache
+          setRecipePage(1);
           setRecipesLoading(false);
           return;
         }
@@ -2702,7 +2707,8 @@ export default function App() {
         const actualRecipes = d.recipes || d;
         if (Array.isArray(actualRecipes)) {
           if (page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
-            cacheSet('recipes', actualRecipes);
+            // BUG FIX: cache full response object so pages info is preserved
+            cacheSet('recipes', { recipes: actualRecipes, pages: d.pages || 1, page: d.page || 1 });
           }
           if (append) {
             setRecipes(prev => [...prev, ...actualRecipes]);
