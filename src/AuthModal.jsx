@@ -1,23 +1,15 @@
 // src/AuthModal.jsx
-import { useState, useEffect } from 'react';
+import { useId, useState } from 'react';
 import './AuthModal.css';
 
 const API_BASE = "https://my-smart-grocery-api.onrender.com";
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess, initMode = 'login' }) {
+  const titleId = useId();
   const [isLogin, setIsLogin] = useState(initMode === 'login');
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  // 🔴 FIX: Κάθε φορά που ανοίγει το modal, εφαρμόζει το σωστό mode
-  useEffect(() => {
-    if (isOpen) {
-      setIsLogin(initMode === 'login');
-      setError('');
-      setFormData({ name: '', email: '', password: '' });
-    }
-  }, [isOpen, initMode]);
 
   if (!isOpen) return null;
 
@@ -49,10 +41,16 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initMode = 
 
   return (
     <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !isLoading) onClose(); }}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <button className="close-btn" onClick={onClose} disabled={isLoading}>✕</button>
+      <div
+        className="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        onClick={e => e.stopPropagation()}
+      >
+        <button type="button" className="close-btn" onClick={onClose} disabled={isLoading} aria-label="Κλείσιμο">✕</button>
         <div className="modal-header staggered-1">
-          <h2>{isLogin ? 'Καλώς ήρθες!' : 'Δημιουργία Λογαριασμού'}</h2>
+          <h2 id={titleId}>{isLogin ? 'Καλώς ήρθες!' : 'Δημιουργία Λογαριασμού'}</h2>
           <p>{isLogin ? 'Συνδέσου για να δεις τη λίστα σου.' : 'Γίνε μέλος του Smart Hub.'}</p>
         </div>
         {error && <div className="error-message staggered-2">{error}</div>}
@@ -68,9 +66,14 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initMode = 
         </form>
         <p className="toggle-text staggered-3">
           {isLogin ? 'Δεν έχεις λογαριασμό; ' : 'Έχεις ήδη λογαριασμό; '}
-          <span onClick={() => { if (!isLoading) { setIsLogin(!isLogin); setError(''); } }}>
+          <button
+            type="button"
+            className="toggle-link-btn"
+            onClick={() => { if (!isLoading) { setIsLogin(!isLogin); setError(''); } }}
+            disabled={isLoading}
+          >
             {isLogin ? 'Κάνε εγγραφή' : 'Συνδέσου'}
-          </span>
+          </button>
         </p>
       </div>
     </div>

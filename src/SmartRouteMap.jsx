@@ -108,8 +108,22 @@ const mkUser = L => L.divIcon({className:'',html:`<div style="width:16px;height:
 
 // ─── FAB position persistence ────────────────────────────────────────────────
 const FAB_KEY = 'sg_fab_pos';
-const saveFabPos = (x,y) => { try{localStorage.setItem(FAB_KEY,JSON.stringify({x,y}))}catch{} };
-const loadFabPos = () => { try{const v=JSON.parse(localStorage.getItem(FAB_KEY));if(v?.x!=null)return v}catch{} return null; };
+const saveFabPos = (x,y) => {
+  try {
+    localStorage.setItem(FAB_KEY, JSON.stringify({ x, y }));
+  } catch {
+    // Ignore storage failures (private mode/quota).
+  }
+};
+const loadFabPos = () => {
+  try {
+    const v = JSON.parse(localStorage.getItem(FAB_KEY));
+    if (v?.x != null) return v;
+  } catch {
+    // Ignore invalid persisted data.
+  }
+  return null;
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FloatingMapButton — DRAGGABLE + animated
@@ -222,6 +236,43 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
     return () => { Object.assign(document.body.style, { overflow:'', position:'', top:'', width:'' }); window.scrollTo(0,y); };
   }, [isOpen]);
 
+  const doSearch = useCallback(async (pos) => {
+    setSearching(true);
+    try {
+      const raw = await searchOverpass(pos.lat, pos.lng, 5000);
+      const L = window.L, map = mapRef.current;
+      markersRef.current.forEach(m => map?.removeLayer(m)); markersRef.current = [];
+      const enriched = raw.map(s => {
+        const chain = matchChain(s.name, s.brand);
+        return { ...s, chain, chainId:chain?.id||'other', chainName:chain?.name||s.name, chainColor:chain?.color||'#6b7280', chainEmoji:chain?.emoji||'⚪', distance:hav(pos.lat,pos.lng,s.lat,s.lng), itemCount:countItems(chain) };
+      }).sort((a,b) => a.distance-b.distance);
+      setStores(enriched);
+      if (map && L) {
+        enriched.forEach(s => {
+          const m = L.marker([s.lat,s.lng],{icon:mkStore(L,s.chainColor)}).addTo(map);
+          let p = `<div style="font-family:-apple-system,sans-serif;min-width:180px;max-width:250px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:16px">${s.chainEmoji}</span><div><div style="font-weight:700;font-size:13px">${s.name}</div>${s.address?`<div style="font-size:11px;color:#666">${s.address}</div>`:''}</div></div><div style="font-size:11px;color:#555">📍 ${fmtM(s.distance)}</div>`;
+          if (s.itemCount > 0 && s.chain) {
+            const si = items.filter(i=>s.chain.tags.some(t=>(i.store||'').toLowerCase().includes(t.toLowerCase())));
+            p += `<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">🛒 ${si.length} προϊόντα:</div>`;
+            si.slice(0,3).forEach(i=>{p+=`<div style="font-size:11px;color:#555">• ${i.name||i.text}${i.price>0?` <b style="color:#10b981">€${i.price.toFixed(2)}</b>`:''}</div>`});
+            if(si.length>3) p+=`<div style="font-size:10px;color:#999">+${si.length-3}</div>`;
+            const tot=si.reduce((a,i)=>a+(i.price>0?i.price:0),0);
+            if(tot>0) p+=`<div style="font-size:12px;font-weight:700;color:#10b981;margin-top:3px;border-top:1px solid #eee;padding-top:3px">€${tot.toFixed(2)}</div>`;
+            p+='</div>';
+          }
+          p+='</div>';
+          m.bindPopup(p); markersRef.current.push(m);
+        });
+        const auto=[], seen=new Set();
+        enriched.forEach(s=>{if(s.itemCount>0&&!seen.has(s.chainId)){auto.push(s);seen.add(s.chainId)}});
+        if(auto.length) setSelected(auto);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+    }
+    setSearching(false);
+  }, [countItems, items]);
+
   // Init
   useEffect(() => {
     if (!isOpen) return;
@@ -257,42 +308,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
       }
     })();
     return () => { dead=true; if(mapRef.current){mapRef.current.remove();mapRef.current=null} markersRef.current=[]; routeLayerRef.current=null; setStores([]); setSelected([]); setRoute(null); };
-  }, [isOpen]);
-
-  const doSearch = async pos => {
-    setSearching(true);
-    try {
-      const raw = await searchOverpass(pos.lat, pos.lng, 5000);
-      const L = window.L, map = mapRef.current;
-      markersRef.current.forEach(m => map?.removeLayer(m)); markersRef.current = [];
-      const enriched = raw.map(s => {
-        const chain = matchChain(s.name, s.brand);
-        return { ...s, chain, chainId:chain?.id||'other', chainName:chain?.name||s.name, chainColor:chain?.color||'#6b7280', chainEmoji:chain?.emoji||'⚪', distance:hav(pos.lat,pos.lng,s.lat,s.lng), itemCount:countItems(chain) };
-      }).sort((a,b) => a.distance-b.distance);
-      setStores(enriched);
-      if (map && L) {
-        enriched.forEach(s => {
-          const m = L.marker([s.lat,s.lng],{icon:mkStore(L,s.chainColor)}).addTo(map);
-          let p = `<div style="font-family:-apple-system,sans-serif;min-width:180px;max-width:250px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:16px">${s.chainEmoji}</span><div><div style="font-weight:700;font-size:13px">${s.name}</div>${s.address?`<div style="font-size:11px;color:#666">${s.address}</div>`:''}</div></div><div style="font-size:11px;color:#555">📍 ${fmtM(s.distance)}</div>`;
-          if (s.itemCount > 0 && s.chain) {
-            const si = items.filter(i=>s.chain.tags.some(t=>(i.store||'').toLowerCase().includes(t.toLowerCase())));
-            p += `<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px"><div style="font-size:11px;font-weight:600;margin-bottom:2px">🛒 ${si.length} προϊόντα:</div>`;
-            si.slice(0,3).forEach(i=>{p+=`<div style="font-size:11px;color:#555">• ${i.name||i.text}${i.price>0?` <b style="color:#10b981">€${i.price.toFixed(2)}</b>`:''}</div>`});
-            if(si.length>3) p+=`<div style="font-size:10px;color:#999">+${si.length-3}</div>`;
-            const tot=si.reduce((a,i)=>a+(i.price>0?i.price:0),0);
-            if(tot>0) p+=`<div style="font-size:12px;font-weight:700;color:#10b981;margin-top:3px;border-top:1px solid #eee;padding-top:3px">€${tot.toFixed(2)}</div>`;
-            p+='</div>';
-          }
-          p+='</div>';
-          m.bindPopup(p); markersRef.current.push(m);
-        });
-        const auto=[], seen=new Set();
-        enriched.forEach(s=>{if(s.itemCount>0&&!seen.has(s.chainId)){auto.push(s);seen.add(s.chainId)}});
-        if(auto.length) setSelected(auto);
-      }
-    } catch(e) { console.error('Search error:',e); }
-    setSearching(false);
-  };
+  }, [isOpen, doSearch]);
 
   const calcRoute = useCallback(async () => {
     if (!mapRef.current||!userLoc||!selected.length) return;
@@ -316,7 +332,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
       let ordered=selected;
       if(r.waypoints&&selected.length>1){const wp=r.waypoints.slice(1,-1).map(w=>w.waypoint_index);if(wp.length===selected.length){const ix=selected.map((s,i)=>({s,i:wp[i]}));ix.sort((a,b)=>a.i-b.i);ordered=ix.map(x=>x.s)}}
       setRoute({distance:r.distance,duration:r.duration,orderedStores:ordered,steps:parseSteps(r.legs)});
-    } catch(e){setErr('Δεν βρέθηκε διαδρομή.')}
+    } catch { setErr('Δεν βρέθηκε διαδρομή.'); }
     setRouting(false);
   },[userLoc,selected,mode]);
 

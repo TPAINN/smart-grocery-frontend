@@ -112,6 +112,7 @@ body.dark-mode .modal-content {
     border-color 0.32s var(--ease),
     background   0.32s var(--ease),
     box-shadow   0.32s var(--ease);
+  appearance: none;
   -webkit-appearance: none;
 }
 
@@ -186,14 +187,19 @@ body.dark-mode .submit-btn {
   color: var(--text-secondary);
 }
 
-.toggle-text span {
+.toggle-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
   color: var(--accent);
   font-weight: 700;
   cursor: pointer;
   transition: opacity 0.15s var(--ease);
 }
 
-.toggle-text span:hover { opacity: 0.75; text-decoration: underline; }
+.toggle-link-btn:hover { opacity: 0.75; text-decoration: underline; }
+.toggle-link-btn:disabled { opacity: 0.45; cursor: not-allowed; text-decoration: none; }
 
 /* Spinner */
 .auth-spinner {

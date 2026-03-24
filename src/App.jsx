@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import './App.css';
@@ -28,21 +28,9 @@ const CACHE_TTL_MS  = 10 * 60 * 1000; // 10 min
 
 // #region agent log
 const debugLog = (payload) => {
-  try {
-    fetch('http://127.0.0.1:7511/ingest/af701115-fec6-479a-b09b-c1d32de6d5c8', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': 'fe5a26',
-      },
-      body: JSON.stringify({
-        sessionId: 'fe5a26',
-        timestamp: Date.now(),
-        ...payload,
-      }),
-    }).catch(() => {});
-  } catch {
-    // swallow
+  // Do not transmit client payloads to external/local debug collectors.
+  if (import.meta.env.DEV) {
+    console.debug('[smart-grocery]', payload);
   }
 };
 // #endregion
@@ -60,7 +48,9 @@ const cacheGet = (key) => {
       memCache.set(key, entry);
       return entry;
     }
-  } catch {}
+  } catch {
+    // Ignore invalid/stale local cache content.
+  }
   return null;
 };
 
@@ -69,23 +59,9 @@ const cacheSet = (key, data) => {
   memCache.set(key, entry);
   try {
     localStorage.setItem(`sgc_${CACHE_VERSION}_${key}`, JSON.stringify({ data, ts: entry.ts }));
-  } catch {}
-};
-
-const cachedFetch = async (url, key, { onData, onBackground } = {}) => {
-  const cached = cacheGet(key);
-  if (cached) {
-    onData?.(cached.data);
-    if (!cached.stale) return;
+  } catch {
+    // Ignore storage write failures.
   }
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return;
-    const data = await r.json();
-    cacheSet(key, data);
-    if (cached?.stale) onBackground?.(data);
-    else onData?.(data);
-  } catch {}
 };
 
 // ─── Keep-alive: prevents Render free-tier cold start ─────────────────────────
@@ -408,7 +384,7 @@ const getCategory = (name) => {
 
   // ── Second pass: try matching individual words (handles "ΦΡΕΣΚΟ ΓΑΛΑ 1L" etc.) ──
   if (bestCat === '📦 Διάφορα') {
-    const words = norm.split(/[\s\-\/,.:;!?()\[\]{}0-9]+/).filter(w => w.length >= 3);
+    const words = norm.split(/[\s\-,.:;!?()[\]{}0-9]+/).filter(w => w.length >= 3);
     for (const word of words) {
       for (const cat of CATEGORIES) {
         for (const kw of cat.keywords) {
@@ -1048,11 +1024,10 @@ function FriendPickerModal({ isOpen, friends, item, onSend, onClose }) {
 
 
 
-function AddFriendModal({ isOpen, onAdd, onClose, existingFriends = [] }) {
+function AddFriendModal({ isOpen, onAdd, onClose }) {
   const [key, setKey]           = useState('');
   const [loading, setLoading]   = useState(false);
   const [preview, setPreview]   = useState(null);
-  const [copied, setCopied]     = useState(false);
   const lookupTimeout           = useRef(null);
 
   if (!isOpen) return null;
@@ -1098,8 +1073,6 @@ function AddFriendModal({ isOpen, onAdd, onClose, existingFriends = [] }) {
     setKey('');
     setPreview(null);
   };
-
-  const alreadyAdded = (sk) => existingFriends.some(f => f.shareKey === sk);
 
   return (
     <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
@@ -1649,6 +1622,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
     try { return JSON.parse(localStorage.getItem('sg_allergens') || '[]'); } catch { return []; }
   });
   const scannerRef = useRef(null);
+  const handleBarcodeScanRef = useRef(null);
   const scannerDivId = 'barcode-scanner-area';
 
   // Persist
@@ -1684,7 +1658,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
           { fps: 10, qrbox: { width: 220, height: 120 }, aspectRatio: 1.333, disableFlip: false },
           (text) => {
             if (html5Qr.isScanning) html5Qr.stop().catch(() => {});
-            handleBarcodeScan(text);
+            handleBarcodeScanRef.current?.(text);
           },
           () => {}
         );
@@ -1708,7 +1682,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             }
           }
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) setError('Δεν μπόρεσε να ανοίξει η κάμερα. Δώσε πρόσβαση.');
       }
     };
@@ -1717,25 +1691,25 @@ function BarcodeScannerModal({ isOpen, onClose }) {
       cancelled = true;
       clearTimeout(timer);
       if (html5Qr) {
-        try { if (html5Qr.isScanning) html5Qr.stop().catch(() => {}); } catch {}
-        try { html5Qr.clear(); } catch {}
+        try { if (html5Qr.isScanning) html5Qr.stop().catch(() => {}); } catch { /* ignore stop cleanup errors */ }
+        try { html5Qr.clear(); } catch { /* ignore clear cleanup errors */ }
       }
       scannerRef.current = null;
     };
-  }, [isOpen, activeView, product, scanKey]);
+  }, [isOpen, activeView, product, scanKey, loading]);
 
   const stopScanner = () => {
     if (scannerRef.current) {
-      try { if (scannerRef.current.isScanning) scannerRef.current.stop().catch(() => {}); } catch {}
-      try { scannerRef.current.clear(); } catch {}
+      try { if (scannerRef.current.isScanning) scannerRef.current.stop().catch(() => {}); } catch { /* ignore stop cleanup errors */ }
+      try { scannerRef.current.clear(); } catch { /* ignore clear cleanup errors */ }
       scannerRef.current = null;
     }
   };
 
-  const handleBarcodeScan = async (barcode) => {
+  async function handleBarcodeScan(barcode) {
     setLoading(true);
     setError('');
-    try { new Audio('data:audio/mp3;base64,//MkxAAQhEBEFmACAAAI0HqAgIICuS39R/4AAAABh//MkxAAYS15QAAwYyAAwAQA4B5///wAAC////wAAA//MkxAAQgAAAAAQQAAAwAAAwD///wAAAP///wAAA//MkxAARQAAAAAQQAAAwAAAwD///wAAAP///wAAA').play().catch(()=>{}); } catch(e){}
+    try { new Audio('data:audio/mp3;base64,//MkxAAQhEBEFmACAAAI0HqAgIICuS39R/4AAAABh//MkxAAYS15QAAwYyAAwAQA4B5///wAAC////wAAA//MkxAAQgAAAAAQQAAAwAAAwD///wAAAP///wAAA//MkxAARQAAAAAQQAAAwAAAwD///wAAAP///wAAA').play().catch(()=>{}); } catch { /* ignore sound-play failures */ }
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
     try {
@@ -1804,7 +1778,10 @@ function BarcodeScannerModal({ isOpen, onClose }) {
       setError('Σφάλμα σύνδεσης. Δοκίμασε ξανά.');
     }
     setLoading(false);
-  };
+  }
+  useEffect(() => {
+    handleBarcodeScanRef.current = handleBarcodeScan;
+  });
 
   const handleClose = () => {
     stopScanner();
@@ -1852,7 +1829,10 @@ function BarcodeScannerModal({ isOpen, onClose }) {
     if (p.proteins != null && p.proteins >= 10) w.push({ icon:'💪', text:'Υψηλή πρωτεΐνη', detail:`${p.proteins.toFixed(1)}g`, type: 'good', clickable:true, desc:`Πρωτεΐνη: ${p.proteins.toFixed(1)}g/100g. Άριστη πηγή πρωτεΐνης για μυϊκή ανάπτυξη και κορεσμό.` });
     if (p.fiber != null && p.fiber >= 5) w.push({ icon:'🥦', text:'Πλούσιες φυτικές ίνες', detail:`${p.fiber.toFixed(1)}g`, type: 'good', clickable:true, desc:`Φυτικές ίνες: ${p.fiber.toFixed(1)}g/100g. Συμβάλλουν στη σωστή λειτουργία του πεπτικού συστήματος.` });
         
-    return w.sort((a, b) => (a.type === 'bad' ? -1 : 1));
+    return w.sort((a, b) => {
+      if (a.type === b.type) return 0;
+      return a.type === 'bad' ? -1 : 1;
+    });
   };
 
   if (!isOpen) return null;
@@ -2138,7 +2118,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
     .filter(s => s.length > 1);
 
   const cleanInstructions = (recipe.instructions || [])
-    .map(s => cleanRecipeText(s).replace(/^\d+[\.\)]\s*/, '')) // strip leading "1. "
+    .map(s => cleanRecipeText(s).replace(/^\d+[.)]\s*/, '')) // strip leading "1. "
     .filter(s => s.length > 5);
 
   useEffect(() => {
@@ -2376,12 +2356,12 @@ export default function App() {
   const [favoriteRecipes, setFavoriteRecipes]   = useState(() => {
     try { return JSON.parse(localStorage.getItem('sg_favorite_recipes') || '[]'); } catch { return []; }
   });
-  const [favoritesLoaded, setFavoritesLoaded]   = useState(false);
+  const [, setFavoritesLoaded]   = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [recipePage, setRecipePage]         = useState(1);
   const [recipeTotalPages, setRecipeTotalPages] = useState(1);
   const [recipeCategory, setRecipeCategory] = useState('');
-  const [recipeCuisine, setRecipeCuisine]   = useState('');
+  const [recipeCuisine]   = useState('');
   const [recipeSearchDebounced, setRecipeSearchDebounced] = useState('');
   const recipeFridgeTimer = useRef(null);
   const recipesSentinelRef = useRef(null); // Infinite scroll sentinel
@@ -2421,9 +2401,9 @@ export default function App() {
   const [showSmartShopping, setShowSmartShopping] = useState(false);
 
   // ── Daily Streak ───────────────────────────────────────────────────────────
-  const [streak,          setStreak]          = useState(0);
-  const [streakToast,     setStreakToast]      = useState('');
-  const [isNewStreakRecord, setIsNewStreakRecord] = useState(false);
+  const [, setStreak]          = useState(0);
+  const [, setStreakToast]      = useState('');
+  const [, setIsNewStreakRecord] = useState(false);
 
   const storeOptions  = ['Όλα','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
   const searchTimeout = useRef(null);
@@ -2475,7 +2455,9 @@ export default function App() {
       });
       const data = await r.json();
       if (r.ok) confirmedFriend = data.friend;
-    } catch {}
+    } catch {
+      // Ignore transient friend loading failures.
+    }
 
     // 2. Update local state with confirmed (or optimistic) data
     const normalizedFriend = confirmedFriend || {
@@ -2512,7 +2494,9 @@ export default function App() {
           dbFriends.forEach(f => socketRef.current.emit('join_cart', f.shareKey));
         }
       }
-    } catch {}
+    } catch {
+      // Ignore chat refresh failures while offline.
+    }
   };
 
   const removeFriend = async (shareKey) => {
@@ -2523,7 +2507,9 @@ export default function App() {
         method: 'DELETE',
         headers: authHeader(),
       });
-    } catch {}
+    } catch {
+      // Ignore favorite sync failures; local state remains source of truth.
+    }
   };
 
   // ── Offline detection ──────────────────────────────────────────────────────
@@ -2889,7 +2875,9 @@ export default function App() {
       const token = localStorage.getItem('smart_grocery_token');
       const r = await fetch(`${API_BASE}/api/lists`, { headers: { Authorization: `Bearer ${token}` } });
       if (r.ok) setSavedLists(await r.json());
-    } catch {}
+    } catch {
+      // Ignore saved-list fetch failures while backend is unavailable.
+    }
   }, [user]);
   useEffect(() => { fetchSavedLists(); }, [fetchSavedLists]);
 
@@ -2959,7 +2947,9 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('smart_grocery_token')}` },
         body: JSON.stringify({ title: list.title, items: updatedItems }),
       });
-    } catch {}
+    } catch {
+      // Ignore optimistic toggle sync failures.
+    }
   };
 
   const deleteList = (listId) => {
@@ -2972,7 +2962,9 @@ export default function App() {
             method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('smart_grocery_token')}` },
           });
           fetchSavedLists();
-        } catch {}
+        } catch {
+          // Ignore delete failures from confirmation flow.
+        }
       },
     });
   };
@@ -3037,7 +3029,9 @@ export default function App() {
         cacheSet(cacheKey, data);
         setSuggestions(data.slice(0, 30));
       }
-    } catch {}
+    } catch {
+      // Ignore search failures and keep existing suggestions.
+    }
     setIsSearching(false);
   };
 
@@ -3132,7 +3126,9 @@ export default function App() {
           const best = getBestMatch(data, query);
           if (best) return best;
         }
-      } catch {}
+      } catch {
+        // Ignore a strategy failure and continue with next keyword.
+      }
     }
     return null;
   };
@@ -3278,13 +3274,6 @@ export default function App() {
     setItems(prev => [...newItems, ...prev]);
     setActiveTab('list');
     setNotification({ show: true, message: `✅ ${newItems.length} υλικά προστέθηκαν στη λίστα!` });
-  };
-
-  const toggleMealRestriction = (r) => {
-    setMealPlanPrefs(p => ({
-      ...p,
-      restrictions: p.restrictions.includes(r) ? p.restrictions.filter(x => x !== r) : [...p.restrictions, r]
-    }));
   };
 
   const deleteItem = useCallback((id) => setItems(prev => prev.filter(i => i.id !== id)), []);
@@ -3826,7 +3815,7 @@ export default function App() {
             ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
             ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Plan'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
-          ].map(([tab, label, labelText]) => {
+          ].map(([tab, label]) => {
             const isLocked = !user && (tab === 'recipes' || tab === 'mealplan');
             const isActive = activeTab === tab;
             return (
@@ -3992,7 +3981,7 @@ export default function App() {
                   <div style={{ padding:'0 16px 16px', animation:'slideUpFadeIn 0.3s ease' }}>
                     {/* Route summary */}
                     <div style={{ display:'flex', gap:6, marginBottom:12, overflowX:'auto', paddingBottom:4 }}>
-                      {smartStoreGroups.map(([store, data], i) => (
+                      {smartStoreGroups.map(([store], i) => (
                         <div key={store} style={{ flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
                           <div style={{ background:'linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.1))', border:'1px solid rgba(99,102,241,0.2)', borderRadius:20, padding:'5px 12px', fontSize:12, fontWeight:700, color:'#6366f1', whiteSpace:'nowrap' }}>
                             {i+1}. {store}
