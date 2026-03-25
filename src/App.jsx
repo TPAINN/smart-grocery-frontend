@@ -2304,8 +2304,19 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
             </div>
           )}
 
-          <button className="add-recipe-btn" onClick={(e) => { e.stopPropagation(); onAddToList(); }}>
-            🛒 Προσθήκη Υλικών στη Λίστα
+          <button
+            className="add-recipe-btn"
+            disabled={isAdding}
+            onClick={async (e) => {
+              e.stopPropagation();
+              setIsAdding(true);
+              try { await onAddToList(); } finally { setIsAdding(false); }
+            }}
+            style={isAdding ? { opacity:0.75, cursor:'not-allowed' } : {}}
+          >
+            {isAdding
+              ? <><span style={{ display:'inline-block', width:14, height:14, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', animation:'spin 0.7s linear infinite', marginRight:8, verticalAlign:'middle' }} />Ψάχνω τιμές...</>
+              : '🛒 Προσθήκη Υλικών στη Λίστα'}
           </button>
 
           <div className={`recipe-popup-details ${showDetails ? 'visible' : ''}`}>
