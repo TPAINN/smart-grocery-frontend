@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import './App.css';
 import RecipeNotification from './RecipeNotification';
 import AuthModal from './AuthModal';
@@ -1336,10 +1336,10 @@ function PremiumModal({ isOpen, onClose, user }) {
 
   const features = [
     { icon:'📋', text:'Έως 10 αποθηκευμένες λίστες (αντί 2)' },
-    { icon:'🍽️', text:'Πλήρης πρόσβαση σε όλες τις συνταγές' },
-    { icon:'🤖', text:'AI Meal Plan χωρίς όρια' },
+    { icon:'🤖', text:'Εβδομαδιαίο AI Meal Plan' },
     { icon:'🤝', text:'Κοινό καλάθι με απεριόριστους φίλους' },
     { icon:'📊', text:'Ιστορικό αγορών & στατιστικά budget' },
+    { icon:'🗺️', text:'Smart Route — Έξυπνη διαδρομή αγορών' },
     { icon:'🔔', text:'Push notifications για φίλους & προσφορές' },
     { icon:'📷', text:'Barcode scanner χωρίς διαφημίσεις' },
     { icon:'⭐', text:'Προτεραιότητα στη νέα ύλη & features' },
@@ -1368,7 +1368,7 @@ function PremiumModal({ isOpen, onClose, user }) {
 
   return (
     <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-content" style={{ maxWidth:440, padding:0, overflow:'hidden' }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" style={{ maxWidth:440, padding:0, overflow:'hidden', maxHeight:'92vh', overflowY:'auto' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div style={{
           background: onTrial
@@ -1437,27 +1437,45 @@ function PremiumModal({ isOpen, onClose, user }) {
             </div>
           )}
 
-          {/* CTA */}
-          <button
-            onClick={handleCheckout}
-            disabled={checkoutLoading}
-            style={{
-              width:'100%', padding:'15px 0', borderRadius:14, border:'none', cursor: checkoutLoading ? 'wait' : 'pointer',
-              background: checkoutLoading ? 'var(--bg-surface)' : 'linear-gradient(135deg,#7c3aed,#a855f7)',
-              color: checkoutLoading ? 'var(--text-secondary)' : '#fff', fontWeight:800, fontSize:16,
-              boxShadow: checkoutLoading ? 'none' : '0 4px 20px rgba(124,58,237,0.4)',
-              transition:'transform 0.15s, box-shadow 0.15s', display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-            }}
-          >
-            {checkoutLoading ? (
-              <><div style={{ width:18, height:18, border:'2.5px solid rgba(255,255,255,0.3)', borderTopColor:'#7c3aed', borderRadius:'50%', animation:'spin 0.85s linear infinite' }}/> Μεταφορά στο Stripe...</>
-            ) : (
-              <>🚀 Ξεκίνα το Premium</>
-            )}
-          </button>
-          <p style={{ textAlign:'center', fontSize:11, color:'var(--text-secondary)', marginTop:10, marginBottom:0 }}>
-            Ασφαλής πληρωμή μέσω Stripe · Ακύρωση ανά πάσα στιγμή
-          </p>
+          {/* CTA — distinct premium box */}
+          <div style={{
+            background:'linear-gradient(135deg,rgba(124,58,237,0.08),rgba(168,85,247,0.05))',
+            border:'1.5px solid rgba(124,58,237,0.25)',
+            borderRadius:18, padding:'18px 20px 14px', marginTop:4,
+          }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginBottom:12 }}>
+              <div style={{ height:1, flex:1, background:'linear-gradient(90deg,transparent,rgba(124,58,237,0.25))' }}/>
+              <span style={{ fontSize:11, fontWeight:700, color:'rgba(167,139,250,0.7)', letterSpacing:1, textTransform:'uppercase' }}>Ξεκίνα τώρα</span>
+              <div style={{ height:1, flex:1, background:'linear-gradient(90deg,rgba(124,58,237,0.25),transparent)' }}/>
+            </div>
+            <button
+              onClick={handleCheckout}
+              disabled={checkoutLoading}
+              style={{
+                width:'100%', padding:'16px 0', borderRadius:14, border:'none', cursor: checkoutLoading ? 'wait' : 'pointer',
+                background: checkoutLoading ? 'var(--bg-surface)' : 'linear-gradient(135deg,#7c3aed 0%,#a855f7 60%,#6366f1 100%)',
+                color: checkoutLoading ? 'var(--text-secondary)' : '#fff', fontWeight:900, fontSize:17,
+                boxShadow: checkoutLoading ? 'none' : '0 6px 28px rgba(124,58,237,0.45), inset 0 1px 0 rgba(255,255,255,0.15)',
+                transition:'transform 0.18s, box-shadow 0.18s', display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+                letterSpacing:0.2,
+              }}
+              onMouseEnter={e => { if (!checkoutLoading) { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 10px 36px rgba(124,58,237,0.55), inset 0 1px 0 rgba(255,255,255,0.18)'; } }}
+              onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow= checkoutLoading ? 'none' : '0 6px 28px rgba(124,58,237,0.45), inset 0 1px 0 rgba(255,255,255,0.15)'; }}
+            >
+              {checkoutLoading ? (
+                <><div style={{ width:18, height:18, border:'2.5px solid rgba(124,58,237,0.3)', borderTopColor:'#7c3aed', borderRadius:'50%', animation:'spin 0.85s linear infinite' }}/> Μεταφορά στο Stripe...</>
+              ) : (
+                <>🚀 Ξεκίνα το Premium</>
+              )}
+            </button>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, marginTop:10 }}>
+              <span style={{ fontSize:10, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:3 }}>🔒 Stripe</span>
+              <span style={{ width:3, height:3, borderRadius:'50%', background:'var(--border-strong)' }}/>
+              <span style={{ fontSize:10, color:'var(--text-muted)' }}>Ακύρωση ανά πάσα στιγμή</span>
+              <span style={{ width:3, height:3, borderRadius:'50%', background:'var(--border-strong)' }}/>
+              <span style={{ fontSize:10, color:'var(--text-muted)' }}>256-bit SSL</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1682,8 +1700,351 @@ function IngredientDetailModal({ item, onClose }) {
   );
 }
 
+// ─── Scanner Onboarding Modal (first-time use) ───────────────────────────────
+function ScannerOnboardingModal({ onComplete }) {
+  const [step, setStep] = useState(0);
+
+  const steps = [
+    {
+      title: 'Σάρωσε οποιοδήποτε προϊόν',
+      desc: 'Άνοιξε το scanner, κράτησε το κινητό σου σταθερό και στόχευσε το barcode του προϊόντος.',
+      svg: (
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:220 }}>
+          {/* Phone outline */}
+          <rect x="65" y="10" width="70" height="120" rx="12" fill="#1e1b4b" stroke="#6366f1" strokeWidth="2"/>
+          <rect x="72" y="22" width="56" height="80" rx="6" fill="#0f0f1a"/>
+          {/* Barcode lines */}
+          <rect x="80" y="36" width="4" height="50" fill="#22c55e" opacity="0.9"/>
+          <rect x="87" y="36" width="2" height="50" fill="#22c55e" opacity="0.9"/>
+          <rect x="92" y="36" width="6" height="50" fill="#22c55e" opacity="0.9"/>
+          <rect x="101" y="36" width="3" height="50" fill="#22c55e" opacity="0.9"/>
+          <rect x="107" y="36" width="5" height="50" fill="#22c55e" opacity="0.9"/>
+          <rect x="115" y="36" width="2" height="50" fill="#22c55e" opacity="0.9"/>
+          <rect x="120" y="36" width="4" height="50" fill="#22c55e" opacity="0.9"/>
+          {/* Scan line animation */}
+          <rect x="76" y="60" width="48" height="2" rx="1" fill="#22c55e">
+            <animateTransform attributeName="transform" type="translate" values="0,0;0,-20;0,20;0,0" dur="2.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="1;0.3;1" dur="2.5s" repeatCount="indefinite"/>
+          </rect>
+          {/* Phone button */}
+          <rect x="92" y="125" width="16" height="4" rx="2" fill="#6366f1" opacity="0.6"/>
+          {/* Tap hand */}
+          <g style={{ animation:'floatHand 2s ease-in-out infinite' }}>
+            <ellipse cx="155" cy="115" rx="12" ry="12" fill="#fbbf24" opacity="0.9"/>
+            <rect x="151" y="92" width="5" height="22" rx="2.5" fill="#fbbf24"/>
+            <rect x="157" y="96" width="4" height="18" rx="2" fill="#fbbf24"/>
+            <rect x="162" y="99" width="4" height="15" rx="2" fill="#fbbf24"/>
+            <rect x="145" y="98" width="4" height="16" rx="2" fill="#fbbf24"/>
+          </g>
+          {/* Signal rings around tap */}
+          <circle cx="155" cy="115" r="18" stroke="#6366f1" strokeWidth="1.5" opacity="0.4">
+            <animate attributeName="r" values="16;24;16" dur="1.8s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;0;0.5" dur="1.8s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
+      ),
+    },
+    {
+      title: 'Κεντράρισε στο πλαίσιο',
+      desc: 'Βάλε το barcode μέσα στο πράσινο πλαίσιο. Η σάρωση γίνεται αυτόματα — χωρίς να πατήσεις τίποτα!',
+      svg: (
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:220 }}>
+          {/* Camera view background */}
+          <rect x="20" y="15" width="160" height="130" rx="16" fill="#0a0a14"/>
+          {/* Barcode in center */}
+          <rect x="68" y="55" width="4" height="50" fill="#fff" opacity="0.85"/>
+          <rect x="75" y="55" width="2" height="50" fill="#fff" opacity="0.85"/>
+          <rect x="80" y="55" width="5" height="50" fill="#fff" opacity="0.85"/>
+          <rect x="88" y="55" width="3" height="50" fill="#fff" opacity="0.85"/>
+          <rect x="94" y="55" width="6" height="50" fill="#fff" opacity="0.85"/>
+          <rect x="103" y="55" width="2" height="50" fill="#fff" opacity="0.85"/>
+          <rect x="108" y="55" width="4" height="50" fill="#fff" opacity="0.85"/>
+          <rect x="115" y="55" width="5" height="50" fill="#fff" opacity="0.85"/>
+          <rect x="123" y="55" width="3" height="50" fill="#fff" opacity="0.85"/>
+          {/* Green frame corners - animated */}
+          <path d="M52 55 L52 42 L65 42" stroke="#22c55e" strokeWidth="3" strokeLinecap="round">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+          </path>
+          <path d="M148 55 L148 42 L135 42" stroke="#22c55e" strokeWidth="3" strokeLinecap="round">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" begin="0.3s"/>
+          </path>
+          <path d="M52 105 L52 118 L65 118" stroke="#22c55e" strokeWidth="3" strokeLinecap="round">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" begin="0.6s"/>
+          </path>
+          <path d="M148 105 L148 118 L135 118" stroke="#22c55e" strokeWidth="3" strokeLinecap="round">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" begin="0.9s"/>
+          </path>
+          {/* Scan line */}
+          <rect x="55" y="80" width="90" height="2" rx="1" fill="#22c55e" opacity="0.9">
+            <animateTransform attributeName="transform" type="translate" values="0,-28;0,28;0,-28" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
+          </rect>
+          {/* Check mark appearing */}
+          <circle cx="170" cy="25" r="10" fill="#22c55e">
+            <animate attributeName="r" values="0;10;10" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0;0;1;1;0" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <path d="M165 25 L168 28 L175 21" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <animate attributeName="opacity" values="0;0;1;1;0" dur="2s" repeatCount="indefinite"/>
+          </path>
+        </svg>
+      ),
+    },
+    {
+      title: 'Δες όλες τις πληροφορίες',
+      desc: 'Θερμίδες, Nutriscore A-E, αλλεργιογόνα, βαθμολογία NOVA, συστατικά και σύγκριση τιμών!',
+      svg: (
+        <svg viewBox="0 0 220 172" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:240 }}>
+          <defs>
+            <linearGradient id="sc-card" x1="0" y1="0" x2="220" y2="172" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#1e1b4b"/>
+              <stop offset="100%" stopColor="#0d0b22"/>
+            </linearGradient>
+            <linearGradient id="sc-img" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#3730a3"/>
+              <stop offset="100%" stopColor="#1e1b4b"/>
+            </linearGradient>
+            <linearGradient id="sc-border" x1="0" y1="0" x2="220" y2="172" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.7"/>
+              <stop offset="60%" stopColor="#4f46e5" stopOpacity="0.3"/>
+              <stop offset="100%" stopColor="#312e81" stopOpacity="0.15"/>
+            </linearGradient>
+            <filter id="sc-shadow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="6" stdDeviation="10" floodColor="#6366f1" floodOpacity="0.18"/>
+            </filter>
+          </defs>
+
+          {/* Card shadow */}
+          <rect x="18" y="20" width="184" height="140" rx="20" fill="#6366f1" opacity="0.06" filter="url(#sc-shadow)"/>
+
+          {/* Card body */}
+          <rect x="12" y="12" width="196" height="148" rx="20" fill="url(#sc-card)" stroke="url(#sc-border)" strokeWidth="1.4">
+            <animate attributeName="opacity" values="0;1" dur="0.5s" fill="freeze"/>
+          </rect>
+          {/* Top inner glow */}
+          <rect x="13" y="12" width="194" height="1.5" rx="0.75" fill="white" opacity="0.07"/>
+
+          {/* Product image box */}
+          <rect x="22" y="22" width="44" height="44" rx="12" fill="url(#sc-img)" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.1s"/>
+          </rect>
+          <rect x="22" y="22" width="44" height="44" rx="12" stroke="#4f46e5" strokeWidth="0.8" strokeOpacity="0.6" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.1s"/>
+          </rect>
+          <text x="44" y="50" textAnchor="middle" fontSize="22" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.35s" fill="freeze" begin="0.15s"/>
+            🥛
+          </text>
+
+          {/* Brand label */}
+          <rect x="74" y="24" width="44" height="6" rx="3" fill="#6366f1" opacity="0">
+            <animate attributeName="opacity" values="0;0.45" dur="0.4s" fill="freeze" begin="0.2s"/>
+            <animate attributeName="width" values="0;44" dur="0.5s" fill="freeze" begin="0.2s"/>
+          </rect>
+          {/* Product name */}
+          <rect x="74" y="34" width="96" height="10" rx="5" fill="#c7d2fe" opacity="0">
+            <animate attributeName="opacity" values="0;0.85" dur="0.45s" fill="freeze" begin="0.25s"/>
+            <animate attributeName="width" values="0;96" dur="0.55s" fill="freeze" begin="0.25s"/>
+          </rect>
+          {/* Quantity */}
+          <rect x="74" y="49" width="36" height="6" rx="3" fill="#6366f1" opacity="0">
+            <animate attributeName="opacity" values="0;0.3" dur="0.4s" fill="freeze" begin="0.3s"/>
+            <animate attributeName="width" values="0;36" dur="0.45s" fill="freeze" begin="0.3s"/>
+          </rect>
+
+          {/* NutriScore pill */}
+          <rect x="74" y="58" width="68" height="15" rx="7.5" fill="#22c55e" opacity="0">
+            <animate attributeName="opacity" values="0;0.95" dur="0.4s" fill="freeze" begin="0.38s"/>
+          </rect>
+          <text x="108" y="69" textAnchor="middle" fontSize="8" fill="white" fontWeight="800" letterSpacing="0.4" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.38s"/>
+            Nutri-Score  A
+          </text>
+
+          {/* Health score badge top-right */}
+          <circle cx="193" cy="35" r="17" fill="#0f0c29" stroke="#22c55e" strokeWidth="1.2" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.42s"/>
+          </circle>
+          <text x="193" y="30" textAnchor="middle" fontSize="6" fill="#86efac" fontWeight="700" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.42s"/>
+            NOVA
+          </text>
+          <text x="193" y="43" textAnchor="middle" fontSize="13" fill="#22c55e" fontWeight="900" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.42s"/>
+            1
+          </text>
+
+          {/* Divider */}
+          <rect x="22" y="84" width="176" height="0.8" fill="#6366f1" opacity="0">
+            <animate attributeName="opacity" values="0;0.22" dur="0.5s" fill="freeze" begin="0.44s"/>
+            <animate attributeName="width" values="0;176" dur="0.6s" fill="freeze" begin="0.44s"/>
+          </rect>
+
+          {/* Macro pill — Calories */}
+          <rect x="20" y="92" width="58" height="24" rx="10" fill="#f97316" fillOpacity="0.12" stroke="#f97316" strokeWidth="0.7" strokeOpacity="0.4" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.52s"/>
+          </rect>
+          <text x="26" y="103" fontSize="9.5" fill="#fb923c" fontWeight="700" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.52s"/>
+            🔥 245 kcal
+          </text>
+          <text x="27" y="113" fontSize="7" fill="#fb923c" opacity="0" fillOpacity="0.6">
+            <animate attributeName="opacity" values="0;0.7" dur="0.4s" fill="freeze" begin="0.52s"/>
+            Θερμίδες
+          </text>
+
+          {/* Macro pill — Protein */}
+          <rect x="83" y="92" width="52" height="24" rx="10" fill="#3b82f6" fillOpacity="0.12" stroke="#3b82f6" strokeWidth="0.7" strokeOpacity="0.4" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.6s"/>
+          </rect>
+          <text x="89" y="103" fontSize="9.5" fill="#60a5fa" fontWeight="700" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.6s"/>
+            💪 8g
+          </text>
+          <text x="90" y="113" fontSize="7" fill="#60a5fa" opacity="0" fillOpacity="0.6">
+            <animate attributeName="opacity" values="0;0.7" dur="0.4s" fill="freeze" begin="0.6s"/>
+            Πρωτεΐνη
+          </text>
+
+          {/* Macro pill — Carbs */}
+          <rect x="140" y="92" width="56" height="24" rx="10" fill="#a855f7" fillOpacity="0.12" stroke="#a855f7" strokeWidth="0.7" strokeOpacity="0.4" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.68s"/>
+          </rect>
+          <text x="146" y="103" fontSize="9.5" fill="#c084fc" fontWeight="700" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.68s"/>
+            ⚡ 32g
+          </text>
+          <text x="147" y="113" fontSize="7" fill="#c084fc" opacity="0" fillOpacity="0.6">
+            <animate attributeName="opacity" values="0;0.7" dur="0.4s" fill="freeze" begin="0.68s"/>
+            Υδατάνθρακες
+          </text>
+
+          {/* Allergen badge */}
+          <rect x="20" y="126" width="80" height="16" rx="8" fill="rgba(239,68,68,0.1)" stroke="rgba(239,68,68,0.35)" strokeWidth="0.8" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.76s"/>
+          </rect>
+          <text x="60" y="137.5" textAnchor="middle" fontSize="8" fill="#f87171" fontWeight="700" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.76s"/>
+            ⚠️ Γλουτένη
+          </text>
+
+          {/* NOVA label */}
+          <rect x="110" y="126" width="86" height="16" rx="8" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.3)" strokeWidth="0.8" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.82s"/>
+          </rect>
+          <text x="153" y="137.5" textAnchor="middle" fontSize="8" fill="#4ade80" fontWeight="700" opacity="0">
+            <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" begin="0.82s"/>
+            ✅ Χαμηλή επεξεργασία
+          </text>
+
+          {/* Sparkles */}
+          {[[202, 78], [14, 128], [198, 152]].map(([x, y], i) => (
+            <text key={i} x={x} y={y} fontSize="9" fill="#fbbf24" opacity="0">
+              <animate attributeName="opacity" values="0;0.6;0" dur="2.5s" repeatCount="indefinite" begin={`${i * 0.8}s`}/>
+              ✦
+            </text>
+          ))}
+        </svg>
+      ),
+    },
+  ];
+
+  const current = steps[step];
+
+  return (
+    <div style={{
+      position:'fixed', inset:0, zIndex:200000,
+      background:'rgba(0,0,0,0.85)', backdropFilter:'blur(12px)',
+      display:'flex', alignItems:'center', justifyContent:'center', padding:20,
+      animation:'fadeInScale 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+    }}>
+      <div style={{
+        background:'linear-gradient(145deg,#0f0c29,#1a1560,#0f0c29)',
+        border:'1px solid rgba(99,102,241,0.35)',
+        borderRadius:28,
+        width:'100%', maxWidth:380, padding:'32px 28px 28px',
+        boxShadow:'0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)',
+        textAlign:'center',
+        position:'relative', overflow:'hidden',
+      }}>
+        {/* Background glow */}
+        <div style={{ position:'absolute', top:-60, left:'50%', transform:'translateX(-50%)', width:200, height:200, background:'radial-gradient(circle,rgba(99,102,241,0.2),transparent 70%)', pointerEvents:'none' }}/>
+
+        {/* Step number */}
+        <div style={{ fontSize:11, color:'#a5b4fc', fontWeight:700, letterSpacing:2, textTransform:'uppercase', marginBottom:20 }}>
+          ΒΗΜΑ {step + 1} / {steps.length}
+        </div>
+
+        {/* Illustration */}
+        <div style={{ margin:'0 auto 24px', height:160, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {current.svg}
+        </div>
+
+        {/* Title */}
+        <h2 style={{ fontSize:20, fontWeight:900, color:'#fff', margin:'0 0 10px', lineHeight:1.3 }}>
+          {current.title}
+        </h2>
+
+        {/* Description */}
+        <p style={{ fontSize:14, color:'#a5b4fc', lineHeight:1.65, margin:'0 0 28px' }}>
+          {current.desc}
+        </p>
+
+        {/* Step dots */}
+        <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:24 }}>
+          {steps.map((_, i) => (
+            <div key={i} onClick={() => setStep(i)} style={{
+              width: i === step ? 20 : 8, height:8, borderRadius:4,
+              background: i === step ? '#6366f1' : 'rgba(99,102,241,0.3)',
+              transition:'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+              cursor:'pointer',
+            }}/>
+          ))}
+        </div>
+
+        {/* Buttons */}
+        <div style={{ display:'flex', gap:10 }}>
+          {step > 0 && (
+            <button onClick={() => setStep(s => s - 1)} style={{
+              flex:1, padding:'13px', borderRadius:14,
+              border:'1px solid rgba(99,102,241,0.4)', background:'transparent',
+              color:'#a5b4fc', fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:'var(--font)',
+            }}>
+              ← Πίσω
+            </button>
+          )}
+          {step === 0 && (
+            <button onClick={onComplete} style={{
+              position:'absolute', top:20, right:20, background:'none', border:'none',
+              color:'rgba(165,180,252,0.5)', fontSize:13, cursor:'pointer', padding:'4px 8px',
+              fontFamily:'var(--font)',
+            }}>
+              Παράλειψη
+            </button>
+          )}
+          <button
+            onClick={() => { if (step < steps.length - 1) setStep(s => s + 1); else onComplete(); }}
+            style={{
+              flex:1, padding:'13px', borderRadius:14, border:'none',
+              background:'linear-gradient(135deg,#6366f1,#4f46e5)',
+              color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer', fontFamily:'var(--font)',
+              boxShadow:'0 4px 20px rgba(99,102,241,0.4)',
+              transition:'transform 0.15s, box-shadow 0.15s',
+            }}
+            onMouseDown={e => { e.currentTarget.style.transform='scale(0.97)'; }}
+            onMouseUp={e => { e.currentTarget.style.transform=''; }}
+          >
+            {step < steps.length - 1 ? 'Επόμενο →' : '🚀 Ξεκίνα!'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Barcode Scanner Modal ───────────────────────────────────────────────────
 function BarcodeScannerModal({ isOpen, onClose }) {
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('sg_scanner_onboarded'));
   const [activeView, setActiveView] = useState('scan');
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -1731,7 +2092,24 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         if (cancelled) return;
         await html5Qr.start(
           { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 220, height: 120 }, aspectRatio: 1.333, disableFlip: false },
+          {
+            fps: 15,
+            qrbox: { width: 270, height: 130 },
+            aspectRatio: 1.5,
+            disableFlip: false,
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.EAN_13,
+              Html5QrcodeSupportedFormats.EAN_8,
+              Html5QrcodeSupportedFormats.UPC_A,
+              Html5QrcodeSupportedFormats.UPC_E,
+              Html5QrcodeSupportedFormats.CODE_128,
+              Html5QrcodeSupportedFormats.CODE_39,
+              Html5QrcodeSupportedFormats.QR_CODE,
+              Html5QrcodeSupportedFormats.DATA_MATRIX,
+              Html5QrcodeSupportedFormats.ITF,
+            ],
+            experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+          },
           (text) => {
             if (html5Qr.isScanning) html5Qr.stop().catch(() => {});
             handleBarcodeScanRef.current?.(text);
@@ -1789,10 +2167,23 @@ function BarcodeScannerModal({ isOpen, onClose }) {
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
     try {
-      const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=product_name,product_name_el,product_name_en,generic_name,generic_name_el,brands,image_front_small_url,image_front_url,image_url,nova_group,nutriscore_grade,nutriments,allergens_tags,traces_tags,additives_tags,additives_original_tags,ingredients_text,ingredients_text_el,ingredients_analysis_tags,quantity,packaging,categories,labels,manufacturing_places,origins,stores,countries`);
-      const data = await r.json();
-      
-      if (data.status === 1 && data.product) {
+      const OFB_FIELDS = 'product_name,product_name_el,product_name_en,generic_name,generic_name_el,brands,image_front_small_url,image_front_url,image_url,nova_group,nutriscore_grade,nutriments,allergens_tags,traces_tags,additives_tags,additives_original_tags,ingredients_text,ingredients_text_el,ingredients_analysis_tags,quantity,packaging,categories,labels,manufacturing_places,origins,stores,countries';
+      // Try world DB first, then Greek DB as fallback for local products
+      let data = null;
+      try {
+        const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${OFB_FIELDS}`);
+        const d = await r.json();
+        if (d.status === 1 && d.product) data = d;
+      } catch { /* try Greek fallback */ }
+      if (!data) {
+        try {
+          const r2 = await fetch(`https://gr.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${OFB_FIELDS}`);
+          const d2 = await r2.json();
+          if (d2.status === 1 && d2.product) data = d2;
+        } catch { /* no result */ }
+      }
+
+      if (data && data.status === 1 && data.product) {
         const p = data.product;
         const fallbackName = `Προϊόν (${barcode})`;
         const parsedName = [p.product_name_el, p.product_name, p.product_name_en, p.generic_name_el, p.generic_name].find(n => n && n.trim()) || fallbackName;
@@ -1913,11 +2304,50 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  if (showOnboarding) {
+    return createPortal(
+      <ScannerOnboardingModal onComplete={() => {
+        localStorage.setItem('sg_scanner_onboarded', '1');
+        setShowOnboarding(false);
+      }} />,
+      document.body
+    );
+  }
+
   return createPortal(
     <div className={`scanner-overlay ${isClosing ? 'closing' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && handleClose()}>
       <div className={`scanner-card ${isClosing ? 'closing' : ''}`}>
-        <button className="recipe-popup-close" onClick={handleClose}>✕</button>
         {ingredientDetail && <IngredientDetailModal item={ingredientDetail} onClose={() => setIngredientDetail(null)} />}
+
+        {/* ── Professional Header ── */}
+        <div className="scanner-header">
+          <div className="scanner-header-left">
+            <div className="scanner-header-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                <rect x="7" y="7" width="10" height="10" rx="1"/>
+              </svg>
+            </div>
+            <div>
+              <div className="scanner-header-title">Smart Scanner</div>
+              <div className="scanner-header-sub">
+                {activeView === 'scan' && !product && !loading && !error
+                  ? <><span className="scanner-live-dot" />Κάμερα ενεργή</>
+                  : activeView === 'scan' && product
+                  ? <><span style={{color:'#22c55e'}}>✓</span> Προϊόν βρέθηκε</>
+                  : activeView === 'history' ? 'Ιστορικό σαρώσεων'
+                  : activeView === 'allergens' ? 'Διαχείριση αλλεργιογόνων'
+                  : 'Barcode Scanner'
+                }
+              </div>
+            </div>
+          </div>
+          <button className="scanner-close-btn" onClick={handleClose} aria-label="Κλείσιμο">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
 
         {/* Tabs */}
         <div className="scanner-tabs">
@@ -1962,7 +2392,12 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                     <div className="sf-laser" />
                   </div>
                 </div>
-                <p className="scanner-hint">Στόχευσε το barcode του προϊόντος</p>
+                <div className="scanner-hint-card">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="scanner-hint-icon">
+                    <path d="M3 5h2M3 12h2M3 19h2M7 5v14M11 5h2M11 12h2M11 19h2M15 5v14M19 5h2M19 12h2M19 19h2"/>
+                  </svg>
+                  <span>Στόχευσε το barcode μέσα στο <strong>πράσινο πλαίσιο</strong></span>
+                </div>
               </>
             )}
           </div>
@@ -1971,6 +2406,11 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         {/* ── PRODUCT RESULT ── */}
         {activeView === 'scan' && product && (
           <div className="scanner-body scanner-result">
+            {/* Product Found Flash */}
+            <div className="scanner-found-flash">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Barcode αναγνωρίστηκε επιτυχώς</span>
+            </div>
             {/* Allergen Alert Banner */}
             {matchedAllergens.length > 0 && (
               <div className="allergen-alert-banner">
@@ -3938,7 +4378,7 @@ export default function App() {
             ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Plan'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
           ].map(([tab, label]) => {
-            const isLocked = !user && (tab === 'recipes' || tab === 'mealplan');
+            const isLocked = !user && tab === 'mealplan';
             const isActive = activeTab === tab;
             return (
               <button
@@ -4214,7 +4654,7 @@ export default function App() {
                     : 'Γράψε ό,τι χρειάζεσαι και πάτα + για να το προσθέσεις'}
                 </p>
                 {/* Quick-add suggestions */}
-                <div style={{ display:'flex', flexWrap:'wrap', gap:7, justifyContent:'center', marginBottom: user ? 0 : 16 }}>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:7, justifyContent:'center', marginBottom: user ? 16 : 16 }}>
                   {['🥛 Γάλα','🍞 Ψωμί','🥚 Αυγά','🍌 Μπανάνες','🧀 Τυρί'].map(chip => {
                     const name = chip.split(' ').slice(1).join(' ');
                     return (
@@ -4230,7 +4670,21 @@ export default function App() {
                     );
                   })}
                 </div>
-                {!user && <button className="locked-unlock-btn" style={{ marginTop:'4px' }} onClick={() => setShowAuthModal(true)}>Σύνδεση για τιμές, συνταγές & άλλα</button>}
+                {/* Scanner Promo */}
+                <div className="scanner-promo-card" onClick={() => setShowScanner(true)}>
+                  <div className="scanner-promo-icon-wrap">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
+                      <rect x="7" y="7" width="10" height="10" rx="1"/>
+                    </svg>
+                  </div>
+                  <div className="scanner-promo-text">
+                    <div className="scanner-promo-title">Σάρωσε προϊόν</div>
+                    <div className="scanner-promo-desc">Ανίχνευσε barcode για θρεπτικά στοιχεία</div>
+                  </div>
+                  <div className="scanner-promo-arrow">→</div>
+                </div>
+                {!user && <button className="locked-unlock-btn" style={{ marginTop:'8px' }} onClick={() => setShowAuthModal(true)}>Σύνδεση για τιμές, συνταγές & άλλα</button>}
               </div>
             ) : (
               <div className="categories-container">
@@ -5136,8 +5590,8 @@ export default function App() {
         )}
       </div>
 
-      {/* ── Smart Route — Floating button + Fullscreen map ── */}
-      <FloatingMapButton
+      {/* ── Smart Route — only for Premium & Trial users ── */}
+      {user && (user.isPremium || user.isOnTrial) && <FloatingMapButton
         onClick={() => {
           // #region agent log
           debugLog({
@@ -5156,12 +5610,12 @@ export default function App() {
           setShowSmartRoute(true);
         }}
         itemCount={uniqueStoresInList}
-      />
-      <SmartRouteMap
+      />}
+      {user && (user.isPremium || user.isOnTrial) && <SmartRouteMap
         isOpen={showSmartRoute}
         onClose={() => setShowSmartRoute(false)}
         items={items}
-      />
+      />}
     </div>
   );
 }
