@@ -592,7 +592,7 @@ const calColor = (c) => c === 0 ? '#94a3b8' : c < 200 ? '#22c55e' : c < 500 ? '#
 
 // ─── Brochures ────────────────────────────────────────────────────────────────
 const BROCHURE_LINKS = {
-  'Lidl':             'https://www.fylladiomat.gr/lidl/',
+  'Lidl':             'https://www.kimbino.gr/lidl/',
   'Market In':        'https://www.fylladiomat.gr/market-in/',
   'MyMarket':         'https://www.fylladiomat.gr/my-market/',
   'ΑΒ Βασιλόπουλος': 'https://www.fylladiomat.gr/%CE%B1%CE%B2-%CE%B2%CE%B1%CF%83%CE%B9%CE%BB%CF%8C%CF%80%CE%BF%85%CE%BB%CE%BF%CF%82/',
@@ -603,7 +603,7 @@ const BROCHURE_LINKS = {
 };
 
 const SUPERMARKET_LOGOS = {
-  'Lidl':            'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/320px-Lidl-Logo.svg.png',
+  'Lidl':            'https://cdn.prod.website-files.com/5f0ee9a58d28527cc63e4029/637cd45937b5906d7d5bfaf3_LIDL%20STATEMENT.jpg',
   'Σκλαβενίτης':    'https://core-sa.com/wp-content/uploads/2019/10/sklavenitis.png',
   'ΑΒ Βασιλόπουλος':'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTl3QK3J91QWo9nDaOQxqXTMIwCRNMnJYazWw&s',
   'MyMarket':        'https://www.chalandri.gr/wp-content/uploads/2021/04/mymarket-logo.jpg',
@@ -5029,9 +5029,11 @@ export default function App() {
                   onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
                 >
                   <img
+                    key={SUPERMARKET_LOGOS[name]}
                     src={SUPERMARKET_LOGOS[name] || ''}
                     alt={name}
                     style={{ width:60, height:60, objectFit:'contain', borderRadius:12, background:'#fff', padding:4 }}
+                    onLoad={e => { e.target.style.display = ''; }}
                     onError={e => { e.target.style.display = 'none'; }}
                   />
                   <span style={{ textAlign:'center', lineHeight:1.3 }}>{name}</span>
