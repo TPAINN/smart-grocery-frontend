@@ -603,7 +603,7 @@ const BROCHURE_LINKS = {
 };
 
 const SUPERMARKET_LOGOS = {
-  'Lidl':            'https://cdn.prod.website-files.com/5f0ee9a58d28527cc63e4029/637cd45937b5906d7d5bfaf3_LIDL%20STATEMENT.jpg',
+  'Lidl':            'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Lidl_logo.png/500px-Lidl_logo.png',
   'Σκλαβενίτης':    'https://core-sa.com/wp-content/uploads/2019/10/sklavenitis.png',
   'ΑΒ Βασιλόπουλος':'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTl3QK3J91QWo9nDaOQxqXTMIwCRNMnJYazWw&s',
   'MyMarket':        'https://www.chalandri.gr/wp-content/uploads/2021/04/mymarket-logo.jpg',
