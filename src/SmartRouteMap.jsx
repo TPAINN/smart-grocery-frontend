@@ -94,12 +94,33 @@ const MAN = {
   'fork-right':{i:IconArrowBearRight,t:'Κράτα δεξιά'},'fork-left':{i:IconArrowBearLeft,t:'Κράτα αριστερά'},
 };
 const getMan = s => { const k=s.maneuver?.modifier?`${s.maneuver.type}-${s.maneuver.modifier}`:s.maneuver?.type||''; const m=MAN[k]||MAN[s.maneuver?.type]||{i:IconArrowUpRight,t:'Συνέχισε'}; return{...m,road:s.name||'',distance:s.distance,duration:s.duration}; };
-const parseSteps = legs => { if(!legs?.length)return[]; const r=[]; legs.forEach((l,li)=>{(l.steps||[]).forEach(s=>{if(s.distance<5&&s.maneuver?.type==='arrive'&&li<legs.length-1)return;r.push(getMan(s))})}); return r; };
+const parseSteps = legs => {
+  if (!legs?.length) return [];
+  const r = [];
+  legs.forEach((leg, li) => {
+    (leg.steps || []).forEach((s, si) => {
+      // Skip intermediate arrive steps (not the final destination)
+      if (s.maneuver?.type === 'arrive' && li < legs.length - 1) return;
+      // Skip very short steps < 10m that are not depart/arrive
+      if (s.distance < 10 && s.maneuver?.type !== 'depart' && s.maneuver?.type !== 'arrive') return;
+      r.push(getMan(s));
+    });
+  });
+  return r;
+};
 
 const openNav = (loc, stores, mode) => {
-  const wp = stores.map(s=>`${s.lat},${s.lng}`).join('|');
   const gm = {driving:'driving',walking:'walking',cycling:'bicycling'}[mode]||'driving';
-  window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${loc.lat},${loc.lng}&waypoints=${wp}&travelmode=${gm}`,'_blank');
+  if (stores.length === 1) {
+    // Single store — simple A→B
+    const s = stores[0];
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${s.lat},${s.lng}&travelmode=${gm}`,'_blank');
+  } else {
+    // Multiple stores — origin → waypoints → last store as destination
+    const dest = stores[stores.length - 1];
+    const wp = stores.slice(0, -1).map(s=>`${s.lat},${s.lng}`).join('|');
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${dest.lat},${dest.lng}&waypoints=${wp}&travelmode=${gm}`,'_blank');
+  }
 };
 
 // Icons
@@ -236,17 +257,27 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
     return () => { Object.assign(document.body.style, { overflow:'', position:'', top:'', width:'' }); window.scrollTo(0,y); };
   }, [isOpen]);
 
-  const doSearch = useCallback(async (pos) => {
+  const doSearch = useCallback(async (pos, attempt = 1) => {
     setSearching(true);
+    setErr('');
     try {
       const raw = await searchOverpass(pos.lat, pos.lng, 5000);
       const L = window.L, map = mapRef.current;
       markersRef.current.forEach(m => map?.removeLayer(m)); markersRef.current = [];
+
+      if (!raw.length && attempt < 3) {
+        // Widen radius and retry
+        const raw2 = await searchOverpass(pos.lat, pos.lng, 10000);
+        raw.push(...raw2);
+      }
+
       const enriched = raw.map(s => {
         const chain = matchChain(s.name, s.brand);
         return { ...s, chain, chainId:chain?.id||'other', chainName:chain?.name||s.name, chainColor:chain?.color||'#6b7280', chainEmoji:chain?.emoji||'⚪', distance:hav(pos.lat,pos.lng,s.lat,s.lng), itemCount:countItems(chain) };
       }).sort((a,b) => a.distance-b.distance);
+
       setStores(enriched);
+
       if (map && L) {
         enriched.forEach(s => {
           const m = L.marker([s.lat,s.lng],{icon:mkStore(L,s.chainColor)}).addTo(map);
@@ -266,9 +297,22 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         const auto=[], seen=new Set();
         enriched.forEach(s=>{if(s.itemCount>0&&!seen.has(s.chainId)){auto.push(s);seen.add(s.chainId)}});
         if(auto.length) setSelected(auto);
+        // Fit map to show all markers
+        if (enriched.length > 0) {
+          const bounds = L.latLngBounds([[pos.lat,pos.lng],...enriched.map(s=>[s.lat,s.lng])]);
+          map.fitBounds(bounds, { padding:[50,50], maxZoom:14 });
+        }
       }
+
+      if (!enriched.length) setErr('Δεν βρέθηκαν σούπερ μάρκετ κοντά. Δοκίμασε "Ανανέωση".');
     } catch (error) {
       console.error('Search error:', error);
+      if (attempt < 2) {
+        // Auto-retry once on failure
+        setTimeout(() => doSearch(pos, attempt + 1), 1500);
+        return;
+      }
+      setErr('Σφάλμα αναζήτησης. Πάτα Ανανέωση.');
     }
     setSearching(false);
   }, [countItems, items]);
@@ -312,27 +356,54 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
 
   const calcRoute = useCallback(async () => {
     if (!mapRef.current||!userLoc||!selected.length) return;
-    setRouting(true); setRoute(null);
+    setRouting(true); setRoute(null); setErr('');
     const L=window.L, map=mapRef.current;
-    if(routeLayerRef.current){map.removeLayer(routeLayerRef.current);routeLayerRef.current=null}
+    // Remove any existing route layers
+    if(routeLayerRef.current){
+      if (Array.isArray(routeLayerRef.current)) routeLayerRef.current.forEach(l=>map.removeLayer(l));
+      else map.removeLayer(routeLayerRef.current);
+      routeLayerRef.current=null;
+    }
     try {
-      const pts=[userLoc,...selected.map(s=>({lat:s.lat,lng:s.lng})),userLoc];
+      const pts=[userLoc,...selected.map(s=>({lat:s.lat,lng:s.lng}))];
+      if (selected.length > 1) pts.push(userLoc); // roundtrip only for multi-stop
       const r = selected.length===1 ? await osrmRoute(pts,mode) : await osrmTrip(pts,mode);
       const coords=r.geometry.coordinates.map(c=>[c[1],c[0]]);
-      // Animated route drawing — smoothFactor:0 so line follows roads exactly
-      const line = L.polyline([],{color:'#6366f1',weight:5,opacity:.88,smoothFactor:0,lineCap:'round',dashArray:'8 12'}).addTo(map);
-      routeLayerRef.current=line;
-      // Animate: add points progressively
-      const step=Math.max(1,Math.floor(coords.length/40));
+
+      // Single animated polyline
+      const line = L.polyline([],{color:'#6366f1',weight:5,opacity:.9,smoothFactor:0,lineCap:'round'}).addTo(map);
+      routeLayerRef.current = line;
+
+      // Animate drawing
+      const step=Math.max(1,Math.floor(coords.length/60));
       let idx=0;
-      const draw=()=>{if(idx>=coords.length){line.setStyle({dashArray:null});map.fitBounds(line.getBounds(),{padding:[50,50]});return}
-        line.addLatLng(coords[Math.min(idx,coords.length-1)]);idx+=step;requestAnimationFrame(draw)};
+      const draw=()=>{
+        if(idx>=coords.length){
+          map.fitBounds(line.getBounds(),{padding:[60,60],maxZoom:14});
+          return;
+        }
+        line.addLatLng(coords[Math.min(idx,coords.length-1)]);
+        idx+=step;
+        requestAnimationFrame(draw);
+      };
       draw();
 
-      let ordered=selected;
-      if(r.waypoints&&selected.length>1){const wp=r.waypoints.slice(1,-1).map(w=>w.waypoint_index);if(wp.length===selected.length){const ix=selected.map((s,i)=>({s,i:wp[i]}));ix.sort((a,b)=>a.i-b.i);ordered=ix.map(x=>x.s)}}
-      setRoute({distance:r.distance,duration:r.duration,orderedStores:ordered,steps:parseSteps(r.legs)});
-    } catch { setErr('Δεν βρέθηκε διαδρομή.'); }
+      // Resolve ordered stops from trip waypoints
+      let ordered = selected;
+      if (r.waypoints && selected.length > 1) {
+        const wpIndexes = r.waypoints.slice(1, selected.length + 1).map(w => w.waypoint_index);
+        if (wpIndexes.length === selected.length) {
+          const indexed = selected.map((s, i) => ({ s, wi: wpIndexes[i] }));
+          indexed.sort((a, b) => a.wi - b.wi);
+          ordered = indexed.map(x => x.s);
+        }
+      }
+
+      setRoute({ distance:r.distance, duration:r.duration, orderedStores:ordered, steps:parseSteps(r.legs) });
+    } catch (e) {
+      console.error('Route error:', e);
+      setErr('Δεν βρέθηκε διαδρομή. Δοκίμασε άλλο τρόπο μεταφοράς.');
+    }
     setRouting(false);
   },[userLoc,selected,mode]);
 
