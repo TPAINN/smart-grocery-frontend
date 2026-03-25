@@ -1515,18 +1515,56 @@ function LockedFeature({ label, onUnlock }) {
 function RecipeAddModal({ isOpen, recipeName, progress, total, onClose }) {
   if (!isOpen) return null;
   const pct = total > 0 ? Math.round((progress / total) * 100) : 0;
+  const isDone = progress === total && total > 0;
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth:340, textAlign:'center' }}>
-        <div style={{ fontSize:40, marginBottom:12 }}>🍽️</div>
-        <h3 style={{ margin:'0 0 6px', fontSize:16 }}>{recipeName}</h3>
-        <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:16 }}>Ψάχνω τιμές για τα υλικά...</p>
-        <div style={{ height:10, background:'var(--bg-subtle)', borderRadius:99, overflow:'hidden', marginBottom:10 }}>
-          <div style={{ height:'100%', width:`${pct}%`, borderRadius:99, background:'linear-gradient(90deg, #7c3aed, #a78bfa)', transition:'width 0.4s ease' }} />
+    <div className="modal-overlay" style={{ backdropFilter:'blur(8px)' }}>
+      <div style={{
+        background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:24,
+        padding:'32px 28px', maxWidth:360, width:'90vw', textAlign:'center',
+        boxShadow:'0 24px 80px rgba(0,0,0,0.4)', animation:'fadeInScale 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+      }}>
+        <div style={{
+          width:72, height:72, borderRadius:'50%', margin:'0 auto 20px',
+          background:'linear-gradient(135deg,rgba(124,58,237,0.15),rgba(167,139,250,0.15))',
+          border:'2px solid rgba(167,139,250,0.3)',
+          display:'flex', alignItems:'center', justifyContent:'center', fontSize:32,
+          animation: isDone ? 'none' : 'pulse 1.5s ease-in-out infinite',
+        }}>
+          {isDone ? '✅' : '🛒'}
         </div>
-        <div style={{ fontSize:13, color:'var(--text-secondary)' }}>{progress}/{total} υλικά ({pct}%)</div>
-        {progress === total && total > 0 && (
-          <button className="submit-btn" style={{ marginTop:16, width:'100%' }} onClick={onClose}>✅ Προστέθηκαν</button>
+        <h3 style={{ margin:'0 0 4px', fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>
+          {isDone ? 'Ολοκληρώθηκε!' : 'Αναζήτηση Τιμών'}
+        </h3>
+        <p style={{ fontSize:12, color:'var(--text-secondary)', margin:'0 0 20px', lineHeight:1.5, maxWidth:260, marginInline:'auto' }}>
+          {isDone
+            ? `${total} υλικά από "${recipeName}" προστέθηκαν στη λίστα σου`
+            : `Βρίσκω τις καλύτερες τιμές για τα υλικά του "${recipeName}"...`}
+        </p>
+        <div style={{ height:8, background:'var(--bg-subtle)', borderRadius:99, overflow:'hidden', marginBottom:10, position:'relative' }}>
+          <div style={{
+            height:'100%', width:`${pct}%`, borderRadius:99,
+            background: isDone ? 'linear-gradient(90deg,#10b981,#34d399)' : 'linear-gradient(90deg,#7c3aed,#a78bfa,#7c3aed)',
+            backgroundSize:'200% 100%',
+            transition:'width 0.5s cubic-bezier(0.34,1.56,0.64,1)',
+            animation: isDone ? 'none' : 'shimmerSlide 1.5s linear infinite',
+          }} />
+        </div>
+        <div style={{ fontSize:12, color:'var(--text-secondary)', marginBottom: isDone ? 20 : 0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+          {!isDone && <span style={{ width:10, height:10, borderRadius:'50%', border:'2px solid #a78bfa', borderTopColor:'transparent', display:'inline-block', animation:'spin 0.7s linear infinite' }} />}
+          <span>{isDone ? `✓ ${total}/${total} υλικά` : `${progress}/${total} υλικά (${pct}%)`}</span>
+        </div>
+        {isDone && (
+          <button
+            onClick={onClose}
+            style={{
+              width:'100%', padding:'13px', borderRadius:14, border:'none',
+              background:'linear-gradient(135deg,#10b981,#059669)', color:'#fff',
+              fontWeight:800, fontSize:14, cursor:'pointer', fontFamily:'var(--font)',
+              boxShadow:'0 4px 16px rgba(16,185,129,0.35)',
+            }}
+          >
+            Πήγαινε στη Λίστα →
+          </button>
         )}
       </div>
     </div>
@@ -2149,6 +2187,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
   const [showDetails, setShowDetails] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [activeSection, setActiveSection] = useState('ingredients');
+  const [isAdding, setIsAdding] = useState(false);
 
   // Pre-clean ingredients and instructions once on mount
   const cleanIngredients = (recipe.ingredients || [])
@@ -4199,12 +4238,9 @@ export default function App() {
           </div>
         )}
 
-        {/* ════ RECIPES TAB — PREMIUM ════ */}
+        {/* ════ RECIPES TAB ════ */}
         {activeTab === 'recipes' && (
           <div className="tab-content recipes-tab">
-            {!user ? (
-              <LockedFeature label="Συνταγές" onUnlock={() => { setAuthInitMode('register'); setShowAuthModal(true); }} />
-            ) : (
             <>
                 {!isOnline && (
                   <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:10, fontSize:13 }}>
@@ -4431,7 +4467,6 @@ export default function App() {
                   );
                 })()}
             </>
-            )}
           </div>
         )}
 
