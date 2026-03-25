@@ -592,9 +592,10 @@ const calColor = (c) => c === 0 ? '#94a3b8' : c < 200 ? '#22c55e' : c < 500 ? '#
 
 // ─── Brochures ────────────────────────────────────────────────────────────────
 const BROCHURE_LINKS = {
+  'Lidl':             'https://www.fylladiomat.gr/lidl/',
   'Market In':        'https://www.fylladiomat.gr/market-in/',
   'MyMarket':         'https://www.fylladiomat.gr/my-market/',
-  'ΑΒ Βασιλόπουλος': 'https://www.fylladiomat.gr/%CE%B1%CE%B2-%CE%B2%CE%B1%CF%83%CE%B9%CE%BB%CF%8C%CF%80%CE%BF%CF%85%CE%BB%CE%BF%CF%82/',
+  'ΑΒ Βασιλόπουλος': 'https://www.fylladiomat.gr/%CE%B1%CE%B2-%CE%B2%CE%B1%CF%83%CE%B9%CE%BB%CF%8C%CF%80%CE%BF%85%CE%BB%CE%BF%CF%82/',
   'Γαλαξίας':         'https://www.fylladiomat.gr/%CE%B3%CE%B1%CE%BB%CE%B1%CE%BE%CE%AF%CE%B1%CF%82/',
   'Σκλαβενίτης':      'https://www.fylladiomat.gr/%CF%83%CE%BA%CE%BB%CE%B1%CE%B2%CE%B5%CE%BD%CE%B9%CF%84%CE%B7%CF%82/',
   'Μασούτης':         'https://www.fylladiomat.gr/%CE%BC%CE%B1%CF%83%CE%BF%CF%8D%CF%84%CE%B7%CF%82/',
@@ -602,6 +603,7 @@ const BROCHURE_LINKS = {
 };
 
 const SUPERMARKET_LOGOS = {
+  'Lidl':            'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Lidl-Logo.svg/320px-Lidl-Logo.svg.png',
   'Σκλαβενίτης':    'https://core-sa.com/wp-content/uploads/2019/10/sklavenitis.png',
   'ΑΒ Βασιλόπουλος':'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTl3QK3J91QWo9nDaOQxqXTMIwCRNMnJYazWw&s',
   'MyMarket':        'https://www.chalandri.gr/wp-content/uploads/2021/04/mymarket-logo.jpg',
@@ -1327,9 +1329,9 @@ function PremiumModal({ isOpen, onClose, user }) {
   const trialDays = user?.trialDaysLeft || 0;
 
   const plans = [
-    { id: 'monthly',  price: '1,99€', period: '/μήνα',     badge: null,         saving: null },
-    { id: 'yearly',   price: '14,99€', period: '/χρόνο',   badge: 'Δημοφιλές',  saving: 'Εξοικονόμηση 9€' },
-    { id: 'lifetime', price: '29,99€', period: ' μία φορά', badge: 'Μόνιμο',    saving: 'Για πάντα!' },
+    { id: 'monthly',  price: '0,99€',  period: '/μήνα',     badge: null,              saving: null },
+    { id: 'yearly',   price: '7,99€',  period: '/χρόνο',    badge: '🔥 Δημοφιλές',    saving: 'Εξοικονόμηση 4€' },
+    { id: 'lifetime', price: '14,99€', period: ' μία φορά', badge: '⭐ Early Bird',    saving: 'Για πάντα!' },
   ];
 
   const features = [
@@ -2441,7 +2443,7 @@ export default function App() {
   const [, setStreakToast]      = useState('');
   const [, setIsNewStreakRecord] = useState(false);
 
-  const storeOptions  = ['Όλα','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
+  const storeOptions  = ['Όλα','Lidl','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
   const searchTimeout = useRef(null);
 
   // #region agent log
