@@ -3140,7 +3140,13 @@ export default function App() {
       });
     });
 
-    return () => socketRef.current.disconnect();
+    return () => {
+      // Remove all listeners before disconnecting to prevent duplicate handlers on reconnect
+      socketRef.current.off('receive_item');
+      socketRef.current.off('receive_message');
+      socketRef.current.off('friend_added');
+      socketRef.current.disconnect();
+    };
   }, [user]);
 
   // Load group chat (own + all friends messages merged & sorted by time)
