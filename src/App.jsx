@@ -1336,7 +1336,7 @@ function PremiumModal({ isOpen, onClose, user }) {
 
   const features = [
     { icon:'📋', text:'Έως 10 αποθηκευμένες λίστες (αντί 2)' },
-    { icon:'🤖', text:'Εβδομαδιαίο AI Meal Plan' },
+    { icon:'🤖', text:'Εβδομαδιαίο AI Πλάνο Διατροφής' },
     { icon:'🤝', text:'Κοινό καλάθι με απεριόριστους φίλους' },
     { icon:'📊', text:'Ιστορικό αγορών & στατιστικά budget' },
     { icon:'🗺️', text:'Smart Route — Έξυπνη διαδρομή αγορών' },
@@ -1495,10 +1495,10 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
         <div className="welcome-features">
           {[
             { icon:'💰', title:'Σύγκριση Τιμών',       sub:'Βρες το φθηνότερο σε ΑΒ, Σκλαβενίτη, MyMarket', locked:false },
-            { icon:'🍽️', title:'Συνταγές & Macros',    sub:'Υλικά απευθείας στη λίστα, θερμίδες & πρωτεΐνη', locked:true },
-            { icon:'🤝', title:'Κοινό Καλάθι',         sub:'Μοιράσου τη λίστα με φίλους real-time', locked:true },
-            { icon:'🤖', title:'AI Meal Plan',          sub:'Εβδομαδιαίο πλάνο διατροφής με AI', locked:true },
-            { icon:'📷', title:'Barcode Scanner',       sub:'Scan για τιμή, θερμίδες & αλλεργιογόνα', locked:true },
+            { icon:'🍽️', title:'Συνταγές & Μακροστοιχεία', sub:'Υλικά απευθείας στη λίστα, θερμίδες & πρωτεΐνη', locked:true },
+            { icon:'🤝', title:'Κοινό Καλάθι',         sub:'Μοιράσου τη λίστα με φίλους σε πραγματικό χρόνο', locked:true },
+            { icon:'🤖', title:'AI Πλάνο Διατροφής',   sub:'Εβδομαδιαίο πλάνο διατροφής με AI', locked:true },
+            { icon:'📷', title:'Σαρωτής Barcodes',      sub:'Σάρωσε για τιμή, θερμίδες & αλλεργιογόνα', locked:true },
           ].map(({ icon, title, sub, locked }) => (
             <div key={title} className={`wf-row ${locked ? 'wf-locked' : ''}`}>
               <span className="wf-icon">{icon}</span>
@@ -2290,7 +2290,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
     if (p.sugars != null && getNutrientLevel(p.sugars, 'sugars') === 'high') w.push({ icon:'🔴', text:'Υψηλή ζάχαρη', detail:`${p.sugars.toFixed(1)}g`, type:'bad', clickable:true, desc:`Ζάχαρη: ${p.sugars.toFixed(1)}g/100g. Ο ΠΟΥ συνιστά <10% ημερήσιων θερμίδων από ελεύθερα σάκχαρα.` });
     if (p.salt != null && getNutrientLevel(p.salt, 'salt') === 'high') w.push({ icon:'🔴', text:'Υψηλό αλάτι', detail:`${p.salt.toFixed(1)}g`, type:'bad', clickable:true, desc:`Αλάτι: ${p.salt.toFixed(1)}g/100g. Η υπερκατανάλωση αλατιού συνδέεται με υπέρταση.` });
     if (p.hasPalmOil) w.push({ icon:'🌴', text:'Περιέχει φοινικέλαιο', detail:'', type:'bad', clickable:true, desc:'Το φοινικέλαιο είναι πλούσιο σε κορεσμένα λιπαρά οξέα και η παραγωγή του συνδέεται με αποψίλωση δασών.' });
-    if (p.novaGroup === 4) w.push({ icon:'⚠️', text:'Ultra-processed food', detail:'NOVA 4', type:'bad', clickable:true, desc:'Τα τρόφιμα NOVA 4 έχουν υποστεί βιομηχανική επεξεργασία και περιέχουν πολλά πρόσθετα. Συνδέονται με αυξημένο κίνδυνο παχυσαρκίας και χρόνιων παθήσεων.' });
+    if (p.novaGroup === 4) w.push({ icon:'⚠️', text:'Υπερεπεξεργασμένο τρόφιμο', detail:'NOVA 4', type:'bad', clickable:true, desc:'Τα τρόφιμα NOVA 4 έχουν υποστεί βιομηχανική επεξεργασία και περιέχουν πολλά πρόσθετα. Συνδέονται με αυξημένο κίνδυνο παχυσαρκίας και χρόνιων παθήσεων.' });
     
     if (p.fat != null && p.sugars != null && getNutrientLevel(p.fat, 'fat') === 'low' && getNutrientLevel(p.sugars, 'sugars') === 'low') w.push({ icon:'✅', text:'Χαμηλά λιπαρά & ζάχαρη', detail:'', type: 'good' });
     if (p.proteins != null && p.proteins >= 10) w.push({ icon:'💪', text:'Υψηλή πρωτεΐνη', detail:`${p.proteins.toFixed(1)}g`, type: 'good', clickable:true, desc:`Πρωτεΐνη: ${p.proteins.toFixed(1)}g/100g. Άριστη πηγή πρωτεΐνης για μυϊκή ανάπτυξη και κορεσμό.` });
@@ -2329,7 +2329,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
               </svg>
             </div>
             <div>
-              <div className="scanner-header-title">Smart Scanner</div>
+              <div className="scanner-header-title">Έξυπνος Σαρωτής</div>
               <div className="scanner-header-sub">
                 {activeView === 'scan' && !product && !loading && !error
                   ? <><span className="scanner-live-dot" />Κάμερα ενεργή</>
@@ -2337,7 +2337,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                   ? <><span style={{color:'#22c55e'}}>✓</span> Προϊόν βρέθηκε</>
                   : activeView === 'history' ? 'Ιστορικό σαρώσεων'
                   : activeView === 'allergens' ? 'Διαχείριση αλλεργιογόνων'
-                  : 'Barcode Scanner'
+                  : 'Σαρωτής Barcodes'
                 }
               </div>
             </div>
@@ -2728,8 +2728,8 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
             <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:14 }}>
               {recipe.tags.map((tag, i) => (
                 <span key={i} style={{ fontSize:10.5, fontWeight:700, color:'var(--accent)', background:'rgba(99,102,241,0.08)', padding:'5px 10px', borderRadius:8, border:'1px solid rgba(99,102,241,0.15)', whiteSpace:'nowrap' }}>{
-                  tag === 'high-protein' ? '💪 High Protein' :
-                  tag === 'low-carb' ? '🥑 Low Carb' :
+                  tag === 'high-protein' ? '💪 Υψηλή Πρωτεΐνη' :
+                  tag === 'low-carb' ? '🥑 Χαμηλοί Υδατ/κες' :
                   tag === 'quick' ? '⚡ Γρήγορη' :
                   tag === 'vegan' ? '🌱 Vegan' :
                   tag === 'vegetarian' ? '🥬 Χορτοφαγική' :
@@ -4218,7 +4218,7 @@ export default function App() {
                 return (
                   <div
                     onClick={() => setShowPremiumModal(true)}
-                    title="Free Trial — Κλίκ για Premium"
+                    title="Δωρεάν Δοκιμή — Κλίκ για Premium"
                     style={{
                       display:'flex', alignItems:'center', gap:4,
                       background: urgent
@@ -4334,7 +4334,7 @@ export default function App() {
                             <button onClick={handleCopyShareKey} style={{ background:'var(--bg-surface-hover)', border:'1px solid var(--border-light)', cursor:'pointer', fontSize:'14px', padding:'4px 8px', borderRadius:'6px' }}>📋</button>
                           </div>
                         </div>
-                        <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display:'flex', alignItems:'center', gap:8 }}>{isDarkMode ? <><IconSun size={16}/> Light Mode</> : <><IconMoon size={16}/> Dark Mode</>}</div>
+                        <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display:'flex', alignItems:'center', gap:8 }}>{isDarkMode ? <><IconSun size={16}/> Φωτεινό θέμα</> : <><IconMoon size={16}/> Σκούρο θέμα</>}</div>
                         <div className="dropdown-item logout" onClick={handleLogout} style={{ display:'flex', alignItems:'center', gap:8 }}><IconLogout size={16}/> Αποσύνδεση</div>
                       </div>
                     </>
@@ -4375,7 +4375,7 @@ export default function App() {
           {[
             ['list', <><IconShoppingCart size={16} stroke={2}/> Λίστα{items.length > 0 && <span className="tab-count-badge">{items.length}</span>}</>, 'Λίστα'],
             ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
-            ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Plan</>, 'AI Plan'],
+            ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Πλάνο</>, 'AI Πλάνο'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
           ].map(([tab, label]) => {
             const isLocked = !user && tab === 'mealplan';
@@ -4465,7 +4465,7 @@ export default function App() {
                     {shoppingBudget && (
                       <div style={{ marginTop:10 }}>
                         <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'var(--text-secondary)', marginBottom:4 }}>
-                          <span>Budget: <strong style={{ color:budgetColor }}>{totalCost.toFixed(2)}€</strong> / {shoppingBudget.toFixed(2)}€</span>
+                          <span>Προϋπολογισμός: <strong style={{ color:budgetColor }}>{totalCost.toFixed(2)}€</strong> / {shoppingBudget.toFixed(2)}€</span>
                           <span
                             style={{ cursor:'pointer', color:'var(--text-muted)', fontSize:10 }}
                             onClick={() => { setShoppingBudget(null); localStorage.removeItem('sg_budget'); }}
@@ -4768,8 +4768,8 @@ export default function App() {
                 <div className="recipe-filters">
                   {[
                     {id:'all', label:'Όλες'},
-                    {id:'protein', label:'💪 High Protein'},
-                    {id:'nosugar', label:'🚫 No Sugar'},
+                    {id:'protein', label:'💪 Πρωτεΐνη'},
+                    {id:'nosugar', label:'🚫 Χωρίς Ζάχαρη'},
                     {id:'fast', label:'⏱️ Γρήγορες'},
                     {id:'vegan', label:'🌱 Vegan'},
                     {id:'budget', label:'💰 Οικονομικές'}
@@ -5070,7 +5070,7 @@ export default function App() {
                 <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, padding:'16px' }}>
                   <button onClick={() => setShowAdvanced(s=>!s)}
                     style={{ background:'none', border:'none', color:'#6366f1', fontWeight:700, fontSize:12, cursor:'pointer', padding:0 }}>
-                    {showAdvanced ? '▼' : '▶'} Advanced (Προαιρετικό)
+                    {showAdvanced ? '▼' : '▶'} Για Προχωρημένους (Προαιρετικό)
                   </button>
                   {showAdvanced && (
                     <div style={{ marginTop:10, background:'var(--bg-surface)', borderRadius:10, padding:'10px 12px' }}>
@@ -5230,8 +5230,8 @@ export default function App() {
                       { label:'🫒 Μεσογειακό', sub:'Ισορροπημένο — ελαιόλαδο, λαχανικά, κρέας', p:30, c:40, f:30 },
                       { label:'💪 Υψηλή Πρωτεΐνη', sub:'Γυμναστήριο, μυϊκή μάζα, κρέας & αυγά', p:35, c:40, f:25 },
                       { label:'⚡ Αθλητική Διατροφή', sub:'Έντονο cardio, τρέξιμο — πολλοί υδατάνθρακες', p:25, c:55, f:20 },
-                      { label:'🥑 Low Carb', sub:'Αποφυγή ζυμαρικών/ψωμιού, καλά λιπαρά', p:30, c:15, f:55 },
-                      { label:'🔥 Keto', sub:'Ελάχιστοι υδατάνθρακες, κετογόνο', p:25, c:5, f:70 },
+                      { label:'🥑 Χαμηλοί Υδατ/κες', sub:'Αποφυγή ζυμαρικών/ψωμιού, καλά λιπαρά', p:30, c:15, f:55 },
+                      { label:'🔥 Κετογονική', sub:'Ελάχιστοι υδατάνθρακες, κετογόνο', p:25, c:5, f:70 },
                     ].map(preset => {
                       const active = macroRatios.protein===preset.p && macroRatios.carbs===preset.c && macroRatios.fat===preset.f;
                       return (

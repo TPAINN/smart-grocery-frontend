@@ -41,31 +41,37 @@ const loadLeaflet = () => {
 
 // ─── APIs ────────────────────────────────────────────────────────────────────
 let _overpassCache = null;
+export const clearOverpassCache = () => { _overpassCache = null; };
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.openstreetmap.ru/api/interpreter',
 ];
-const searchOverpass = async (lat, lng, r=5000) => {
+const searchOverpass = async (lat, lng, r=8000) => {
   const k = `${lat.toFixed(3)},${lng.toFixed(3)},${r}`;
   if (_overpassCache?.k === k && Date.now() - _overpassCache.t < 180000) return _overpassCache.d;
-  const q = `[out:json][timeout:15];(node["shop"="supermarket"](around:${r},${lat},${lng});way["shop"="supermarket"](around:${r},${lat},${lng}););out center body;`;
-  let lastErr;
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const resp = await fetch(`${endpoint}?data=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(14000) });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
-      const d = data.elements.map(e => ({
-        id:e.id, name:e.tags?.name||'Σούπερ Μάρκετ', brand:e.tags?.brand||e.tags?.operator||'',
-        lat:e.lat||e.center?.lat, lng:e.lon||e.center?.lon,
-        address:[e.tags?.['addr:street'],e.tags?.['addr:housenumber']].filter(Boolean).join(' ')||'',
-      })).filter(s => s.lat && s.lng);
-      _overpassCache = { k, d, t:Date.now() };
-      return d;
-    } catch (err) { lastErr = err; }
+  const q = `[out:json][timeout:10];(node["shop"="supermarket"](around:${r},${lat},${lng});way["shop"="supermarket"](around:${r},${lat},${lng}););out center body;`;
+  // Race all endpoints in parallel — first to respond wins
+  let data;
+  try {
+    data = await Promise.any(
+      OVERPASS_ENDPOINTS.map(endpoint =>
+        fetch(`${endpoint}?data=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(9000) })
+          .then(resp => { if (!resp.ok) throw new Error(`HTTP ${resp.status}`); return resp.json(); })
+          .then(d => { if (!Array.isArray(d.elements)) throw new Error('Invalid'); return d; })
+      )
+    );
+  } catch {
+    throw new Error('Overpass unavailable');
   }
-  throw lastErr || new Error('Overpass unavailable');
+  const d = data.elements.map(e => ({
+    id:e.id, name:e.tags?.name||'Σούπερ Μάρκετ', brand:e.tags?.brand||e.tags?.operator||'',
+    lat:e.lat||e.center?.lat, lng:e.lon||e.center?.lon,
+    address:[e.tags?.['addr:street'],e.tags?.['addr:housenumber']].filter(Boolean).join(' ')||'',
+  })).filter(s => s.lat && s.lng);
+  _overpassCache = { k, d, t:Date.now() };
+  return d;
 };
 
 const osrmRoute = async (coords, p='driving') => {
@@ -261,13 +267,15 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
     setSearching(true);
     setErr('');
     try {
-      const raw = await searchOverpass(pos.lat, pos.lng, 5000);
+      // Start with 8km, auto-widen to 15km if nothing found
+      const raw = await searchOverpass(pos.lat, pos.lng, 8000);
       const L = window.L, map = mapRef.current;
       markersRef.current.forEach(m => map?.removeLayer(m)); markersRef.current = [];
 
       if (!raw.length && attempt < 3) {
-        // Widen radius and retry
-        const raw2 = await searchOverpass(pos.lat, pos.lng, 10000);
+        // Widen radius to 15km and retry
+        clearOverpassCache();
+        const raw2 = await searchOverpass(pos.lat, pos.lng, 15000);
         raw.push(...raw2);
       }
 
@@ -304,7 +312,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         }
       }
 
-      if (!enriched.length) setErr('Δεν βρέθηκαν σούπερ μάρκετ κοντά. Δοκίμασε "Ανανέωση".');
+      if (!enriched.length) setErr('Δεν βρέθηκαν σούπερ μάρκετ σε ακτίνα 15χλμ. Δοκίμασε "Ανανέωση".');
     } catch (error) {
       console.error('Search error:', error);
       if (attempt < 2) {
@@ -312,7 +320,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         setTimeout(() => doSearch(pos, attempt + 1), 1500);
         return;
       }
-      setErr('Σφάλμα αναζήτησης. Πάτα Ανανέωση.');
+      setErr('Αποτυχία σύνδεσης. Έλεγξε το ίντερνετ και πάτα Ανανέωση.');
     }
     setSearching(false);
   }, [countItems, items]);
@@ -409,7 +417,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
 
   const toggle=s=>{setSelected(p=>p.find(x=>x.id===s.id)?p.filter(x=>x.id!==s.id):[...p,s]);setRoute(null);setShowNav(false)};
   const recenter=()=>{if(mapRef.current&&userLoc)mapRef.current.setView([userLoc.lat,userLoc.lng],14)};
-  const refresh=()=>{if(userLoc){setRoute(null);setSelected([]);setShowNav(false);doSearch(userLoc)}};
+  const refresh=()=>{if(userLoc){clearOverpassCache();setRoute(null);setSelected([]);setShowNav(false);doSearch(userLoc)}};
 
   if (!isOpen) return null;
 
@@ -435,14 +443,14 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
       <div className="smart-route-map-container">
         <div ref={containerRef} className="smart-route-map"/>
         {status==='loading'&&<div className="smart-route-loading"><div className="smart-route-spinner"/><div style={{fontWeight:600}}>Φόρτωση χάρτη...</div></div>}
-        {status==='error'&&<div className="smart-route-loading"><IconAlertTriangle size={40} color="#f59e0b"/><div style={{fontWeight:700,marginTop:12}}>{err}</div><button className="smart-route-retry-btn" onClick={()=>{setStatus('loading');setErr('')}}><IconRefresh size={16}/>Ξαναδοκίμασε</button></div>}
+        {status==='error'&&<div className="smart-route-loading"><IconAlertTriangle size={40} color="#f59e0b"/><div style={{fontWeight:700,marginTop:12,textAlign:'center',padding:'0 16px'}}>{err}</div><button className="smart-route-retry-btn" onClick={()=>{clearOverpassCache();setStatus('loading');setErr('');if(userLoc)doSearch(userLoc)}}><IconRefresh size={16}/>Ξαναδοκίμασε</button></div>}
       </div>
 
       <div className={`smart-route-panel ${panel?'expanded':'collapsed'}`}>
         <div className="smart-route-panel-handle" onClick={()=>setPanel(!panel)}>
           <div className="smart-route-handle-bar"/>
           <div className="smart-route-panel-header">
-            <span style={{display:'flex',alignItems:'center',gap:6}}><IconBuildingStore size={16}/>{selected.length>0?` ${selected.length} επιλεγμένα`:' Κοντινά Σούπερ'}</span>
+            <span style={{display:'flex',alignItems:'center',gap:6}}><IconBuildingStore size={16}/>{selected.length>0?` ${selected.length} επιλεγμένα σούπερ`:' Κοντινά Σούπερ Μάρκετ'}</span>
             {panel?<IconChevronDown size={18}/>:<IconChevronUp size={18}/>}
           </div>
         </div>
