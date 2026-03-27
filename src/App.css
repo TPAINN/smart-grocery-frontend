@@ -1284,6 +1284,15 @@ body.dark-mode .budget-banner {
   animation: scannerBodyIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
+  display: flex;
+  flex-direction: column;
+}
+.scanner-scan-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
 }
 .scanner-body::-webkit-scrollbar { width: 4px; }
 .scanner-body::-webkit-scrollbar-track { margin: 8px 0; }
@@ -5012,4 +5021,31 @@ body.dark-mode .delete-btn {
   width: 15px !important;
   height: 15px !important;
   font-size: 8px !important;
+}
+/* ── Quiz Slides (AI Meal Planner) ── */
+.quiz-slide {
+  animation-duration: 0.35s;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+.quiz-slide-fwd { animation-name: quizSlideInFwd; }
+.quiz-slide-bck { animation-name: quizSlideInBck; }
+@keyframes quizSlideInFwd {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes quizSlideInBck {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.quiz-slide-body {
+  display: flex;
+  flex-direction: column;
+}
+.quiz-question {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  line-height: 1.3;
 }
