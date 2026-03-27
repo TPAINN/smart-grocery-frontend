@@ -2964,7 +2964,7 @@ export default function App() {
   const [mealPlanSummary,    setMealPlanSummary]     = useState(null);
   const [mealPlanShoppingList, setMealPlanShoppingList] = useState([]);
   const [mealPlanPrefs,      setMealPlanPrefs]       = useState({
-    persons: 2, days: 7, budget: 80, goal: 'balanced', restrictions: []
+    persons: 2, days: 7, budget: 80, goal: 'maintain', restrictions: []
   });
 
   // TDEE Calculator state
@@ -3865,7 +3865,7 @@ export default function App() {
       const bmrVal = (w && h && a) ? (tdeeGender === 'male' ? 10*w + 6.25*h - 5*a + 5 : 10*w + 6.25*h - 5*a - 161) : null;
       const multipliers = { sedentary:1.2, light:1.375, moderate:1.55, active:1.725, veryactive:1.9 };
       const tdeeVal = bmrVal ? Math.round(bmrVal * (multipliers[tdeeActivity] || 1.55)) : null;
-      const goalTdeeMap = { balanced: 0, weightloss: -500, muscle: +300, budget: 0 };
+      const goalTdeeMap = { maintain: 0, mild: -250, loss: -500, extreme: -1000, muscle: +300, budget: 0 };
       const tdeeKcal = tdeeVal ? tdeeVal + (goalTdeeMap[mealPlanPrefs.goal] ?? 0) : null;
       const zigzagHigh = tdeeKcal ? Math.round(tdeeKcal * 1.15) : null;
       const zigzagLow  = tdeeKcal ? Math.round(tdeeKcal * 0.85) : null;
@@ -5155,20 +5155,30 @@ export default function App() {
                   {quizSlide === 5 && (
                     <div className="quiz-slide-body">
                       <div className="quiz-question">Τι θέλεις να πετύχεις;</div>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:16 }}>
+                      <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:16 }}>
                         {[
-                          { k:'balanced',   icon:'⚖️', label:'Ισορροπία',  sub:'Υγεία & ευεξία',  color:'#6366f1' },
-                          { k:'weightloss', icon:'🔥', label:'Αδυνάτισμα', sub:'Μείωση λίπους',   color:'#ef4444' },
-                          { k:'muscle',     icon:'💪', label:'Μυϊκή Μάζα', sub:'Δύναμη & όγκος',  color:'#10b981' },
-                          { k:'budget',     icon:'💰', label:'Οικονομία',  sub:'Χαμηλό κόστος',   color:'#f59e0b' },
-                        ].map(({k, icon, label, sub, color}) => (
-                          <button key={k} onClick={() => { setMealPlanPrefs(p => ({ ...p, goal: k })); setQuizDir('fwd'); setQuizSlide(6); }}
-                            style={{ padding:'20px 12px', borderRadius:16, border:`2.5px solid ${mealPlanPrefs.goal===k?color:'var(--border)'}`, background:mealPlanPrefs.goal===k?`${color}12`:'var(--bg-card)', cursor:'pointer', transition:'all 0.2s', display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
-                            <span style={{ fontSize:36 }}>{icon}</span>
-                            <div style={{ fontWeight:800, fontSize:14, color:mealPlanPrefs.goal===k?color:'var(--text-primary)' }}>{label}</div>
-                            <div style={{ fontSize:10, color:'var(--text-muted)' }}>{sub}</div>
-                          </button>
-                        ))}
+                          { k:'muscle',  icon:'💪', label:'Bulk — Μυϊκή Μάζα',       sub:'Αύξηση δύναμης & όγκου',          kcal:'+300 kcal', color:'#10b981' },
+                          { k:'maintain',icon:'⚖️', label:'Διατήρηση Βάρους',         sub:'Ισορροπία, καμία αλλαγή',          kcal:'0 kcal',    color:'#6366f1' },
+                          { k:'mild',    icon:'📉', label:'Ήπια Απώλεια',             sub:'Αργή & σταθερή μείωση λίπους',     kcal:'−250 kcal', color:'#a78bfa' },
+                          { k:'loss',    icon:'🔥', label:'Cut — Απώλεια Βάρους',     sub:'Αποτελεσματική καύση λίπους',      kcal:'−500 kcal', color:'#f59e0b' },
+                          { k:'extreme', icon:'⚡', label:'Έντονη Απώλεια',           sub:'Γρήγορα αποτελέσματα (προσοχή!)', kcal:'−1000 kcal',color:'#ef4444' },
+                          { k:'budget',  icon:'💰', label:'Οικονομία',                sub:'Χαμηλό κόστος, υγιεινό πλάνο',    kcal:'0 kcal',    color:'#f59e0b' },
+                        ].map(({k, icon, label, sub, kcal, color}) => {
+                          const active = mealPlanPrefs.goal === k;
+                          return (
+                            <button key={k} onClick={() => { setMealPlanPrefs(p => ({ ...p, goal: k })); setQuizDir('fwd'); setQuizSlide(6); }}
+                              style={{ display:'flex', alignItems:'center', gap:14, padding:'13px 16px', borderRadius:14, border:`2px solid ${active?color:'var(--border)'}`, background:active?`${color}12`:'var(--bg-card)', cursor:'pointer', transition:'all 0.18s', textAlign:'left' }}>
+                              <span style={{ fontSize:26, flexShrink:0 }}>{icon}</span>
+                              <div style={{ flex:1 }}>
+                                <div style={{ fontWeight:800, fontSize:13, color:active?color:'var(--text-primary)' }}>{label}</div>
+                                <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>{sub}</div>
+                              </div>
+                              <div style={{ flexShrink:0, fontWeight:800, fontSize:11, color:active?color:'var(--text-muted)', background:active?`${color}18`:'var(--bg-subtle)', borderRadius:8, padding:'4px 8px', whiteSpace:'nowrap' }}>
+                                {kcal}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
