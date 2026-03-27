@@ -1706,8 +1706,15 @@ function ScannerOnboardingModal({ onComplete }) {
 
   const steps = [
     {
-      title: 'Σάρωσε οποιοδήποτε προϊόν',
-      desc: 'Άνοιξε το scanner, κράτησε το κινητό σου σταθερό και στόχευσε το barcode του προϊόντος.',
+      icon: '📷',
+      tag: 'Σάρωση',
+      title: 'Σκάναρε οποιοδήποτε προϊόν',
+      desc: 'Στόχευσε το barcode με την κάμερα και η αναγνώριση γίνεται αυτόματα — χωρίς να πατήσεις τίποτα.',
+      features: [
+        { icon: '⚡', text: 'Αυτόματη αναγνώριση barcode' },
+        { icon: '🌍', text: 'Βάση δεδομένων 3M+ προϊόντων' },
+        { icon: '🇬🇷', text: 'Υποστήριξη ελληνικών προϊόντων' },
+      ],
       svg: (
         <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:220 }}>
           {/* Phone outline */}
@@ -1745,8 +1752,15 @@ function ScannerOnboardingModal({ onComplete }) {
       ),
     },
     {
-      title: 'Κεντράρισε στο πλαίσιο',
-      desc: 'Βάλε το barcode μέσα στο πράσινο πλαίσιο. Η σάρωση γίνεται αυτόματα — χωρίς να πατήσεις τίποτα!',
+      icon: '🎯',
+      tag: 'Διατροφή',
+      title: 'Κεντράρισε στο πράσινο πλαίσιο',
+      desc: 'Κράτησε το κινητό σταθερό και βάλε το barcode μέσα στο πράσινο πλαίσιο. Η αναγνώριση γίνεται αμέσως!',
+      features: [
+        { icon: '📊', text: 'Θερμίδες & μακροθρεπτικά' },
+        { icon: '🔴', text: 'Προειδοποιήσεις ζάχαρης/αλατιού' },
+        { icon: '🌱', text: 'Vegan & vegetarian ένδειξη' },
+      ],
       svg: (
         <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:220 }}>
           {/* Camera view background */}
@@ -1791,8 +1805,15 @@ function ScannerOnboardingModal({ onComplete }) {
       ),
     },
     {
-      title: 'Δες όλες τις πληροφορίες',
-      desc: 'Θερμίδες, Nutriscore A-E, αλλεργιογόνα, βαθμολογία NOVA, συστατικά και σύγκριση τιμών!',
+      icon: '🛡️',
+      tag: 'Αλλεργίες & NOVA',
+      title: 'Πλήρης ανάλυση προϊόντος',
+      desc: 'Nutri-Score, βαθμολογία NOVA, αλλεργιογόνα, πρόσθετα E-codes και πλήρη λίστα συστατικών.',
+      features: [
+        { icon: '🏅', text: 'Nutri-Score A έως E' },
+        { icon: '⚠️', text: 'Αλλεργιογόνα & E-codes' },
+        { icon: '🏭', text: 'Βαθμολογία NOVA επεξεργασίας' },
+      ],
       svg: (
         <svg viewBox="0 0 220 172" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:240 }}>
           <defs>
@@ -1954,88 +1975,125 @@ function ScannerOnboardingModal({ onComplete }) {
   return (
     <div style={{
       position:'fixed', inset:0, zIndex:200000,
-      background:'rgba(0,0,0,0.85)', backdropFilter:'blur(12px)',
-      display:'flex', alignItems:'center', justifyContent:'center', padding:20,
-      animation:'fadeInScale 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+      background:'rgba(0,0,0,0.88)', backdropFilter:'blur(16px)',
+      display:'flex', alignItems:'center', justifyContent:'center', padding:16,
+      animation:'fadeInScale 0.35s cubic-bezier(0.16,1,0.3,1)',
     }}>
       <div style={{
-        background:'linear-gradient(145deg,#0f0c29,#1a1560,#0f0c29)',
-        border:'1px solid rgba(99,102,241,0.35)',
+        background:'linear-gradient(160deg,#0f0c29 0%,#1a1560 50%,#0c0a1e 100%)',
+        border:'1px solid rgba(99,102,241,0.3)',
         borderRadius:28,
-        width:'100%', maxWidth:380, padding:'32px 28px 28px',
-        boxShadow:'0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)',
-        textAlign:'center',
+        width:'100%', maxWidth:370,
+        boxShadow:'0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
         position:'relative', overflow:'hidden',
       }}>
-        {/* Background glow */}
-        <div style={{ position:'absolute', top:-60, left:'50%', transform:'translateX(-50%)', width:200, height:200, background:'radial-gradient(circle,rgba(99,102,241,0.2),transparent 70%)', pointerEvents:'none' }}/>
+        {/* Top glow */}
+        <div style={{ position:'absolute', top:-80, left:'50%', transform:'translateX(-50%)', width:260, height:200, background:'radial-gradient(ellipse,rgba(99,102,241,0.18),transparent 70%)', pointerEvents:'none' }}/>
 
-        {/* Step number */}
-        <div style={{ fontSize:11, color:'#a5b4fc', fontWeight:700, letterSpacing:2, textTransform:'uppercase', marginBottom:20 }}>
-          ΒΗΜΑ {step + 1} / {steps.length}
+        {/* Skip button */}
+        <button onClick={onComplete} style={{
+          position:'absolute', top:16, right:16, background:'rgba(255,255,255,0.06)', border:'none',
+          color:'rgba(165,180,252,0.6)', fontSize:12, fontWeight:600, cursor:'pointer', padding:'5px 12px',
+          borderRadius:20, fontFamily:'var(--font)', letterSpacing:0.3,
+          transition:'background 0.2s',
+        }}>
+          Παράλειψη
+        </button>
+
+        {/* Progress bar */}
+        <div style={{ height:3, background:'rgba(99,102,241,0.15)', position:'relative' }}>
+          <div style={{
+            height:'100%', borderRadius:2,
+            background:'linear-gradient(90deg,#6366f1,#818cf8)',
+            width:`${((step + 1) / steps.length) * 100}%`,
+            transition:'width 0.4s cubic-bezier(0.16,1,0.3,1)',
+          }}/>
         </div>
 
-        {/* Illustration */}
-        <div style={{ margin:'0 auto 24px', height:160, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          {current.svg}
-        </div>
-
-        {/* Title */}
-        <h2 style={{ fontSize:20, fontWeight:900, color:'#fff', margin:'0 0 10px', lineHeight:1.3 }}>
-          {current.title}
-        </h2>
-
-        {/* Description */}
-        <p style={{ fontSize:14, color:'#a5b4fc', lineHeight:1.65, margin:'0 0 28px' }}>
-          {current.desc}
-        </p>
-
-        {/* Step dots */}
-        <div style={{ display:'flex', justifyContent:'center', gap:8, marginBottom:24 }}>
-          {steps.map((_, i) => (
-            <div key={i} onClick={() => setStep(i)} style={{
-              width: i === step ? 20 : 8, height:8, borderRadius:4,
-              background: i === step ? '#6366f1' : 'rgba(99,102,241,0.3)',
-              transition:'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
-              cursor:'pointer',
-            }}/>
-          ))}
-        </div>
-
-        {/* Buttons */}
-        <div style={{ display:'flex', gap:10 }}>
-          {step > 0 && (
-            <button onClick={() => setStep(s => s - 1)} style={{
-              flex:1, padding:'13px', borderRadius:14,
-              border:'1px solid rgba(99,102,241,0.4)', background:'transparent',
-              color:'#a5b4fc', fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:'var(--font)',
+        <div style={{ padding:'24px 24px 28px' }}>
+          {/* Tag + step */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+            <div style={{
+              display:'inline-flex', alignItems:'center', gap:6,
+              background:'rgba(99,102,241,0.15)', border:'1px solid rgba(99,102,241,0.3)',
+              borderRadius:20, padding:'4px 12px', fontSize:11, fontWeight:700,
+              color:'#a5b4fc', letterSpacing:0.5,
             }}>
-              ← Πίσω
+              <span>{current.icon}</span> {current.tag}
+            </div>
+            <span style={{ fontSize:11, color:'rgba(165,180,252,0.5)', fontWeight:600 }}>
+              {step + 1} / {steps.length}
+            </span>
+          </div>
+
+          {/* Illustration */}
+          <div style={{ margin:'0 auto 20px', height:150, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            {current.svg}
+          </div>
+
+          {/* Title */}
+          <h2 style={{ fontSize:19, fontWeight:900, color:'#fff', margin:'0 0 8px', lineHeight:1.3, letterSpacing:-0.3 }}>
+            {current.title}
+          </h2>
+
+          {/* Description */}
+          <p style={{ fontSize:13.5, color:'rgba(165,180,252,0.8)', lineHeight:1.6, margin:'0 0 18px' }}>
+            {current.desc}
+          </p>
+
+          {/* Feature highlights */}
+          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:24 }}>
+            {current.features.map((f, i) => (
+              <div key={i} style={{
+                display:'flex', alignItems:'center', gap:10,
+                background:'rgba(255,255,255,0.04)', borderRadius:12,
+                padding:'9px 12px', border:'1px solid rgba(255,255,255,0.06)',
+              }}>
+                <span style={{ fontSize:16, flexShrink:0 }}>{f.icon}</span>
+                <span style={{ fontSize:13, color:'rgba(255,255,255,0.75)', fontWeight:500 }}>{f.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Step dots */}
+          <div style={{ display:'flex', justifyContent:'center', gap:6, marginBottom:20 }}>
+            {steps.map((_, i) => (
+              <div key={i} onClick={() => setStep(i)} style={{
+                width: i === step ? 22 : 7, height:7, borderRadius:4,
+                background: i <= step ? '#6366f1' : 'rgba(99,102,241,0.25)',
+                transition:'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+                cursor:'pointer',
+              }}/>
+            ))}
+          </div>
+
+          {/* Buttons */}
+          <div style={{ display:'flex', gap:8 }}>
+            {step > 0 && (
+              <button onClick={() => setStep(s => s - 1)} style={{
+                padding:'13px 18px', borderRadius:14,
+                border:'1px solid rgba(99,102,241,0.35)', background:'rgba(99,102,241,0.08)',
+                color:'#a5b4fc', fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:'var(--font)',
+                transition:'background 0.2s',
+              }}>
+                ←
+              </button>
+            )}
+            <button
+              onClick={() => { if (step < steps.length - 1) setStep(s => s + 1); else onComplete(); }}
+              style={{
+                flex:1, padding:'13px', borderRadius:14, border:'none',
+                background:'linear-gradient(135deg,#6366f1,#4f46e5)',
+                color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer', fontFamily:'var(--font)',
+                boxShadow:'0 6px 20px rgba(99,102,241,0.45)',
+                transition:'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseDown={e => { e.currentTarget.style.transform='scale(0.97)'; }}
+              onMouseUp={e => { e.currentTarget.style.transform=''; }}
+            >
+              {step < steps.length - 1 ? 'Επόμενο →' : '🚀 Ξεκίνα!'}
             </button>
-          )}
-          {step === 0 && (
-            <button onClick={onComplete} style={{
-              position:'absolute', top:20, right:20, background:'none', border:'none',
-              color:'rgba(165,180,252,0.5)', fontSize:13, cursor:'pointer', padding:'4px 8px',
-              fontFamily:'var(--font)',
-            }}>
-              Παράλειψη
-            </button>
-          )}
-          <button
-            onClick={() => { if (step < steps.length - 1) setStep(s => s + 1); else onComplete(); }}
-            style={{
-              flex:1, padding:'13px', borderRadius:14, border:'none',
-              background:'linear-gradient(135deg,#6366f1,#4f46e5)',
-              color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer', fontFamily:'var(--font)',
-              boxShadow:'0 4px 20px rgba(99,102,241,0.4)',
-              transition:'transform 0.15s, box-shadow 0.15s',
-            }}
-            onMouseDown={e => { e.currentTarget.style.transform='scale(0.97)'; }}
-            onMouseUp={e => { e.currentTarget.style.transform=''; }}
-          >
-            {step < steps.length - 1 ? 'Επόμενο →' : '🚀 Ξεκίνα!'}
-          </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2210,7 +2268,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
           brand: p.brands ? p.brands.split(',')[0].trim() : null,
           image: p.image_front_small_url || p.image_front_url || p.image_url || null,
           novaGroup: p.nova_group || null,
-          nutriScore: p.nutriscore_grade || null,
+          nutriScore: /^[a-e]$/i.test(p.nutriscore_grade || '') ? p.nutriscore_grade.toLowerCase() : null,
           kcal: p.nutriments?.['energy-kcal_100g'] ?? p.nutriments?.['energy-kcal'] ?? null,
           fat: p.nutriments?.fat_100g ?? null,
           saturated: p.nutriments?.['saturated-fat_100g'] ?? null,
@@ -2359,8 +2417,6 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             <button key={t.id} className={`scanner-tab ${activeView === t.id ? 'active' : ''}`}
               onClick={() => {
                 if (activeView === 'scan') stopScanner();
-                const card = document.querySelector('.scanner-card');
-                if (card) { const h = card.offsetHeight; card.style.minHeight = h + 'px'; setTimeout(() => { card.style.minHeight = ''; }, 400); }
                 setActiveView(t.id);
                 if (t.id === 'scan' && !product) setScanKey(k => k + 1);
               }}
@@ -2564,7 +2620,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                       <div className="history-name">{h.name}</div>
                       <div className="history-meta">
                         {h.brand && <span>{h.brand}</span>}
-                        {h.nutriScore && (
+                        {h.nutriScore && /^[a-e]$/i.test(h.nutriScore) && (
                           <span className="history-score" style={{ background: getNutriScoreColor(h.nutriScore) }}>
                             {h.nutriScore.toUpperCase()}
                           </span>

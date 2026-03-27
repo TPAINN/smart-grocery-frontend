@@ -1216,8 +1216,10 @@ body.dark-mode .budget-banner {
   border-radius: 28px;
   width: 100%;
   max-width: 420px;
-  max-height: 88vh; max-height: 88dvh;
-  overflow-y: auto; overflow-x: hidden;
+  height: 88vh; height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   box-shadow:
     0 0 0 1px rgba(255,255,255,0.06),
     0 32px 80px rgba(0,0,0,0.35),
@@ -1230,9 +1232,6 @@ body.dark-mode .budget-banner {
 .scanner-card.closing {
   animation: scannerCardOut 0.4s cubic-bezier(0.55, 0, 1, 0.45) forwards;
 }
-.scanner-card::-webkit-scrollbar { width: 4px; }
-.scanner-card::-webkit-scrollbar-track { margin: 16px 0; }
-.scanner-card::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
 
 @keyframes scannerCardIn {
   from { opacity: 0; transform: scale(0.65) translateY(30px); }
@@ -1278,9 +1277,17 @@ body.dark-mode .budget-banner {
 
 /* ── Scanner Body (shared) ── */
 .scanner-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px 18px 24px;
   animation: scannerBodyIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
+.scanner-body::-webkit-scrollbar { width: 4px; }
+.scanner-body::-webkit-scrollbar-track { margin: 8px 0; }
+.scanner-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
 @keyframes scannerBodyIn {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -4827,11 +4834,9 @@ body.dark-mode .delete-btn {
    BARCODE SCANNER — UI REFINEMENTS
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* Scanner card — slightly larger max, smoother scrollbar */
+/* Scanner card — slightly larger max */
 .scanner-card {
   max-width: 440px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) transparent;
 }
 
 /* Viewfinder — cleaner dark bg with subtle vignette */

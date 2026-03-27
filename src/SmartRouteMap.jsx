@@ -79,11 +79,6 @@ const osrmRoute = async (coords, p='driving') => {
   const r = await fetch(`https://router.project-osrm.org/route/v1/${p}/${s}?overview=full&geometries=geojson&steps=true`);
   const d = await r.json(); if (d.code!=='Ok'||!d.routes?.length) throw new Error('No route'); return d.routes[0];
 };
-const osrmTrip = async (coords, p='driving') => {
-  const s = coords.map(c=>`${c.lng},${c.lat}`).join(';');
-  const r = await fetch(`https://router.project-osrm.org/trip/v1/${p}/${s}?overview=full&geometries=geojson&roundtrip=true&source=first&destination=last`);
-  const d = await r.json(); if (d.code!=='Ok'||!d.trips?.length) throw new Error('No trip'); return d.trips[0];
-};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const hav = (a,b,c,d) => { const R=6371e3,r=x=>x*Math.PI/180,dL=r(c-a),dN=r(d-b),x=Math.sin(dL/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dN/2)**2; return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); };
@@ -344,8 +339,8 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         if (containerRef.current && !mapRef.current) {
           const L = window.L;
           const map = L.map(containerRef.current, { center:[pos.lat,pos.lng], zoom:14, zoomControl:false, attributionControl:false });
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,crossOrigin:true,className:'srm-tiles'}).addTo(map);
-          L.control.attribution({position:'bottomright',prefix:false}).addAttribution('© <a href="https://openstreetmap.org">OSM</a>').addTo(map);
+          L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,crossOrigin:true,className:'srm-tiles'}).addTo(map);
+          L.control.attribution({position:'bottomright',prefix:false}).addAttribution('© <a href="https://openstreetmap.org">OSM</a> © <a href="https://carto.com">CARTO</a>').addTo(map);
           L.control.zoom({position:'topright'}).addTo(map);
           L.marker([pos.lat,pos.lng],{icon:mkUser(L),zIndexOffset:1000}).addTo(map).bindPopup('<b>📍 Εδώ είσαι</b>');
           mapRef.current = map;
@@ -373,41 +368,18 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
       routeLayerRef.current=null;
     }
     try {
+      // Route endpoint: user → store1 → store2 → ... in order, road-following
       const pts=[userLoc,...selected.map(s=>({lat:s.lat,lng:s.lng}))];
-      if (selected.length > 1) pts.push(userLoc); // roundtrip only for multi-stop
-      const r = selected.length===1 ? await osrmRoute(pts,mode) : await osrmTrip(pts,mode);
+      const r = await osrmRoute(pts,mode);
       const coords=r.geometry.coordinates.map(c=>[c[1],c[0]]);
 
-      // Single animated polyline
-      const line = L.polyline([],{color:'#6366f1',weight:5,opacity:.9,smoothFactor:0,lineCap:'round'}).addTo(map);
-      routeLayerRef.current = line;
+      // Draw route with shadow layer for depth
+      const shadow = L.polyline(coords,{color:'rgba(0,0,0,0.18)',weight:9,opacity:1,smoothFactor:1,lineCap:'round',lineJoin:'round'}).addTo(map);
+      const line   = L.polyline(coords,{color:'#6366f1',weight:5,opacity:0.95,smoothFactor:1,lineCap:'round',lineJoin:'round'}).addTo(map);
+      routeLayerRef.current = [shadow, line];
+      map.fitBounds(line.getBounds(),{padding:[60,60],maxZoom:15});
 
-      // Animate drawing
-      const step=Math.max(1,Math.floor(coords.length/60));
-      let idx=0;
-      const draw=()=>{
-        if(idx>=coords.length){
-          map.fitBounds(line.getBounds(),{padding:[60,60],maxZoom:14});
-          return;
-        }
-        line.addLatLng(coords[Math.min(idx,coords.length-1)]);
-        idx+=step;
-        requestAnimationFrame(draw);
-      };
-      draw();
-
-      // Resolve ordered stops from trip waypoints
-      let ordered = selected;
-      if (r.waypoints && selected.length > 1) {
-        const wpIndexes = r.waypoints.slice(1, selected.length + 1).map(w => w.waypoint_index);
-        if (wpIndexes.length === selected.length) {
-          const indexed = selected.map((s, i) => ({ s, wi: wpIndexes[i] }));
-          indexed.sort((a, b) => a.wi - b.wi);
-          ordered = indexed.map(x => x.s);
-        }
-      }
-
-      setRoute({ distance:r.distance, duration:r.duration, orderedStores:ordered, steps:parseSteps(r.legs) });
+      setRoute({ distance:r.distance, duration:r.duration, orderedStores:selected, steps:parseSteps(r.legs) });
     } catch (e) {
       console.error('Route error:', e);
       setErr('Δεν βρέθηκε διαδρομή. Δοκίμασε άλλο τρόπο μεταφοράς.');
