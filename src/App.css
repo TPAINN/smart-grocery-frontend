@@ -2068,6 +2068,20 @@ body:not(.dark-mode) .scanner-header-icon-wrap {
   letter-spacing: 0.2px;
 }
 
+/* "via Edamam" badge — shown when product came from Edamam fallback */
+.product-source-badge {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #f97316;
+  background: rgba(249,115,22,0.1);
+  border: 1px solid rgba(249,115,22,0.25);
+  border-radius: 6px;
+  padding: 2px 7px;
+  letter-spacing: 0.3px;
+}
+
 /* ── Product Found Flash ── */
 .scanner-found-flash {
   display: flex;
