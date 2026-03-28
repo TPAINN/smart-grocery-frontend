@@ -3315,8 +3315,8 @@ export default function App() {
     if (!append) setRecipesLoading(true);
 
     const params = new URLSearchParams({
-      page: String(page),
-      limit: '20',
+      page:  String(page),
+      limit: '24',     // enough cards to fill a screen + a bit
       ...(recipeCategory && { category: recipeCategory }),
       ...(recipeCuisine  && { cuisine: recipeCuisine }),
       ...(recipeSearchDebounced && { search: recipeSearchDebounced }),
@@ -4812,11 +4812,32 @@ export default function App() {
           <div className="tab-content recipes-tab">
             <>
                 {!isOnline && (
-                  <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:10, fontSize:13 }}>
+                  <div className="offline-banner">
                     <span>📡</span>
-                    <div><strong>Offline mode</strong> — Συνταγές από τελευταία φόρτωση.</div>
+                    <span><strong>Offline</strong> — εμφανίζονται οι τελευταίες αποθηκευμένες συνταγές.</span>
                   </div>
                 )}
+
+                {/* ── Tab header ── */}
+                <div className="recipes-tab-header">
+                  <div>
+                    <h2 className="recipes-tab-title">Συνταγές</h2>
+                    {!recipesLoading && filteredRecipes.length > 0 && (
+                      <p className="recipes-tab-subtitle">
+                        {recipes.length}+ συνταγές
+                        {recipeCategory && <> · <strong>{recipeCategory}</strong></>}
+                        {fridgeQuery && <> · «{fridgeQuery}»</>}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    className={`recipe-cat-pill fav-pill ${showFavoritesOnly ? 'active' : ''}`}
+                    style={{ flexShrink: 0 }}
+                    onClick={() => { setShowFavoritesOnly(v => !v); setRecipeCategory(''); setRecipePage(1); }}
+                  >
+                    ❤️ {favoriteRecipes.length > 0 && <span className="fav-count">{favoriteRecipes.length}</span>}
+                  </button>
+                </div>
 
                 {/* ── Search Bar ── */}
                 <div className="recipe-search-bar">
@@ -4830,10 +4851,7 @@ export default function App() {
                       className="recipe-search-input"
                     />
                     {fridgeQuery && (
-                      <button
-                        onClick={() => setFridgeQuery('')}
-                        style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', padding:4, display:'flex' }}
-                      >
+                      <button onClick={() => setFridgeQuery('')} className="recipe-search-clear">
                         <IconX size={16} />
                       </button>
                     )}
@@ -4842,12 +4860,6 @@ export default function App() {
 
                 {/* ── Category Pills ── */}
                 <div className="recipe-category-scroll">
-                  <button
-                    className={`recipe-cat-pill fav-pill ${showFavoritesOnly ? 'active' : ''}`}
-                    onClick={() => { setShowFavoritesOnly(v => !v); setRecipeCategory(''); setRecipePage(1); }}
-                  >
-                    ❤️ Αγαπημένα {favoriteRecipes.length > 0 && <span className="fav-count">{favoriteRecipes.length}</span>}
-                  </button>
                   {[
                     { id: '', label: '🍽️ Όλες' },
                     { id: 'Κυρίως', label: '🥘 Κυρίως' },
@@ -4855,8 +4867,8 @@ export default function App() {
                     { id: 'Σούπες', label: '🍲 Σούπες' },
                     { id: 'Πρωινό', label: '🍳 Πρωινό' },
                     { id: 'Σνακ', label: '🍏 Σνακ' },
-                    { id: 'Επιδόρπια', label: '🍰 Επιδόρπια' },
-                    { id: 'Συνοδευτικά', label: '🥗 Συνοδευτικά' },
+                    { id: 'Επιδόρπια', label: '🍰 Γλυκά' },
+                    { id: 'Συνοδευτικά', label: '🫙 Συνοδευτικά' },
                   ].map(cat => (
                     <button
                       key={cat.id}
@@ -4871,25 +4883,22 @@ export default function App() {
                 {/* ── Filter Chips ── */}
                 <div className="recipe-filters">
                   {[
-                    {id:'all', label:'Όλες'},
-                    {id:'protein', label:'💪 Πρωτεΐνη'},
-                    {id:'nosugar', label:'🚫 Χωρίς Ζάχαρη'},
-                    {id:'fast', label:'⏱️ Γρήγορες'},
-                    {id:'vegan', label:'🌱 Vegan'},
-                    {id:'budget', label:'💰 Οικονομικές'}
+                    { id:'all',     label:'Όλες' },
+                    { id:'protein', label:'💪 Πρωτεΐνη' },
+                    { id:'fast',    label:'⚡ Γρήγορες' },
+                    { id:'vegan',   label:'🌱 Vegan' },
+                    { id:'nosugar', label:'🚫 Χ. Ζάχαρη' },
+                    { id:'budget',  label:'💰 Λίγα Υλικά' },
                   ].map(f => (
-                    <button key={f.id} className={`filter-btn ${recipeFilter === f.id ? 'active' : ''}`} onClick={() => setRecipeFilter(f.id)}>{f.label}</button>
+                    <button
+                      key={f.id}
+                      className={`filter-btn ${recipeFilter === f.id ? 'active' : ''}`}
+                      onClick={() => setRecipeFilter(f.id)}
+                    >
+                      {f.label}
+                    </button>
                   ))}
                 </div>
-
-                {/* ── Results count ── */}
-                {!recipesLoading && filteredRecipes.length > 0 && (
-                  <div style={{ fontSize:12, color:'var(--text-muted)', padding:'0 2px 12px', fontWeight:500 }}>
-                    {filteredRecipes.length} συνταγ{filteredRecipes.length === 1 ? 'ή' : 'ές'}
-                    {recipeCategory && <span> στην κατηγορία <strong style={{ color:'var(--text-secondary)' }}>{recipeCategory}</strong></span>}
-                    {fridgeQuery && <span> για «<strong style={{ color:'var(--text-secondary)' }}>{fridgeQuery}</strong>»</span>}
-                  </div>
-                )}
 
                 {/* ── Loading skeletons ── */}
                 {recipesLoading && recipes.length === 0 && (
@@ -5009,18 +5018,24 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* ── Infinite Scroll Sentinel ── */}
+                    {/* ── Load-more sentinel + manual fallback ── */}
                     {!showFavoritesOnly && (
-                      <div ref={recipesSentinelRef} style={{ padding:'16px 0', textAlign:'center', minHeight:40 }}>
+                      <div ref={recipesSentinelRef} className="recipes-load-more-sentinel">
                         {recipesLoading && (
-                          <div style={{ display:'inline-flex', alignItems:'center', gap:8, color:'var(--text-muted)', fontSize:13, fontWeight:600 }}>
-                            <div style={{ width:16, height:16, borderRadius:'50%', border:'2.5px solid var(--border)', borderTopColor:'#6366f1', animation:'spin 0.7s linear infinite' }} />
-                            Φόρτωση συνταγών...
+                          <div className="recipes-loading-row">
+                            <div className="spinner-sm" />
+                            Φόρτωση περισσότερων...
                           </div>
                         )}
+                        {!recipesLoading && recipePage < recipeTotalPages && (
+                          // Manual fallback — in case IntersectionObserver misses a trigger
+                          <button className="load-more-btn" onClick={loadMoreRecipes}>
+                            Φόρτωση περισσότερων ↓
+                          </button>
+                        )}
                         {!recipesLoading && recipePage >= recipeTotalPages && recipes.length > 0 && (
-                          <div style={{ fontSize:12, color:'var(--text-muted)', fontWeight:500 }}>
-                            ✓ Εμφανίζονται όλες οι συνταγές
+                          <div className="recipes-end-label">
+                            Εμφανίζονται όλες οι συνταγές ({recipes.length})
                           </div>
                         )}
                       </div>
