@@ -24,18 +24,24 @@ function mkParticle(id) {
 //   2950ms → onDone() fires
 export default function AppSplash({ onDone }) {
   const [phase, setPhase] = useState('idle');
-  const dots = useRef(Array.from({ length: N }, (_, i) => mkParticle(i)));
+  const dots    = useRef(Array.from({ length: N }, (_, i) => mkParticle(i)));
+  // Keep onDone in a ref so we can call the latest version without it
+  // being a useEffect dependency — otherwise an inline () => {} prop
+  // creates a new reference every render and re-triggers the whole chain.
+  const onDoneRef = useRef(onDone);
+  useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
 
   useEffect(() => {
+    // Empty deps — fire once on mount, clean up on unmount.
     const ts = [
-      setTimeout(() => setPhase('bloom'),    80),
-      setTimeout(() => setPhase('wordmark'), 900),
-      setTimeout(() => setPhase('tagline'),  1400),
-      setTimeout(() => setPhase('exit'),     2400),
-      setTimeout(() => onDone(),             2950),
+      setTimeout(() => setPhase('bloom'),              80),
+      setTimeout(() => setPhase('wordmark'),           900),
+      setTimeout(() => setPhase('tagline'),           1400),
+      setTimeout(() => setPhase('exit'),              2400),
+      setTimeout(() => onDoneRef.current?.(),         2950),
     ];
     return () => ts.forEach(clearTimeout);
-  }, [onDone]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Helper: is the animation at or past this phase?
   const ORDER  = ['idle', 'bloom', 'wordmark', 'tagline', 'exit'];

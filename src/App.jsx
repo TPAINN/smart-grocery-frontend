@@ -2898,6 +2898,9 @@ export default function App() {
   }, []);
 
   const [showSplash, setShowSplash] = useState(true);
+  // Stable ref — inline arrow would create a new function every render,
+  // which would re-trigger AppSplash's useEffect and loop forever.
+  const handleSplashDone = useCallback(() => setShowSplash(false), []);
 
   const [isDarkMode, setIsDarkMode]           = useState(() => localStorage.getItem('theme') === 'dark');
   const socketRef = useRef(null);
@@ -4091,8 +4094,8 @@ export default function App() {
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="app-wrapper">
-      {/* Splash animation — every app open */}
-      {showSplash && <AppSplash onDone={() => setShowSplash(false)} />}
+      {/* Splash animation — shows once on launch, hides via handleSplashDone */}
+      {showSplash && <AppSplash onDone={handleSplashDone} />}
       {/* Runtime permission dialogs (camera, location) */}
       {PermissionDialog}
       <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} />
