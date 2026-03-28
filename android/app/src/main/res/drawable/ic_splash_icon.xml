@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+  <!-- Shopping cart body -->
+  <path
+      android:fillColor="#6366f1"
+      android:pathData="M18,22 L22,22 L28,50 L82,50 L88,28 L26,28 Z"/>
+
+  <!-- Cart basket -->
+  <path
+      android:fillColor="#8b5cf6"
+      android:pathData="M28,50 L82,50 L76,72 L34,72 Z"/>
+
+  <!-- Left wheel (circle via path arc) -->
+  <path
+      android:fillColor="#6366f1"
+      android:pathData="M40,86 a6,6 0 1,0 0.001,0 Z"/>
+
+  <!-- Right wheel -->
+  <path
+      android:fillColor="#6366f1"
+      android:pathData="M70,86 a6,6 0 1,0 0.001,0 Z"/>
+
+  <!-- Star/sparkle -->
+  <path
+      android:fillColor="#ffffff"
+      android:pathData="M56,32 L58,37 L63,39 L58,41 L56,46 L54,41 L49,39 L54,37 Z"/>
+
+</vector>

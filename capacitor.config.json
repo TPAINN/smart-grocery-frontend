@@ -1,0 +1,30 @@
+{
+  "appId": "gr.smartgrocery.app",
+  "appName": "Smart Grocery",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": false,
+      "backgroundColor": "#0f0f1a",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0f0f1a",
+      "overlaysWebView": true
+    },
+    "Geolocation": {
+      "requestPermissions": true
+    }
+  }
+}

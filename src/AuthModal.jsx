@@ -54,12 +54,42 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess, initMode = 
           <p>{isLogin ? 'Συνδέσου για να δεις τη λίστα σου.' : 'Γίνε μέλος του Smart Hub.'}</p>
         </div>
         {error && <div className="error-message staggered-2">{error}</div>}
-        <form onSubmit={handleSubmit} className="auth-form staggered-2">
+        <form onSubmit={handleSubmit} className="auth-form staggered-2" autoComplete="on">
           {!isLogin && (
-            <input type="text" name="name" placeholder="Το όνομά σου" value={formData.name} onChange={handleChange} required disabled={isLoading} className="slide-down-input" />
+            <input
+              type="text"
+              name="name"
+              placeholder="Το όνομά σου"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              disabled={isLoading}
+              className="slide-down-input"
+              autoComplete="name"
+              inputMode="text"
+            />
           )}
-          <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required disabled={isLoading} />
-          <input type="password" name="password" placeholder="Κωδικός" value={formData.password} onChange={handleChange} required disabled={isLoading} />
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            disabled={isLoading}
+            autoComplete="email"
+            inputMode="email"
+          />
+          <input
+            type="password"
+            name="password"
+            placeholder="Κωδικός"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            disabled={isLoading}
+            autoComplete={isLogin ? 'current-password' : 'new-password'}
+          />
           <button type="submit" className="submit-btn" disabled={isLoading}>
             {isLoading ? <span className="auth-spinner"></span> : (isLogin ? 'Σύνδεση' : 'Εγγραφή')}
           </button>

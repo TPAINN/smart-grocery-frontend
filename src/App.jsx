@@ -8,6 +8,10 @@ import SavedListsModal from './SavedListsModal';
 import SmartRouteMap, { FloatingMapButton } from './SmartRouteMap';
 import './SmartRouteMap.css';
 import { io } from 'socket.io-client';
+import { initCapacitor, initBackButton } from './capacitorInit';
+import { useAndroidPermissions } from './useAndroidPermissions.jsx';
+import AppSplash from './AppSplash';
+import ScrollReveal from './ScrollReveal';
 import {
   IconShoppingCart, IconQrcode, IconUsers, IconMessage,
   IconNotes, IconUser, IconLogout,
@@ -26,16 +30,13 @@ const API_BASE      = 'https://my-smart-grocery-api.onrender.com';
 const CACHE_VERSION = 'v3';
 const CACHE_TTL_MS  = 10 * 60 * 1000; // 10 min
 
-// #region agent log
+// only fires in dev — keeps prod console clean
 const debugLog = (payload) => {
-  // Do not transmit client payloads to external/local debug collectors.
-  if (import.meta.env.DEV) {
-    console.debug('[smart-grocery]', payload);
-  }
+  if (import.meta.env.DEV) console.debug('[smart-grocery]', payload);
 };
-// #endregion
 
-// ─── Smart Cache (memory + localStorage, stale-while-revalidate) ──────────────
+// Two-layer cache: hot Map in memory, cold JSON in localStorage.
+// Stale entries still render immediately while we revalidate in the background.
 const memCache = new Map();
 
 const cacheGet = (key) => {
@@ -64,7 +65,7 @@ const cacheSet = (key, data) => {
   }
 };
 
-// ─── Keep-alive: prevents Render free-tier cold start ─────────────────────────
+// Render free-tier spins down after 15min of inactivity. Ping every 9min to avoid that.
 const useKeepAlive = () => {
   useEffect(() => {
     const ping = () => fetch(`${API_BASE}/api/status`, { method: 'GET' }).catch(() => {});
@@ -74,7 +75,7 @@ const useKeepAlive = () => {
   }, []);
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ── Text helpers ──────────────────────────────────────────────────────────────
 const normalizeText = (text) =>
   text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
@@ -2880,6 +2881,24 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
 export default function App() {
   useKeepAlive(); // 🔑 keeps Render free-tier alive
 
+  // ── Capacitor Android init ─────────────────────────────────────────────────
+  const { requestLocation, requestCamera, PermissionDialog } = useAndroidPermissions();
+
+  useEffect(() => {
+    // Αρχικοποίηση StatusBar, SplashScreen κ.ά.
+    initCapacitor();
+
+    // Android back button: κλείνει modals ή βγαίνει
+    const cleanup = initBackButton(({ canGoBack }) => {
+      if (canGoBack) {
+        window.history.back();
+      }
+    });
+    return () => { if (typeof cleanup === 'function') cleanup(); };
+  }, []);
+
+  const [showSplash, setShowSplash] = useState(true);
+
   const [isDarkMode, setIsDarkMode]           = useState(() => localStorage.getItem('theme') === 'dark');
   const socketRef = useRef(null);
 
@@ -4072,6 +4091,10 @@ export default function App() {
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="app-wrapper">
+      {/* Splash animation — every app open */}
+      {showSplash && <AppSplash onDone={() => setShowSplash(false)} />}
+      {/* Runtime permission dialogs (camera, location) */}
+      {PermissionDialog}
       <OfflineBanner isOnline={isOnline} wasOffline={wasOffline} />
       {showWelcome && !user && <WelcomeModal onLogin={handleWelcomeLogin} onRegister={handleWelcomeRegister} onSkip={handleWelcomeSkip} />}
 
@@ -4328,9 +4351,12 @@ export default function App() {
                 </div>
               )}
 
-              {/* Barcode scanner button */}
+              {/* Barcode scanner button — asks camera permission first */}
               {user && (
-                <div className="action-btn-new scanner-btn-header" onClick={() => setShowScanner(true)} title="Σάρωση Barcode">
+                <div className="action-btn-new scanner-btn-header" onClick={async () => {
+                  const { granted } = await requestCamera();
+                  if (granted) setShowScanner(true);
+                }} title="Σάρωση Barcode">
                   <IconQrcode size={20} stroke={1.8} />
                 </div>
               )}
@@ -4930,49 +4956,56 @@ export default function App() {
                   <>
                     <div className="recipes-grid">
                       {filteredRecipes.map((recipe, idx) => (
-                        <div
+                        // ScrollReveal fires per-card when it enters the viewport —
+                        // works for initial render AND infinite-scroll appended cards.
+                        <ScrollReveal
                           key={recipe._id || recipe.title}
-                          className="recipe-card-v2"
-                          onClick={() => recipe._id && setExpandedRecipe(recipe._id)}
-                          style={{ animationDelay: `${Math.min(idx * 0.06, 0.5)}s` }}
+                          delay={Math.min((idx % 6) * 55, 280)}
+                          y={20}
                         >
-                          <div className="recipe-card-img-wrap">
-                            {recipe.image ? (
-                              <div className="recipe-card-img" style={{ backgroundImage: `url(${recipe.image})` }} />
-                            ) : (
-                              <div className="recipe-card-img" style={{ height:135, background:'linear-gradient(135deg, var(--bg-subtle), var(--bg-card))', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                <span style={{ fontSize:36, opacity:0.3 }}>🍽️</span>
-                              </div>
-                            )}
-                            <div className="recipe-card-time-badge">⏱️ {recipe.time || 30}'</div>
-                            <div style={{ position:'absolute', top:10, left:10, width:8, height:8, borderRadius:'50%', zIndex:2, background: recipe.difficulty === 'Εύκολη' ? '#10b981' : recipe.difficulty === 'Δύσκολη' ? '#ef4444' : '#f59e0b' }} />
-                            <button
-                              className={`recipe-fav-btn ${favoriteIds.includes(recipe._id) ? 'is-fav' : ''}`}
-                              onClick={(e) => { e.stopPropagation(); toggleFavorite(recipe._id); }}
-                              aria-label={favoriteIds.includes(recipe._id) ? 'Αφαίρεση από αγαπημένα' : 'Προσθήκη στα αγαπημένα'}
-                            >
-                              {favoriteIds.includes(recipe._id) ? '❤️' : '🤍'}
-                            </button>
-                          </div>
-
-                          <div className="recipe-card-body">
-                            <h4 className="recipe-card-title">{cleanRecipeTitle(recipe.title)}</h4>
-                            <div className="recipe-card-meta">
-                              <span>{recipe.ingredients?.length || 0} υλικά</span>
-                              {recipe.cuisine && recipe.cuisine !== 'Διεθνής' && (
-                                <>
-                                  <span style={{ opacity:0.4 }}>·</span>
-                                  <span>{recipe.cuisine}</span>
-                                </>
+                          <div
+                            className="recipe-card-v2"
+                            onClick={() => recipe._id && setExpandedRecipe(recipe._id)}
+                            style={{ animationName: 'none' }} // disable old CSS-only animation now that ScrollReveal handles entrance
+                          >
+                            <div className="recipe-card-img-wrap">
+                              {recipe.image ? (
+                                <div className="recipe-card-img" style={{ backgroundImage: `url(${recipe.image})` }} />
+                              ) : (
+                                <div className="recipe-card-img" style={{ height:135, background:'linear-gradient(135deg, var(--bg-subtle), var(--bg-card))', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                  <span style={{ fontSize:36, opacity:0.3 }}>🍽️</span>
+                                </div>
                               )}
+                              <div className="recipe-card-time-badge">⏱️ {recipe.time || 30}'</div>
+                              <div style={{ position:'absolute', top:10, left:10, width:8, height:8, borderRadius:'50%', zIndex:2, background: recipe.difficulty === 'Εύκολη' ? '#10b981' : recipe.difficulty === 'Δύσκολη' ? '#ef4444' : '#f59e0b' }} />
+                              <button
+                                className={`recipe-fav-btn ${favoriteIds.includes(recipe._id) ? 'is-fav' : ''}`}
+                                onClick={(e) => { e.stopPropagation(); toggleFavorite(recipe._id); }}
+                                aria-label={favoriteIds.includes(recipe._id) ? 'Αφαίρεση από αγαπημένα' : 'Προσθήκη στα αγαπημένα'}
+                              >
+                                {favoriteIds.includes(recipe._id) ? '❤️' : '🤍'}
+                              </button>
                             </div>
-                            <div className="recipe-card-macros">
-                              {recipe.calories && <span className="macro-pill macro-kcal">🔥 {recipe.calories}</span>}
-                              {recipe.protein && <span className="macro-pill macro-protein">💪 {recipe.protein}g</span>}
-                              {recipe.carbs && <span className="macro-pill macro-carbs">⚡ {recipe.carbs}g</span>}
+
+                            <div className="recipe-card-body">
+                              <h4 className="recipe-card-title">{cleanRecipeTitle(recipe.title)}</h4>
+                              <div className="recipe-card-meta">
+                                <span>{recipe.ingredients?.length || 0} υλικά</span>
+                                {recipe.cuisine && recipe.cuisine !== 'Διεθνής' && (
+                                  <>
+                                    <span style={{ opacity:0.4 }}>·</span>
+                                    <span>{recipe.cuisine}</span>
+                                  </>
+                                )}
+                              </div>
+                              <div className="recipe-card-macros">
+                                {recipe.calories && <span className="macro-pill macro-kcal">🔥 {recipe.calories}</span>}
+                                {recipe.protein && <span className="macro-pill macro-protein">💪 {recipe.protein}g</span>}
+                                {recipe.carbs && <span className="macro-pill macro-carbs">⚡ {recipe.carbs}g</span>}
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        </ScrollReveal>
                       ))}
                     </div>
 
@@ -5628,7 +5661,7 @@ export default function App() {
 
       {/* ── Smart Route — only for Premium & Trial users ── */}
       {user && (user.isPremium || user.isOnTrial) && <FloatingMapButton
-        onClick={() => {
+        onClick={async () => {
           // #region agent log
           debugLog({
             runId: 'pre-repro',
@@ -5643,7 +5676,9 @@ export default function App() {
             },
           });
           // #endregion
-          setShowSmartRoute(true);
+          // Request location permission before opening map
+          const { granted } = await requestLocation();
+          if (granted) setShowSmartRoute(true);
         }}
         itemCount={uniqueStoresInList}
       />}

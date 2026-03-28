@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Production: μόνο HTTPS για το backend -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">my-smart-grocery-api.onrender.com</domain>
+        <domain includeSubdomains="true">world.openfoodfacts.org</domain>
+        <domain includeSubdomains="true">gr.openfoodfacts.org</domain>
+        <domain includeSubdomains="true">router.project-osrm.org</domain>
+        <domain includeSubdomains="true">maps.googleapis.com</domain>
+    </domain-config>
+    <!-- Capacitor local WebView — επιτρέπεται cleartext μόνο για localhost -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+</network-security-config>
