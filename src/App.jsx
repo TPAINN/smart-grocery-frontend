@@ -1705,7 +1705,15 @@ function IngredientDetailModal({ item, onClose }) {
 
 // ─── Scanner Onboarding Modal (first-time use) ───────────────────────────────
 function ScannerOnboardingModal({ onComplete }) {
-  const [step, setStep] = useState(0);
+  const [step, setStep]           = useState(0);
+  const [direction, setDirection] = useState('forward');
+
+  const goTo = (newStep) => {
+    setDirection(newStep > step ? 'forward' : 'backward');
+    setStep(newStep);
+  };
+  const goNext = () => { if (step < 2) goTo(step + 1); else onComplete(); };
+  const goPrev = () => { if (step > 0) goTo(step - 1); };
 
   const steps = [
     {
@@ -1719,7 +1727,7 @@ function ScannerOnboardingModal({ onComplete }) {
         { icon: '🇬🇷', text: 'Υποστήριξη ελληνικών προϊόντων' },
       ],
       svg: (
-        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:220 }}>
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:210, height:158 }}>
           {/* Phone outline */}
           <rect x="65" y="10" width="70" height="120" rx="12" fill="#1e1b4b" stroke="#6366f1" strokeWidth="2"/>
           <rect x="72" y="22" width="56" height="80" rx="6" fill="#0f0f1a"/>
@@ -1765,7 +1773,7 @@ function ScannerOnboardingModal({ onComplete }) {
         { icon: '🌱', text: 'Vegan & vegetarian ένδειξη' },
       ],
       svg: (
-        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:220 }}>
+        <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:210, height:158 }}>
           {/* Camera view background */}
           <rect x="20" y="15" width="160" height="130" rx="16" fill="#0a0a14"/>
           {/* Barcode in center */}
@@ -1818,7 +1826,7 @@ function ScannerOnboardingModal({ onComplete }) {
         { icon: '🏭', text: 'Βαθμολογία NOVA επεξεργασίας' },
       ],
       svg: (
-        <svg viewBox="0 0 220 172" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:240 }}>
+        <svg viewBox="0 0 220 172" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:226, height:158 }}>
           <defs>
             <linearGradient id="sc-card" x1="0" y1="0" x2="220" y2="172" gradientUnits="userSpaceOnUse">
               <stop offset="0%" stopColor="#1e1b4b"/>
@@ -1978,17 +1986,20 @@ function ScannerOnboardingModal({ onComplete }) {
   return (
     <div style={{
       position:'fixed', inset:0, zIndex:200000,
-      background:'rgba(0,0,0,0.88)', backdropFilter:'blur(16px)',
+      background:'rgba(0,0,0,0.9)', backdropFilter:'blur(20px)',
       display:'flex', alignItems:'center', justifyContent:'center', padding:16,
-      animation:'fadeInScale 0.35s cubic-bezier(0.16,1,0.3,1)',
+      animation:'fadeIn 0.25s ease both',
     }}>
       <div style={{
         background:'linear-gradient(160deg,#0f0c29 0%,#1a1560 50%,#0c0a1e 100%)',
-        border:'1px solid rgba(99,102,241,0.3)',
+        border:'1px solid rgba(99,102,241,0.35)',
         borderRadius:28,
         width:'100%', maxWidth:370,
-        boxShadow:'0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
+        maxHeight:'calc(100dvh - 32px)',
+        boxShadow:'0 40px 100px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.07)',
         position:'relative', overflow:'hidden',
+        display:'flex', flexDirection:'column',
+        animation:'onboardModalIn 0.6s cubic-bezier(0.16,1,0.3,1) both',
       }}>
         {/* Top glow */}
         <div style={{ position:'absolute', top:-80, left:'50%', transform:'translateX(-50%)', width:260, height:200, background:'radial-gradient(ellipse,rgba(99,102,241,0.18),transparent 70%)', pointerEvents:'none' }}/>
@@ -2013,7 +2024,7 @@ function ScannerOnboardingModal({ onComplete }) {
           }}/>
         </div>
 
-        <div style={{ padding:'24px 24px 28px' }}>
+        <div key={step} className={`onboard-step-${direction}`} style={{ padding:'24px 24px 28px', overflowY:'auto', flex:1 }}>
           {/* Tag + step */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
             <div style={{
@@ -2030,41 +2041,42 @@ function ScannerOnboardingModal({ onComplete }) {
           </div>
 
           {/* Illustration */}
-          <div style={{ margin:'0 auto 20px', height:150, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ margin:'0 auto 16px', height:158, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', flexShrink:0, animation:'onboardIllustrationIn 0.5s cubic-bezier(0.16,1,0.3,1) 0.06s both' }}>
             {current.svg}
           </div>
 
           {/* Title */}
-          <h2 style={{ fontSize:19, fontWeight:900, color:'#fff', margin:'0 0 8px', lineHeight:1.3, letterSpacing:-0.3 }}>
+          <h2 style={{ fontSize:18, fontWeight:900, color:'#fff', margin:'0 0 7px', lineHeight:1.3, letterSpacing:-0.3 }}>
             {current.title}
           </h2>
 
           {/* Description */}
-          <p style={{ fontSize:13.5, color:'rgba(165,180,252,0.8)', lineHeight:1.6, margin:'0 0 18px' }}>
+          <p style={{ fontSize:13, color:'rgba(165,180,252,0.82)', lineHeight:1.55, margin:'0 0 14px' }}>
             {current.desc}
           </p>
 
           {/* Feature highlights */}
-          <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:24 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:20 }}>
             {current.features.map((f, i) => (
               <div key={i} style={{
                 display:'flex', alignItems:'center', gap:10,
                 background:'rgba(255,255,255,0.04)', borderRadius:12,
-                padding:'9px 12px', border:'1px solid rgba(255,255,255,0.06)',
+                padding:'8px 12px', border:'1px solid rgba(255,255,255,0.06)',
+                animation:`onboardFeatureIn 0.45s cubic-bezier(0.16,1,0.3,1) ${0.12 + i * 0.09}s both`,
               }}>
-                <span style={{ fontSize:16, flexShrink:0 }}>{f.icon}</span>
-                <span style={{ fontSize:13, color:'rgba(255,255,255,0.75)', fontWeight:500 }}>{f.text}</span>
+                <span style={{ fontSize:15, flexShrink:0 }}>{f.icon}</span>
+                <span style={{ fontSize:12.5, color:'rgba(255,255,255,0.78)', fontWeight:500, lineHeight:1.35 }}>{f.text}</span>
               </div>
             ))}
           </div>
 
           {/* Step dots */}
-          <div style={{ display:'flex', justifyContent:'center', gap:6, marginBottom:20 }}>
+          <div style={{ display:'flex', justifyContent:'center', gap:6, marginBottom:16 }}>
             {steps.map((_, i) => (
-              <div key={i} onClick={() => setStep(i)} style={{
+              <div key={i} onClick={() => goTo(i)} style={{
                 width: i === step ? 22 : 7, height:7, borderRadius:4,
                 background: i <= step ? '#6366f1' : 'rgba(99,102,241,0.25)',
-                transition:'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+                transition:'all 0.38s cubic-bezier(0.34,1.56,0.64,1)',
                 cursor:'pointer',
               }}/>
             ))}
@@ -2073,26 +2085,33 @@ function ScannerOnboardingModal({ onComplete }) {
           {/* Buttons */}
           <div style={{ display:'flex', gap:8 }}>
             {step > 0 && (
-              <button onClick={() => setStep(s => s - 1)} style={{
+              <button onClick={goPrev} style={{
                 padding:'13px 18px', borderRadius:14,
                 border:'1px solid rgba(99,102,241,0.35)', background:'rgba(99,102,241,0.08)',
                 color:'#a5b4fc', fontWeight:700, fontSize:14, cursor:'pointer', fontFamily:'var(--font)',
-                transition:'background 0.2s',
-              }}>
+                transition:'background 0.2s, transform 0.15s',
+              }}
+              onMouseDown={e=>e.currentTarget.style.transform='scale(0.96)'}
+              onMouseUp={e=>e.currentTarget.style.transform=''}
+              onTouchStart={e=>e.currentTarget.style.transform='scale(0.96)'}
+              onTouchEnd={e=>e.currentTarget.style.transform=''}
+              >
                 ←
               </button>
             )}
             <button
-              onClick={() => { if (step < steps.length - 1) setStep(s => s + 1); else onComplete(); }}
+              onClick={goNext}
               style={{
                 flex:1, padding:'13px', borderRadius:14, border:'none',
                 background:'linear-gradient(135deg,#6366f1,#4f46e5)',
                 color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer', fontFamily:'var(--font)',
-                boxShadow:'0 6px 20px rgba(99,102,241,0.45)',
+                boxShadow:'0 6px 22px rgba(99,102,241,0.5)',
                 transition:'transform 0.15s, box-shadow 0.15s',
               }}
-              onMouseDown={e => { e.currentTarget.style.transform='scale(0.97)'; }}
-              onMouseUp={e => { e.currentTarget.style.transform=''; }}
+              onMouseDown={e => { e.currentTarget.style.transform='scale(0.97)'; e.currentTarget.style.boxShadow='0 2px 10px rgba(99,102,241,0.35)'; }}
+              onMouseUp={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow=''; }}
+              onTouchStart={e => { e.currentTarget.style.transform='scale(0.97)'; }}
+              onTouchEnd={e => { e.currentTarget.style.transform=''; }}
             >
               {step < steps.length - 1 ? 'Επόμενο →' : '🚀 Ξεκίνα!'}
             </button>

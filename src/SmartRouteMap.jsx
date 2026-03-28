@@ -15,12 +15,14 @@ import {
 
 // ─── Chains ──────────────────────────────────────────────────────────────────
 const CHAINS = [
-  { id:'ab', name:'ΑΒ Βασιλόπουλος', tags:['ΑΒ Βασιλόπουλος','AB Vassilopoulos','AB Food Market'], color:'#e31e24', emoji:'🔴' },
-  { id:'sklavenitis', name:'Σκλαβενίτης', tags:['Σκλαβενίτης','Sklavenitis'], color:'#1a5632', emoji:'🟢' },
-  { id:'mymarket', name:'My Market', tags:['My Market'], color:'#f5a623', emoji:'🟡' },
-  { id:'lidl', name:'Lidl', tags:['Lidl'], color:'#0050aa', emoji:'🔵' },
-  { id:'masoutis', name:'Μασούτης', tags:['Μασούτης','Masoutis'], color:'#c41230', emoji:'🟠' },
-  { id:'galaxias', name:'Γαλαξίας', tags:['Γαλαξίας','Galaxias'], color:'#6b21a8', emoji:'🟣' },
+  { id:'ab',         name:'ΑΒ Βασιλόπουλος', tags:['ΑΒ Βασιλόπουλος','AB Vassilopoulos','AB Food Market'], color:'#e31e24', emoji:'🔴', logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTl3QK3J91QWo9nDaOQxqXTMIwCRNMnJYazWw&s' },
+  { id:'sklavenitis', name:'Σκλαβενίτης',    tags:['Σκλαβενίτης','Sklavenitis'],                           color:'#1a5632', emoji:'🟢', logo:'https://core-sa.com/wp-content/uploads/2019/10/sklavenitis.png' },
+  { id:'mymarket',   name:'My Market',        tags:['My Market'],                                           color:'#f5a623', emoji:'🟡', logo:'https://www.chalandri.gr/wp-content/uploads/2021/04/mymarket-logo.jpg' },
+  { id:'lidl',       name:'Lidl',             tags:['Lidl'],                                                color:'#0050aa', emoji:'🔵', logo:'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Lidl_logo.png/500px-Lidl_logo.png' },
+  { id:'masoutis',   name:'Μασούτης',         tags:['Μασούτης','Masoutis'],                                 color:'#c41230', emoji:'🟠', logo:'https://www.sbctv.gr/wp-content/uploads/2023/12/masoutis.jpg' },
+  { id:'galaxias',   name:'Γαλαξίας',         tags:['Γαλαξίας','Galaxias'],                                 color:'#6b21a8', emoji:'🟣', logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQy-2RHg306icN_ZxWeZtHNUeB_p9oIvMYx9Q&s' },
+  { id:'kritikos',   name:'Κρητικός',         tags:['Κρητικός','Kritikos'],                                  color:'#1d4ed8', emoji:'🔷', logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqiIcIME5HllU-2TVovGx0hdfpW0Y32Hcs7w&s' },
+  { id:'marketin',   name:'Market In',        tags:['Market In'],                                           color:'#0891b2', emoji:'🔹', logo:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQif4Kc8fqSN-sxec3L1gefzE8BGBL_hQOWDg&s' },
 ];
 
 // ─── Leaflet loader ──────────────────────────────────────────────────────────
@@ -178,8 +180,8 @@ export function FloatingMapButton({ onClick, itemCount = 0 }) {
     const dy = clientY - d.startY;
     if (Math.abs(dx) > 5 || Math.abs(dy) > 5) d.moved = true;
     if (!d.moved) return;
-    const nx = Math.max(0, Math.min(window.innerWidth - 52, d.startPosX + dx));
-    const ny = Math.max(0, Math.min(window.innerHeight - 52, d.startPosY + dy));
+    const nx = Math.max(0, Math.min(window.innerWidth - 44, d.startPosX + dx));
+    const ny = Math.max(0, Math.min(window.innerHeight - 44, d.startPosY + dy));
     setPos({ x: nx, y: ny });
   };
 
@@ -216,7 +218,7 @@ export function FloatingMapButton({ onClick, itemCount = 0 }) {
       aria-label="Smart Route"
     >
       <span className="smart-route-fab-inner">
-        <IconMap2 size={22} stroke={2.2} />
+        <IconMap2 size={18} stroke={2.2} />
         {ripple && <span className="fab-ripple" />}
       </span>
       {itemCount > 0 && <span className="smart-route-fab-badge">{itemCount > 9 ? '9+' : itemCount}</span>}
@@ -416,6 +418,17 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         <div ref={containerRef} className="smart-route-map"/>
         {status==='loading'&&<div className="smart-route-loading"><div className="smart-route-spinner"/><div style={{fontWeight:600}}>Φόρτωση χάρτη...</div></div>}
         {status==='error'&&<div className="smart-route-loading"><IconAlertTriangle size={40} color="#f59e0b"/><div style={{fontWeight:700,marginTop:12,textAlign:'center',padding:'0 16px'}}>{err}</div><button className="smart-route-retry-btn" onClick={()=>{clearOverpassCache();setStatus('loading');setErr('');if(userLoc)doSearch(userLoc)}}><IconRefresh size={16}/>Ξαναδοκίμασε</button></div>}
+        {selected.length>0&&userLoc&&status==='ready'&&(
+          <div className="smart-route-map-nav-overlay">
+            <button className="smart-route-map-nav-fab" onClick={()=>openNav(userLoc,selected,mode)}>
+              <IconNavigation size={15}/>
+              <span className="smart-route-map-nav-fab-label">
+                {route?`${fmtD(route.duration)} · ${fmtM(route.distance)}`:`Πλοήγηση (${selected.length})`}
+              </span>
+              <span className="smart-route-map-nav-fab-sub">Google Maps →</span>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={`smart-route-panel ${panel?'expanded':'collapsed'}`}>
@@ -446,7 +459,12 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
             {stores.map(s=>{const sel=selected.some(x=>x.id===s.id);return(
               <div key={s.id} className={`smart-route-store-card ${sel?'selected':''}`} onClick={()=>toggle(s)}>
                 <div className="smart-route-store-left">
-                  <div className="smart-route-store-icon" style={{background:s.chainColor+'18',borderColor:s.chainColor+'40'}}><span>{s.chainEmoji}</span></div>
+                  <div className="smart-route-store-icon" style={{background:s.chainColor+'18',borderColor:s.chainColor+'40',overflow:'hidden'}}>
+                    {s.chain?.logo
+                      ? <img src={s.chain.logo} alt="" className="smart-route-store-logo-img" onError={e=>{e.currentTarget.style.display='none';e.currentTarget.nextSibling.style.display='';}} />
+                      : null}
+                    <span style={s.chain?.logo?{display:'none'}:{}}>{s.chainEmoji}</span>
+                  </div>
                   <div className="smart-route-store-info">
                     <div className="smart-route-store-name">{s.name}</div>
                     <div className="smart-route-store-meta"><span>📍 {fmtM(s.distance)}</span>{s.address&&<span>{s.address}</span>}</div>
