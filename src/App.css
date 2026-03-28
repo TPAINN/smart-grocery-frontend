@@ -2010,11 +2010,39 @@ body:not(.dark-mode) .scanner-header-icon-wrap {
 .scanner-close-btn:active { transform: scale(0.92); }
 
 /* ── Scan Hint Card ── */
+/* Small disclaimer above the viewfinder */
+.scanner-coverage-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: rgba(99,102,241,0.06);
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  font-weight: 500;
+  animation: hintFade 0.5s 0.3s both;
+}
+
+/* Dim bands above/below the scan zone so the active area pops */
+.scanner-zone-overlay {
+  position: absolute;
+  left: 0; right: 0;
+  background: rgba(0,0,0,0.35);
+  pointer-events: none;
+  z-index: 1;
+}
+.scanner-zone-top    { top: 0;    height: calc(50% - 61px); }
+.scanner-zone-bottom { bottom: 0; height: calc(50% - 61px); }
+
 .scanner-hint-card {
   display: flex;
   align-items: center;
   gap: 9px;
-  justify-content: center;
+  justify-content: flex-start;
   background: rgba(34,197,94,0.06);
   border: 1px solid rgba(34,197,94,0.2);
   border-radius: 12px;
@@ -2030,6 +2058,15 @@ body:not(.dark-mode) .scanner-header-icon-wrap {
   flex-shrink: 0;
 }
 .scanner-hint-card strong { color: var(--text-primary); }
+
+/* Supported barcode formats shown under hint text */
+.scanner-hint-supported {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
 
 /* ── Product Found Flash ── */
 .scanner-found-flash {

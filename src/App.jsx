@@ -1066,10 +1066,12 @@ function AddFriendModal({ isOpen, onAdd, onClose }) {
   };
 
   const handleAdd = (friendData) => {
+    // Only allow adding when the share key was verified against the server.
+    // Never create a ghost friend from a raw unverified key.
     const target = friendData || (
       preview && preview !== 'not_found' && preview !== 'offline'
         ? { shareKey: preview.shareKey, username: preview.name || preview.username || 'Φίλος', addedAt: Date.now() }
-        : key.trim() ? { shareKey: key.trim().toUpperCase(), username: 'Φίλος', addedAt: Date.now() } : null
+        : null
     );
     if (!target) return;
     onAdd(target);
@@ -2441,6 +2443,14 @@ function BarcodeScannerModal({ isOpen, onClose }) {
               </div>
             ) : (
               <div className="scanner-scan-center">
+                {/* Coverage notice — small, unobtrusive, above the viewfinder */}
+                <div className="scanner-coverage-notice">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink:0, opacity:0.65 }}>
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
+                  </svg>
+                  <span>Ο σαρωτής χρησιμοποιεί τη βάση Open Food Facts. Δεν αναγνωρίζει πάντα ελληνικά ή τοπικά προϊόντα — αν δεν βρεθεί αποτέλεσμα, δοκίμασε χειροκίνητη αναζήτηση.</span>
+                </div>
+
                 <div className="scanner-viewfinder">
                   <div id={scannerDivId} key={scanKey} style={{ width:'100%' }} />
                   <div className="scanner-frame">
@@ -2448,12 +2458,19 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                     <div className="sf-corner sf-bl" /><div className="sf-corner sf-br" />
                     <div className="sf-laser" />
                   </div>
+                  {/* Dim overlay outside the scan zone */}
+                  <div className="scanner-zone-overlay scanner-zone-top" />
+                  <div className="scanner-zone-overlay scanner-zone-bottom" />
                 </div>
+
                 <div className="scanner-hint-card">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="scanner-hint-icon">
                     <path d="M3 5h2M3 12h2M3 19h2M7 5v14M11 5h2M11 12h2M11 19h2M15 5v14M19 5h2M19 12h2M19 19h2"/>
                   </svg>
-                  <span>Στόχευσε το barcode μέσα στο <strong>πράσινο πλαίσιο</strong></span>
+                  <div>
+                    <div>Στόχευσε το barcode μέσα στο <strong>πράσινο πλαίσιο</strong></div>
+                    <div className="scanner-hint-supported">EAN-13 · EAN-8 · UPC · QR · Code 128</div>
+                  </div>
                 </div>
               </div>
             )}
@@ -3003,6 +3020,13 @@ export default function App() {
   const [mealPlanStep, setMealPlanStep] = useState(1); // 1=Quiz slides, 3=Results
   const [quizSlide,    setQuizSlide]    = useState(0); // 0-8 quiz slides
   const [quizDir,      setQuizDir]      = useState('fwd'); // 'fwd' | 'bck'
+
+  // Feedback modal — shown when user taps "Νέο" to learn why they want a new plan
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackReason,    setFeedbackReason]    = useState('other');
+  const [feedbackFreeText,  setFeedbackFreeText]  = useState('');
+  // Track which A/B option user picked per meal slot: key = "dayIdx_mealType", value = 'a'|'b'
+  const [selectedMeals, setSelectedMeals] = useState({});
 
   // Macro ratio targets for meal plan (must sum to 100)
   const [macroRatios, setMacroRatios] = useState({ protein: 30, carbs: 40, fat: 30 });
@@ -3921,6 +3945,32 @@ export default function App() {
     } finally {
       setMealPlanLoading(false);
     }
+  };
+
+  // Show the feedback dialog instead of immediately resetting
+  const resetPlanWithFeedback = () => {
+    setFeedbackReason('other');
+    setFeedbackFreeText('');
+    setShowFeedbackModal(true);
+  };
+
+  // Save feedback to backend then wipe the current plan
+  const submitFeedbackAndReset = async () => {
+    const choices = Object.entries(selectedMeals).map(([key, chosen]) => {
+      const [day, ...rest] = key.split('_');
+      return { day: Number(day), mealType: rest.join('_'), chosen };
+    });
+    try {
+      await fetch(`${API_BASE}/api/meal-plan/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({ reason: feedbackReason, freeText: feedbackFreeText, choices }),
+      });
+    } catch { /* non-critical — don't block the UX */ }
+    setMealPlan(null); setMealPlanStats(null); setMealPlanShoppingList([]);
+    setMealPlanSummary(null); setMealPlanStep(1); setQuizSlide(0);
+    setSelectedMeals({}); setShowFeedbackModal(false);
+    setFeedbackReason('other'); setFeedbackFreeText('');
   };
 
   const addMealPlanToCart = () => {
@@ -5416,15 +5466,32 @@ export default function App() {
 
             {/* ════ STEP 3: RESULTS ════ */}
             {mealPlanStep === 3 && mealPlan && (() => {
-              const renderCard = (meal, isAlt) => {
+              // slotKey = "dayIdx_mealType" (e.g. "0_breakfast")
+              // chosen = 'a' | 'b'
+              const renderCard = (meal, isAlt, slotKey) => {
                 if (!meal) return null;
+                const chosenForSlot = selectedMeals[slotKey];
+                const isThisChosen = chosenForSlot === (isAlt ? 'b' : 'a');
+                const otherChosen  = chosenForSlot && !isThisChosen;
                 return (
-                  <div style={{ background:isAlt?'var(--bg-surface)':'var(--bg-card)', border:`1.5px solid ${isAlt?'var(--border)':'rgba(99,102,241,0.15)'}`, borderRadius:16, padding:'14px 16px' }}>
+                  <div
+                    onClick={() => slotKey && setSelectedMeals(prev => ({ ...prev, [slotKey]: isAlt ? 'b' : 'a' }))}
+                    style={{
+                      background: isThisChosen
+                        ? (isAlt ? 'rgba(139,92,246,0.07)' : 'rgba(99,102,241,0.07)')
+                        : isAlt ? 'var(--bg-surface)' : 'var(--bg-card)',
+                      border: `1.5px solid ${isThisChosen ? (isAlt?'#8b5cf6':'#6366f1') : otherChosen ? 'var(--border)' : isAlt?'var(--border)':'rgba(99,102,241,0.15)'}`,
+                      borderRadius:16, padding:'14px 16px',
+                      cursor: slotKey ? 'pointer' : 'default',
+                      opacity: otherChosen ? 0.55 : 1,
+                      transition: 'all 0.2s',
+                    }}
+                  >
                     <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:10 }}>
                       <div style={{ flex:1 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:5 }}>
-                          <div style={{ fontSize:10, fontWeight:800, color:isAlt?'var(--text-muted)':'#6366f1', background:isAlt?'var(--bg-subtle)':'rgba(99,102,241,0.1)', borderRadius:6, padding:'2px 7px', letterSpacing:0.3 }}>
-                            {isAlt?'ΕΠΙΛΟΓΗ Β':'ΕΠΙΛΟΓΗ Α'}
+                          <div style={{ fontSize:10, fontWeight:800, color:isThisChosen?(isAlt?'#8b5cf6':'#6366f1'):isAlt?'var(--text-muted)':'#6366f1', background:isThisChosen?'rgba(99,102,241,0.18)':isAlt?'var(--bg-subtle)':'rgba(99,102,241,0.1)', borderRadius:6, padding:'2px 7px', letterSpacing:0.3 }}>
+                            {isThisChosen ? '✓ ' : ''}{isAlt?'ΕΠΙΛΟΓΗ Β':'ΕΠΙΛΟΓΗ Α'}
                           </div>
                           {meal.time && <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)' }}>⏱ {meal.time}′</div>}
                         </div>
@@ -5482,27 +5549,31 @@ export default function App() {
                         <div style={{ fontWeight:900, fontSize:19, color:'var(--text-primary)', letterSpacing:-0.5 }}>🎉 Το πλάνο σου είναι έτοιμο!</div>
                         <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:3 }}>{mealPlan.length} μέρες · {mealPlanPrefs.persons} άτομο{mealPlanPrefs.persons!==1?'α':''} · 2 επιλογές ανά γεύμα</div>
                       </div>
-                      <button onClick={() => { setMealPlan(null); setMealPlanStats(null); setMealPlanShoppingList([]); setMealPlanSummary(null); setMealPlanStep(1); setQuizSlide(0); }}
+                      <button onClick={resetPlanWithFeedback}
                         style={{ background:'var(--bg-surface)', border:'1.5px solid var(--border)', borderRadius:12, padding:'8px 12px', fontSize:12, fontWeight:700, cursor:'pointer', color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:5, flexShrink:0 }}>
                         <IconRefresh size={13}/> Νέο
                       </button>
                     </div>
-                    {mealPlanSummary && (
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
-                        {[
-                          { label:'kcal/μέρα', value:mealPlanSummary.avgKcalPerDay||'—', color:'#f59e0b', icon:'🔥' },
-                          { label:'Πρωτεΐνη', value:mealPlanSummary.avgProteinPerDay?`${mealPlanSummary.avgProteinPerDay}g`:'—', color:'#6366f1', icon:'💪' },
-                          { label:'Βρέθηκαν', value:mealPlanStats?`${mealPlanStats.foundInDB}/${mealPlanStats.totalIngredients}`:'—', color:'#10b981', icon:'✓' },
-                          { label:'Κόστος', value:mealPlanStats?.estimatedTotalCost?`${mealPlanStats.estimatedTotalCost.toFixed(0)}€`:'—', color:'#a78bfa', icon:'💰' },
-                        ].map(({label,value,color,icon}) => (
-                          <div key={label} style={{ background:`${color}12`, border:`1px solid ${color}22`, borderRadius:12, padding:'10px 8px', textAlign:'center' }}>
-                            <div style={{ fontSize:18, marginBottom:3 }}>{icon}</div>
-                            <div style={{ fontWeight:900, fontSize:14, color, lineHeight:1 }}>{value}</div>
-                            <div style={{ fontSize:9, color:'var(--text-muted)', marginTop:3, fontWeight:600 }}>{label}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {mealPlanSummary && (() => {
+                      const isBudget = mealPlanPrefs.goal === 'budget';
+                      const statItems = [
+                        !isBudget && { label:'kcal/μέρα', value:mealPlanSummary.avgKcalPerDay||'—', color:'#f59e0b', icon:'🔥' },
+                        { label:'Πρωτεΐνη', value:mealPlanSummary.avgProteinPerDay?`${mealPlanSummary.avgProteinPerDay}g`:'—', color:'#6366f1', icon:'💪' },
+                        { label:'Βρέθηκαν', value:mealPlanStats?`${mealPlanStats.foundInDB}/${mealPlanStats.totalIngredients}`:'—', color:'#10b981', icon:'✓' },
+                        { label:'Κόστος', value:mealPlanStats?.estimatedCost?`${mealPlanStats.estimatedCost.toFixed(0)}€`:mealPlanStats?.estimatedTotalCost?`${mealPlanStats.estimatedTotalCost.toFixed(0)}€`:'—', color:'#a78bfa', icon:'💰' },
+                      ].filter(Boolean);
+                      return (
+                        <div style={{ display:'grid', gridTemplateColumns:`repeat(${statItems.length},1fr)`, gap:8 }}>
+                          {statItems.map(({label,value,color,icon}) => (
+                            <div key={label} style={{ background:`${color}12`, border:`1px solid ${color}22`, borderRadius:12, padding:'10px 8px', textAlign:'center' }}>
+                              <div style={{ fontSize:18, marginBottom:3 }}>{icon}</div>
+                              <div style={{ fontWeight:900, fontSize:14, color, lineHeight:1 }}>{value}</div>
+                              <div style={{ fontSize:9, color:'var(--text-muted)', marginTop:3, fontWeight:600 }}>{label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Day selector */}
@@ -5533,8 +5604,8 @@ export default function App() {
                           </div>
                         </div>
                         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                          {renderCard(day.meals.breakfast, false)}
-                          {day.meals.breakfast_alt && renderCard(day.meals.breakfast_alt, true)}
+                          {renderCard(day.meals.breakfast, false, `${activeMealDay}_breakfast`)}
+                          {day.meals.breakfast_alt && renderCard(day.meals.breakfast_alt, true, `${activeMealDay}_breakfast`)}
                         </div>
                       </div>
                     )}
@@ -5559,8 +5630,8 @@ export default function App() {
                           </div>
                         </div>
                         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                          {renderCard(day.meals.lunch, false)}
-                          {day.meals.lunch_alt && renderCard(day.meals.lunch_alt, true)}
+                          {renderCard(day.meals.lunch, false, `${activeMealDay}_lunch`)}
+                          {day.meals.lunch_alt && renderCard(day.meals.lunch_alt, true, `${activeMealDay}_lunch`)}
                         </div>
                       </div>
                     )}
@@ -5585,8 +5656,8 @@ export default function App() {
                           </div>
                         </div>
                         <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                          {renderCard(day.meals.dinner, false)}
-                          {day.meals.dinner_alt && renderCard(day.meals.dinner_alt, true)}
+                          {renderCard(day.meals.dinner, false, `${activeMealDay}_dinner`)}
+                          {day.meals.dinner_alt && renderCard(day.meals.dinner_alt, true, `${activeMealDay}_dinner`)}
                         </div>
                       </div>
                     )}
@@ -5624,7 +5695,7 @@ export default function App() {
                         style={{ padding:'16px', border:'none', borderRadius:14, fontWeight:800, fontSize:15, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:'linear-gradient(135deg,#10b981,#059669)', color:'#fff', boxShadow:'0 4px 20px rgba(16,185,129,0.3)' }}>
                         <IconShoppingCart size={18} stroke={2}/> Πρόσθεσε στη Λίστα
                       </button>
-                      <button onClick={() => { setMealPlan(null); setMealPlanStats(null); setMealPlanShoppingList([]); setMealPlanSummary(null); setMealPlanStep(1); setQuizSlide(0); }}
+                      <button onClick={resetPlanWithFeedback}
                         style={{ padding:'16px 14px', background:'var(--bg-card)', color:'var(--text-secondary)', border:'1.5px solid var(--border)', borderRadius:14, fontWeight:800, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                         <IconRefresh size={15} stroke={2}/>
                       </button>
@@ -5635,6 +5706,64 @@ export default function App() {
               );
             })()}
           </div>
+        )}
+
+        {/* ════ FEEDBACK MODAL — shown before regenerating a plan ════ */}
+        {showFeedbackModal && createPortal(
+          <div
+            aria-modal="true" role="dialog"
+            onClick={e => { if (e.target === e.currentTarget) setShowFeedbackModal(false); }}
+            style={{ position:'fixed', inset:0, zIndex:9999, display:'flex', alignItems:'flex-end', justifyContent:'center', background:'rgba(0,0,0,0.55)', backdropFilter:'blur(4px)' }}
+          >
+            <div style={{ width:'100%', maxWidth:480, background:'var(--bg-card)', borderRadius:'24px 24px 0 0', padding:'24px 20px 32px', paddingBottom:'calc(32px + env(safe-area-inset-bottom))', display:'flex', flexDirection:'column', gap:16 }}>
+
+              {/* Handle + title */}
+              <div style={{ width:40, height:4, borderRadius:99, background:'var(--border)', margin:'0 auto 4px' }}/>
+              <div>
+                <div style={{ fontWeight:900, fontSize:19, color:'var(--text-primary)', marginBottom:4 }}>Γιατί νέο πλάνο; 🤔</div>
+                <div style={{ fontSize:12, color:'var(--text-secondary)' }}>Το feedback σου βοηθάει να βελτιώνουμε τις προτάσεις</div>
+              </div>
+
+              {/* Reason chips */}
+              <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                {[
+                  { v:'different_recipes', l:'Θέλω άλλες συνταγές' },
+                  { v:'lighter',           l:'Πιο ελαφρύ' },
+                  { v:'cheaper',           l:'Πιο οικονομικό' },
+                  { v:'faster',            l:'Πιο γρήγορο μαγείρεμα' },
+                  { v:'more_variety',      l:'Περισσότερη ποικιλία' },
+                  { v:'other',             l:'Άλλο' },
+                ].map(({ v, l }) => (
+                  <button key={v} onClick={() => setFeedbackReason(v)}
+                    style={{ padding:'8px 14px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border:`1.5px solid ${feedbackReason===v?'#6366f1':'var(--border)'}`, background:feedbackReason===v?'rgba(99,102,241,0.1)':'var(--bg-surface)', color:feedbackReason===v?'#6366f1':'var(--text-secondary)', transition:'all 0.15s' }}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+
+              {/* Optional free-text */}
+              <textarea
+                placeholder="Πρόσθεσε σχόλιο (προαιρετικό)…"
+                value={feedbackFreeText}
+                onChange={e => setFeedbackFreeText(e.target.value)}
+                rows={2}
+                style={{ padding:'12px', borderRadius:12, border:'1.5px solid var(--border)', background:'var(--bg-surface)', color:'var(--text-primary)', fontSize:13, resize:'none', fontFamily:'inherit', outline:'none' }}
+              />
+
+              {/* Actions */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                <button onClick={() => setShowFeedbackModal(false)}
+                  style={{ padding:'14px', borderRadius:14, border:'1.5px solid var(--border)', background:'var(--bg-surface)', color:'var(--text-secondary)', fontWeight:700, fontSize:14, cursor:'pointer' }}>
+                  Άκυρο
+                </button>
+                <button onClick={submitFeedbackAndReset}
+                  style={{ padding:'14px', borderRadius:14, border:'none', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', fontWeight:800, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:7, boxShadow:'0 4px 18px rgba(99,102,241,0.35)' }}>
+                  <IconRefresh size={15}/> Νέο Πλάνο
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
         )}
 
         {/* ════ BROCHURES TAB ════ */}
