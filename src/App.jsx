@@ -3028,6 +3028,8 @@ export default function App() {
   const [mealDbLoading, setMealDbLoading]       = useState(false);
   const [mealDbExpanded, setMealDbExpanded]     = useState(null);
   const [mealDbTab, setMealDbTab]               = useState('greek'); // 'greek' | 'mediterranean'
+  const [mealDbPanelKey, setMealDbPanelKey]     = useState(0); // increment to retrigger animation
+  const mealDbTabsRef                           = useRef(null);
   const [showScanner, setShowScanner]     = useState(false);
   const [showSmartRoute, setShowSmartRoute] = useState(false);
   const [currentTime, setCurrentTime]     = useState(new Date());
@@ -3477,6 +3479,8 @@ export default function App() {
   const fetchMealDb = useCallback(async (section = 'greek') => {
     setMealDbLoading(true);
     setMealDbRecipes([]);
+    setMealDbExpanded(null);
+    setMealDbPanelKey(k => k + 1);
     try {
       const endpoint = section === 'mediterranean' ? 'mediterranean' : 'greek';
       const r = await fetch(`${API_BASE}/api/meals/${endpoint}`);
@@ -5160,125 +5164,154 @@ export default function App() {
                   </>
                 )}
 
-                {/* ── TheMealDB: Greek & Mediterranean Section ── */}
-                {isOnline && (
-                  <div style={{ marginTop: 28 }}>
-                    {/* Section header */}
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                      <div>
-                        <div style={{ fontWeight:900, fontSize:17, color:'var(--text-primary)', letterSpacing:-0.4 }}>
-                          🌍 Διεθνείς Συνταγές
-                        </div>
-                        <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
-                          Από το TheMealDB — ανοιχτή βάση δεδομένων συνταγών
-                        </div>
-                      </div>
-                      {/* Tab switcher */}
-                      <div style={{ display:'flex', background:'var(--bg-surface)', borderRadius:10, padding:3, gap:2 }}>
-                        {[{ id:'greek', label:'🇬🇷 Ελληνικές' }, { id:'mediterranean', label:'☀️ Μεσογειακές' }].map(t => (
-                          <button key={t.id}
-                            onClick={() => { setMealDbTab(t.id); fetchMealDb(t.id); }}
-                            style={{ padding:'5px 10px', borderRadius:8, border:'none', fontSize:11, fontWeight:700, cursor:'pointer', transition:'all 0.15s',
-                              background: mealDbTab===t.id ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'transparent',
-                              color: mealDbTab===t.id ? '#fff' : 'var(--text-secondary)' }}>
-                            {t.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                {/* ── TheMealDB: Διεθνείς Συνταγές Section ── */}
+                {isOnline && (() => {
+                  const TABS = [
+                    { id: 'greek',         label: '🇬🇷 Ελληνικές' },
+                    { id: 'mediterranean', label: '☀️ Μεσογειακές' },
+                  ];
+                  const activeIdx = TABS.findIndex(t => t.id === mealDbTab);
 
-                    {mealDbLoading ? (
-                      <div style={{ display:'flex', justifyContent:'center', padding:'24px 0', gap:8, alignItems:'center' }}>
-                        <div className="spinner-sm" />
-                        <span style={{ fontSize:13, color:'var(--text-muted)' }}>Φόρτωση συνταγών...</span>
-                      </div>
-                    ) : mealDbRecipes.length === 0 ? (
-                      <div style={{ textAlign:'center', color:'var(--text-muted)', fontSize:13, padding:'20px 0' }}>
-                        Δεν βρέθηκαν συνταγές.
-                      </div>
-                    ) : (
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(148px,1fr))', gap:12 }}>
-                        {mealDbRecipes.map(meal => (
-                          <div key={meal._id}
-                            onClick={() => setMealDbExpanded(mealDbExpanded === meal._id ? null : meal._id)}
-                            style={{ background:'var(--bg-card)', border:'1.5px solid var(--border-light)', borderRadius:16,
-                              overflow:'hidden', cursor:'pointer', transition:'transform 0.15s, box-shadow 0.15s',
-                              boxShadow: mealDbExpanded===meal._id ? '0 8px 28px rgba(99,102,241,0.2)' : '0 2px 8px rgba(0,0,0,0.06)',
-                              transform: mealDbExpanded===meal._id ? 'translateY(-2px)' : '' }}
-                          >
-                            {meal.image && (
-                              <img src={meal.image} alt={meal.title}
-                                style={{ width:'100%', height:110, objectFit:'cover', display:'block' }}
-                                loading="lazy"
-                              />
-                            )}
-                            <div style={{ padding:'10px 12px' }}>
-                              <div style={{ fontWeight:800, fontSize:13, color:'var(--text-primary)', lineHeight:1.3, marginBottom:4 }}>
-                                {meal.title}
-                              </div>
-                              <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
-                                {meal.category && (
-                                  <span style={{ fontSize:10, background:'rgba(99,102,241,0.1)', color:'#6366f1', borderRadius:6, padding:'2px 6px', fontWeight:700 }}>
-                                    {meal.category}
-                                  </span>
-                                )}
-                                {meal.area && (
-                                  <span style={{ fontSize:10, background:'var(--bg-subtle)', color:'var(--text-muted)', borderRadius:6, padding:'2px 6px', fontWeight:600 }}>
-                                    {meal.area}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Expanded detail */}
-                            {mealDbExpanded === meal._id && (
-                              <div style={{ padding:'0 12px 14px', borderTop:'1px solid var(--border)' }}>
-                                {meal.ingredients?.length > 0 && (
-                                  <div style={{ marginBottom:10 }}>
-                                    <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.3, margin:'10px 0 6px' }}>
-                                      🛒 Υλικά
-                                    </div>
-                                    <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
-                                      {meal.ingredients.map((ing, i) => (
-                                        <span key={i} style={{ fontSize:11, padding:'3px 8px', borderRadius:20, background:'var(--bg-subtle)', color:'var(--text-secondary)', border:'1px solid var(--border)', fontWeight:500 }}>
-                                          {ing}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                {meal.instructions && (
-                                  <div>
-                                    <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.3, marginBottom:6 }}>
-                                      📋 Οδηγίες
-                                    </div>
-                                    <div style={{ fontSize:11, color:'var(--text-secondary)', lineHeight:1.6, maxHeight:160, overflowY:'auto' }}>
-                                      {meal.instructions.slice(0, 500)}{meal.instructions.length > 500 ? '…' : ''}
-                                    </div>
-                                  </div>
-                                )}
-                                <div style={{ display:'flex', gap:8, marginTop:10 }}>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); addRecipeToList(meal); }}
-                                    style={{ flex:1, padding:'8px', border:'none', borderRadius:10, background:'linear-gradient(135deg,#10b981,#059669)', color:'#fff', fontWeight:700, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
-                                    <IconShoppingCart size={13}/> Λίστα
-                                  </button>
-                                  {meal.youtube && (
-                                    <a href={meal.youtube} target="_blank" rel="noopener noreferrer"
-                                      onClick={e => e.stopPropagation()}
-                                      style={{ padding:'8px 12px', border:'1.5px solid var(--border)', borderRadius:10, background:'var(--bg-surface)', color:'var(--text-secondary)', fontWeight:700, fontSize:12, textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
-                                      ▶ Video
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                  return (
+                    <div className="mealdb-section">
+                      {/* ── Header row ── */}
+                      <div className="mealdb-header">
+                        <div className="mealdb-header-left">
+                          <div className="mealdb-title">
+                            <span className="mealdb-globe">🌍</span>
+                            Διεθνείς Συνταγές
                           </div>
-                        ))}
+                          <div className="mealdb-subtitle">
+                            Από το TheMealDB — μεταφρασμένες στα ελληνικά
+                          </div>
+                        </div>
+
+                        {/* Animated tab switcher */}
+                        <div className="mealdb-tabs" ref={mealDbTabsRef}>
+                          {/* Sliding pill — positioned via JS widths */}
+                          {(() => {
+                            const tabsEl   = mealDbTabsRef.current;
+                            const btnEls   = tabsEl ? tabsEl.querySelectorAll('.mealdb-tab-btn') : [];
+                            const activeEl = btnEls[activeIdx];
+                            const left  = activeEl ? activeEl.offsetLeft : 0;
+                            const width = activeEl ? activeEl.offsetWidth : 0;
+                            return (
+                              <span
+                                className="mealdb-tab-pill"
+                                style={{ left, width }}
+                              />
+                            );
+                          })()}
+                          {TABS.map(t => (
+                            <button
+                              key={t.id}
+                              className={`mealdb-tab-btn${mealDbTab === t.id ? ' active' : ''}`}
+                              onClick={() => { setMealDbTab(t.id); fetchMealDb(t.id); }}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    )}
-                  </div>
-                )}
+
+                      {/* ── Content panel ── */}
+                      {mealDbLoading ? (
+                        /* Skeleton grid */
+                        <div className="mealdb-skeleton">
+                          {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="mealdb-skeleton-card"
+                              style={{ animationDelay: `${i * 0.06}s` }} />
+                          ))}
+                        </div>
+                      ) : mealDbRecipes.length === 0 ? (
+                        <div style={{ textAlign:'center', color:'var(--text-muted)', fontSize:13, padding:'24px 0' }}>
+                          Δεν βρέθηκαν συνταγές.
+                        </div>
+                      ) : (
+                        <div key={mealDbPanelKey} className="mealdb-panel">
+                          <div className="mealdb-grid">
+                            {mealDbRecipes.map((meal, idx) => (
+                              <div
+                                key={meal._id}
+                                className={`mealdb-card${mealDbExpanded === meal._id ? ' expanded' : ''}`}
+                                style={{ animationDelay: `${Math.min(idx, 9) * 0.05}s` }}
+                                onClick={() => setMealDbExpanded(mealDbExpanded === meal._id ? null : meal._id)}
+                              >
+                                {/* Image */}
+                                {meal.image && (
+                                  <div className="mealdb-card-img-wrap">
+                                    <img
+                                      src={meal.image}
+                                      alt={meal.title}
+                                      className="mealdb-card-img"
+                                      loading="lazy"
+                                    />
+                                    {meal.area && (
+                                      <span className="mealdb-card-area-badge">{meal.area}</span>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Body */}
+                                <div className="mealdb-card-body">
+                                  <div className="mealdb-card-title">{meal.title}</div>
+                                  <div>
+                                    {meal.category && (
+                                      <span className="mealdb-chip mealdb-chip-category">{meal.category}</span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Expanded detail */}
+                                {mealDbExpanded === meal._id && (
+                                  <div className="mealdb-expand" onClick={e => e.stopPropagation()}>
+                                    {meal.ingredients?.length > 0 && (
+                                      <>
+                                        <div className="mealdb-expand-label">🛒 Υλικά</div>
+                                        <div className="mealdb-ing-list">
+                                          {meal.ingredients.map((ing, i) => (
+                                            <span key={i} className="mealdb-ing-chip">{ing}</span>
+                                          ))}
+                                        </div>
+                                      </>
+                                    )}
+                                    {meal.instructions && (
+                                      <>
+                                        <div className="mealdb-expand-label">📋 Οδηγίες</div>
+                                        <div className="mealdb-instructions">
+                                          {meal.instructions}
+                                        </div>
+                                      </>
+                                    )}
+                                    <div className="mealdb-actions">
+                                      <button
+                                        className="mealdb-btn-list"
+                                        onClick={(e) => { e.stopPropagation(); addRecipeToList(meal); }}
+                                      >
+                                        <IconShoppingCart size={13}/> Λίστα
+                                      </button>
+                                      {meal.youtube && (
+                                        <a
+                                          href={meal.youtube}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="mealdb-btn-video"
+                                          onClick={e => e.stopPropagation()}
+                                        >
+                                          ▶ Video
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* ── Recipe Popup Modal ── */}
                 {expandedRecipe && (() => {

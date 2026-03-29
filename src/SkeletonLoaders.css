@@ -1,0 +1,405 @@
+/**
+ * Smart Grocery - Skeleton Loaders CSS
+ * Premium shimmer animations for loading states
+ */
+
+/* ── Base Skeleton ──────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle, #f0f0f0) 0%,
+    var(--bg-chip-hover, #e0e0e0) 50%,
+    var(--bg-subtle, #f0f0f0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: shimmer-sheen 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes shimmer-sheen {
+  0% { left: -100%; }
+  50%, 100% { left: 200%; }
+}
+
+/* Dark mode adjustments */
+body.dark-mode .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+}
+
+body.dark-mode .skeleton::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%
+  );
+}
+
+/* ── Product Card Skeleton ───────────────────────────────────────────────── */
+.skeleton-card {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 16px;
+  padding: 16px;
+  opacity: 0;
+  animation: skeletonFadeIn 0.5s ease forwards, shimmer 1.8s ease-in-out infinite;
+  animation-delay: var(--delay, 0s), 0s;
+}
+
+.skeleton-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-card-info {
+  flex: 1;
+}
+
+.skeleton-card-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+@keyframes skeletonFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Recipe Card Skeleton ────────────────────────────────────────────────── */
+.skeleton-recipe-card {
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 20px;
+  overflow: hidden;
+  opacity: 0;
+  animation: skeletonFadeIn 0.5s ease forwards, shimmer 1.8s ease-in-out infinite;
+}
+
+.skeleton-recipe-content {
+  padding: 14px;
+}
+
+.skeleton-recipe-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ── List Item Skeleton ──────────────────────────────────────────────────── */
+.skeleton-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light, #f0f0f0);
+  opacity: 0;
+  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+}
+
+.skeleton-list-item:last-child {
+  border-bottom: none;
+}
+
+/* ── Budget Banner Skeleton ──────────────────────────────────────────────── */
+.skeleton-budget {
+  background: linear-gradient(135deg, #0c1526 0%, #162035 50%, #0c1526 100%);
+  color: white;
+  padding: 20px 22px;
+  border-radius: 20px;
+  opacity: 0;
+  animation: skeletonFadeIn 0.5s ease forwards;
+}
+
+.skeleton-budget .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.skeleton-budget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.skeleton-budget-stats {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* ── Scanner Skeleton ────────────────────────────────────────────────────── */
+.skeleton-scanner {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+.skeleton-scanner-viewfinder {
+  background: #0a0a0a;
+  border-radius: 20px;
+  height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.skeleton-scanner-icon {
+  color: rgba(255, 255, 255, 0.15);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.skeleton-scanner-hint {
+  animation: shimmer 1.8s ease-in-out infinite 0.2s;
+}
+
+/* ── Chat Message Skeleton ──────────────────────────────────────────────── */
+.skeleton-chat-message {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+}
+
+.skeleton-chat-message.user {
+  flex-direction: row-reverse;
+}
+
+.skeleton-chat-message.user .skeleton-chat-bubble {
+  background: linear-gradient(
+    90deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(99, 102, 241, 0.15) 50%,
+    rgba(99, 102, 241, 0.1) 100%
+  );
+  background-size: 200% 100%;
+}
+
+.skeleton-chat-bubble {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--bg-subtle, #f5f5f5);
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ── Nutrition Grid Skeleton ────────────────────────────────────────────── */
+.skeleton-nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.skeleton-nutrition-cell {
+  background: var(--bg-subtle, #f5f5f5);
+  border-radius: 14px;
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+}
+
+/* ── Category Pills Skeleton ────────────────────────────────────────────── */
+.skeleton-category-pills {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.skeleton-category-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.skeleton-category-pills .skeleton {
+  flex-shrink: 0;
+  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+}
+
+/* ── Friend Card Skeleton ────────────────────────────────────────────────── */
+.skeleton-friend-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border, #e5e5e5);
+  border-radius: 16px;
+  margin-bottom: 10px;
+  opacity: 0;
+  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+}
+
+.skeleton-friend-info {
+  flex: 1;
+}
+
+/* ── Full Page Loader ────────────────────────────────────────────────────── */
+.skeleton-full-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 20px;
+}
+
+.skeleton-pulse-logo {
+  color: var(--accent, #6366f1);
+  animation: logoPulse 2s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(0.95);
+    filter: blur(0px);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+    filter: blur(2px);
+  }
+}
+
+.skeleton-loading-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary, #666);
+  margin: 0;
+  animation: textPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.skeleton-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.skeleton-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #6366f1);
+  animation: dotBounce 1.2s ease-in-out infinite;
+}
+
+.skeleton-dots span:nth-child(1) { animation-delay: 0s; }
+.skeleton-dots span:nth-child(2) { animation-delay: 0.15s; }
+.skeleton-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── Skeleton List Container ─────────────────────────────────────────────── */
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-list-product {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.skeleton-list-recipe {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+/* ── Smooth Loading Transition ──────────────────────────────────────────── */
+.skeleton-loading-transition {
+  animation: skeletonLoadingPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonLoadingPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+/* ── Inline Skeleton (for text lines) ──────────────────────────────────── */
+.skeleton-inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.skeleton-text {
+  border-radius: 4px;
+  height: 14px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text:last-child {
+  width: 70%;
+  margin-bottom: 0;
+}
