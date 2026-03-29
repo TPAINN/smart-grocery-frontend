@@ -2852,6 +2852,17 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
             </div>
           )}
 
+          {recipe.youtube && (
+            <a
+              href={recipe.youtube}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', padding:'11px 16px', marginBottom:10, borderRadius:12, background:'#ff0000', color:'#fff', fontWeight:700, fontSize:13, textDecoration:'none', boxSizing:'border-box' }}
+            >
+              ▶ Δες το Video στο YouTube
+            </a>
+          )}
+
           <button
             className="add-recipe-btn"
             disabled={isAdding}
@@ -3027,6 +3038,7 @@ export default function App() {
   const [mealDbRecipes, setMealDbRecipes]       = useState([]);
   const [mealDbLoading, setMealDbLoading]       = useState(false);
   const [mealDbExpanded, setMealDbExpanded]     = useState(null);
+  const [selectedMealDbRecipe, setSelectedMealDbRecipe] = useState(null);
   const [mealDbTab, setMealDbTab]               = useState('greek'); // 'greek' | 'mediterranean'
   const [mealDbPanelKey, setMealDbPanelKey]     = useState(0); // increment to retrigger animation
   const [mealDbPage,    setMealDbPage]          = useState(1); // 12 per page
@@ -3501,6 +3513,7 @@ export default function App() {
     setMealDbLoading(true);
     setMealDbRecipes([]);
     setMealDbExpanded(null);
+    setSelectedMealDbRecipe(null);
     setMealDbPage(1);
     setMealDbPanelKey(k => k + 1);
     try {
@@ -5316,9 +5329,9 @@ export default function App() {
                             {mealDbRecipes.slice(0, mealDbPage * MEALDB_PER_PAGE).map((meal, idx) => (
                               <div
                                 key={meal._id}
-                                className={`mealdb-card${mealDbExpanded === meal._id ? ' expanded' : ''}`}
-                                style={{ animationDelay: `${Math.min(idx, 9) * 0.05}s` }}
-                                onClick={() => setMealDbExpanded(mealDbExpanded === meal._id ? null : meal._id)}
+                                className="mealdb-card"
+                                style={{ animationDelay: `${Math.min(idx, 9) * 0.05}s`, cursor:'pointer' }}
+                                onClick={() => setSelectedMealDbRecipe(meal)}
                               >
                                 {/* Image */}
                                 {meal.image && (
@@ -5344,49 +5357,6 @@ export default function App() {
                                     )}
                                   </div>
                                 </div>
-
-                                {/* Expanded detail */}
-                                {mealDbExpanded === meal._id && (
-                                  <div className="mealdb-expand" onClick={e => e.stopPropagation()}>
-                                    {meal.ingredients?.length > 0 && (
-                                      <>
-                                        <div className="mealdb-expand-label">🛒 Υλικά</div>
-                                        <div className="mealdb-ing-list">
-                                          {meal.ingredients.map((ing, i) => (
-                                            <span key={i} className="mealdb-ing-chip">{ing}</span>
-                                          ))}
-                                        </div>
-                                      </>
-                                    )}
-                                    {meal.instructions && (
-                                      <>
-                                        <div className="mealdb-expand-label">📋 Οδηγίες</div>
-                                        <div className="mealdb-instructions">
-                                          {meal.instructions}
-                                        </div>
-                                      </>
-                                    )}
-                                    <div className="mealdb-actions">
-                                      <button
-                                        className="mealdb-btn-list"
-                                        onClick={(e) => { e.stopPropagation(); addRecipeToList(meal); }}
-                                      >
-                                        <IconShoppingCart size={13}/> Λίστα
-                                      </button>
-                                      {meal.youtube && (
-                                        <a
-                                          href={meal.youtube}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="mealdb-btn-video"
-                                          onClick={e => e.stopPropagation()}
-                                        >
-                                          ▶ Video
-                                        </a>
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                             ))}
                           </div>
@@ -5427,6 +5397,27 @@ export default function App() {
                       onAddToList={() => addRecipeToList(recipe)}
                       isFavorite={favoriteIds.includes(recipe._id)}
                       onToggleFavorite={() => toggleFavorite(recipe._id)}
+                    />
+                  );
+                })()}
+
+                {selectedMealDbRecipe && (() => {
+                  const meal = selectedMealDbRecipe;
+                  // Adapt mealdb structure to RecipePopup format
+                  const adapted = {
+                    ...meal,
+                    cuisine: meal.area || '',
+                    instructions: typeof meal.instructions === 'string'
+                      ? meal.instructions.split(/\r?\n/).filter(s => s.trim().length > 0)
+                      : (meal.instructions || []),
+                  };
+                  return (
+                    <RecipePopup
+                      recipe={adapted}
+                      onClose={() => setSelectedMealDbRecipe(null)}
+                      onAddToList={() => addRecipeToList(meal)}
+                      isFavorite={false}
+                      onToggleFavorite={null}
                     />
                   );
                 })()}
