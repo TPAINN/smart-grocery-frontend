@@ -5764,3 +5764,302 @@ html, body {
   animation: shimmerSlide 1.4s ease-in-out infinite;
 }
 
+/* ── Mealdb Load-more button ─────────────────────────────────────────────── */
+.mealdb-load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+.mealdb-load-more-btn:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.18);
+}
+.mealdb-load-more-btn:active { transform: scale(0.95); transition-duration: 0.08s; }
+.mealdb-load-more-count {
+  background: rgba(99,102,241,0.12);
+  color: #6366f1;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 99px;
+  padding: 2px 8px;
+}
+
+/* ── Streak bar ──────────────────────────────────────────────────────────── */
+@keyframes streakIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes flamePulse {
+  0%, 100% { transform: scale(1)    rotate(0deg); }
+  40%       { transform: scale(1.25) rotate(-8deg); }
+  70%       { transform: scale(1.1)  rotate(5deg); }
+}
+.streak-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, rgba(251,146,60,0.12), rgba(239,68,68,0.08));
+  border: 1px solid rgba(251,146,60,0.25);
+  border-radius: 50px;
+  margin: 0 auto 14px;
+  width: fit-content;
+  animation: streakIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.streak-flame {
+  font-size: 16px;
+  display: inline-block;
+  animation: flamePulse 2s ease-in-out infinite;
+}
+.streak-count {
+  font-size: 18px;
+  font-weight: 900;
+  color: #f97316;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+.streak-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.streak-record-badge {
+  font-size: 10px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 99px;
+  letter-spacing: 0.1px;
+}
+
+/* ── Engagement toasts ───────────────────────────────────────────────────── */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.93); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(16px) scale(0.9); }
+}
+.engagement-toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  padding: 12px 22px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font);
+  white-space: nowrap;
+  animation: toastIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  pointer-events: none;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.22);
+}
+.streak-toast {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: #fff;
+}
+.achievement-toast {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+
+/* ── Daily Recipe Card ───────────────────────────────────────────────────── */
+@keyframes dailyCardIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.daily-recipe-card {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-card);
+  border: 1.5px solid rgba(99,102,241,0.2);
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.2s ease,
+              border-color 0.2s ease;
+  animation: dailyCardIn 0.45s cubic-bezier(0.34,1.2,0.64,1) both;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.1);
+  -webkit-tap-highlight-color: transparent;
+}
+.daily-recipe-card:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 10px 30px rgba(99,102,241,0.2);
+  border-color: rgba(99,102,241,0.4);
+}
+.daily-recipe-card:active { transform: scale(0.97); transition-duration: 0.08s; }
+.daily-recipe-img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+}
+.daily-recipe-body {
+  flex: 1;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+}
+.daily-recipe-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(99,102,241,0.1);
+  border-radius: 6px;
+  padding: 2px 7px;
+  width: fit-content;
+}
+.daily-recipe-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.daily-recipe-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.daily-recipe-meta span {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Tab bar upgrade: active glow ────────────────────────────────────────── */
+.tab-btn.active {
+  background: var(--bg-card) !important;
+  color: var(--brand-primary) !important;
+  box-shadow:
+    0 2px 10px rgba(0,0,0,0.1),
+    0 0 0 1px rgba(255,255,255,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.1) !important;
+}
+
+/* ── Section divider with label ──────────────────────────────────────────── */
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 24px 0 14px;
+}
+.section-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.section-divider-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Header actions row spacing ──────────────────────────────────────────── */
+.header-actions-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── Better empty state ──────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 36px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.empty-state-icon {
+  font-size: 44px;
+  animation: floatIcon 3s ease-in-out infinite;
+}
+.empty-state-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+.empty-state-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 240px;
+  line-height: 1.5;
+}
+
+/* ── Recipes tab header refinements ──────────────────────────────────────── */
+.recipes-tab-title {
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.5px !important;
+}
+.recipes-tab-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Contextual nudge banner ─────────────────────────────────────────────── */
+@keyframes nudgeSlideIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.contextual-nudge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.06), rgba(139,92,246,0.04));
+  border: 1px solid rgba(99,102,241,0.14);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  animation: nudgeSlideIn 0.4s cubic-bezier(0.34,1.2,0.64,1) both;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.contextual-nudge-icon { font-size: 20px; flex-shrink: 0; }
+
+

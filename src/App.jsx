@@ -3029,6 +3029,8 @@ export default function App() {
   const [mealDbExpanded, setMealDbExpanded]     = useState(null);
   const [mealDbTab, setMealDbTab]               = useState('greek'); // 'greek' | 'mediterranean'
   const [mealDbPanelKey, setMealDbPanelKey]     = useState(0); // increment to retrigger animation
+  const [mealDbPage,    setMealDbPage]          = useState(1); // 12 per page
+  const MEALDB_PER_PAGE = 12;
   const mealDbTabsRef                           = useRef(null);
   const [showScanner, setShowScanner]     = useState(false);
   const [showSmartRoute, setShowSmartRoute] = useState(false);
@@ -3076,9 +3078,28 @@ export default function App() {
   const [showSmartShopping, setShowSmartShopping] = useState(false);
 
   // ── Daily Streak ───────────────────────────────────────────────────────────
-  const [, setStreak]          = useState(0);
-  const [, setStreakToast]      = useState('');
-  const [, setIsNewStreakRecord] = useState(false);
+  const [streak,            setStreak]          = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sg_streak') || '{}').count || 0; } catch { return 0; }
+  });
+  const [streakToast,       setStreakToast]      = useState('');
+  const [isNewStreakRecord,  setIsNewStreakRecord] = useState(false);
+
+  // ── Achievements ───────────────────────────────────────────────────────────
+  const [achievements, setAchievements] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sg_achievements') || '{}'); } catch { return {}; }
+  });
+  const [achievementToast, setAchievementToast] = useState('');
+
+  const unlockAchievement = (id, label) => {
+    setAchievements(prev => {
+      if (prev[id]) return prev;
+      const next = { ...prev, [id]: true };
+      localStorage.setItem('sg_achievements', JSON.stringify(next));
+      setAchievementToast(label);
+      setTimeout(() => setAchievementToast(''), 3200);
+      return next;
+    });
+  };
 
   const storeOptions  = ['Όλα','Lidl','ΑΒ Βασιλόπουλος','Σκλαβενίτης','MyMarket','Μασούτης','Κρητικός','Γαλαξίας','Market In'];
   const searchTimeout = useRef(null);
@@ -3480,6 +3501,7 @@ export default function App() {
     setMealDbLoading(true);
     setMealDbRecipes([]);
     setMealDbExpanded(null);
+    setMealDbPage(1);
     setMealDbPanelKey(k => k + 1);
     try {
       const endpoint = section === 'mediterranean' ? 'mediterranean' : 'greek';
@@ -3913,7 +3935,16 @@ export default function App() {
       });
       setRecipeAddModal(prev => ({ ...prev, progress: Math.min(ingredients.length, i + batchSize) }));
     }
-    setItems(prev => [...newItems, ...prev]);
+    setItems(prev => {
+      const next = [...newItems, ...prev];
+      // Achievements
+      if (!achievements['first_recipe']) unlockAchievement('first_recipe', '🎉 Πρώτη συνταγή στη λίστα!');
+      const recipesAdded = parseInt(localStorage.getItem('sg_recipes_added') || '0', 10) + 1;
+      localStorage.setItem('sg_recipes_added', recipesAdded);
+      if (recipesAdded >= 5 && !achievements['chef5'])  unlockAchievement('chef5',  '👨‍🍳 5 συνταγές στη λίστα!');
+      if (recipesAdded >= 10 && !achievements['chef10']) unlockAchievement('chef10', '🏆 10 συνταγές — Μaster Chef!');
+      return next;
+    });
     setActiveTab('list');
   };
 
@@ -4228,6 +4259,20 @@ export default function App() {
       <NameModal isOpen={nameModalOpen} value={nameModalValue} onChange={setNameModalValue} onConfirm={handleSaveConfirm} onCancel={() => setNameModalOpen(false)} />
       <ConfirmModal isOpen={confirmModal.open} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={() => setConfirmModal({ open:false, message:'', onConfirm:null })} />
       <RecipeNotification show={notification.show} message={notification.message} onClose={() => setNotification({ show:false, message:'' })} />
+
+      {/* Streak toast */}
+      {streakToast && (
+        <div className="engagement-toast streak-toast">
+          {streakToast}
+        </div>
+      )}
+
+      {/* Achievement toast */}
+      {achievementToast && (
+        <div className="engagement-toast achievement-toast">
+          {achievementToast}
+        </div>
+      )}
       <RecipeAddModal isOpen={recipeAddModal.open} recipeName={recipeAddModal.recipeName} progress={recipeAddModal.progress} total={recipeAddModal.total} onClose={closeRecipeAddModal} />
       <BarcodeScannerModal isOpen={showScanner} onClose={() => setShowScanner(false)} />
       {/* Friend modals & panel */}
@@ -4408,12 +4453,24 @@ export default function App() {
           </div>
 
           {/* Τίτλος */}
-          <h1 style={{ textAlign: 'center', marginTop: '12px', letterSpacing:'-0.5px', fontSize: '24px', fontWeight: 900, display:'flex', alignItems:'center', justifyContent:'center', gap: 6, marginBottom: '12px' }}>
+          <h1 style={{ textAlign: 'center', marginTop: '12px', letterSpacing:'-0.5px', fontSize: '24px', fontWeight: 900, display:'flex', alignItems:'center', justifyContent:'center', gap: 6, marginBottom: '8px' }}>
             <span style={{ fontSize: '22px' }}>Έξυπνο</span>
             <span style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
               Καλαθάκι
             </span>
           </h1>
+
+          {/* Streak badge */}
+          {streak > 0 && (
+            <div className="streak-bar">
+              <span className="streak-flame">🔥</span>
+              <span className="streak-count">{streak}</span>
+              <span className="streak-label">{streak === 1 ? 'μέρα' : 'μέρες'} streak</span>
+              {isNewStreakRecord && streak >= 3 && (
+                <span className="streak-record-badge">Νέο ρεκόρ! 🏆</span>
+              )}
+            </div>
+          )}
 
           {/* Κάτω: Κουμπιά κεντραρισμένα σε νέα σειρά */}
           <div className="header-actions-row">
@@ -4960,6 +5017,32 @@ export default function App() {
                   </button>
                 </div>
 
+                {/* ── Συνταγή της Ημέρας ── */}
+                {!showFavoritesOnly && !fridgeQuery && !recipeCategory && recipes.length > 0 && (() => {
+                  const dayIdx   = Math.floor(Date.now() / 86400000);
+                  const daily    = recipes[dayIdx % recipes.length];
+                  if (!daily) return null;
+                  return (
+                    <div
+                      className="daily-recipe-card"
+                      onClick={() => setExpandedRecipe(daily._id)}
+                    >
+                      {daily.image && (
+                        <img src={daily.image} alt={daily.title} className="daily-recipe-img" loading="lazy" />
+                      )}
+                      <div className="daily-recipe-body">
+                        <div className="daily-recipe-badge">⭐ Συνταγή της Ημέρας</div>
+                        <div className="daily-recipe-title">{daily.title}</div>
+                        <div className="daily-recipe-meta">
+                          {daily.kcal && <span>🔥 {daily.kcal} kcal</span>}
+                          {daily.cookTime && <span>⏱ {daily.cookTime} λεπτ.</span>}
+                          {daily.cuisine && <span>🌍 {daily.cuisine}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* ── Search Bar ── */}
                 <div className="recipe-search-bar">
                   <div className="recipe-search-inner">
@@ -5230,7 +5313,7 @@ export default function App() {
                       ) : (
                         <div key={mealDbPanelKey} className="mealdb-panel">
                           <div className="mealdb-grid">
-                            {mealDbRecipes.map((meal, idx) => (
+                            {mealDbRecipes.slice(0, mealDbPage * MEALDB_PER_PAGE).map((meal, idx) => (
                               <div
                                 key={meal._id}
                                 className={`mealdb-card${mealDbExpanded === meal._id ? ' expanded' : ''}`}
@@ -5307,6 +5390,26 @@ export default function App() {
                               </div>
                             ))}
                           </div>
+
+                          {/* Load more */}
+                          {mealDbPage * MEALDB_PER_PAGE < mealDbRecipes.length && (
+                            <div style={{ textAlign:'center', marginTop:16 }}>
+                              <button
+                                className="mealdb-load-more-btn"
+                                onClick={() => setMealDbPage(p => p + 1)}
+                              >
+                                Φόρτωση περισσότερων
+                                <span className="mealdb-load-more-count">
+                                  +{Math.min(MEALDB_PER_PAGE, mealDbRecipes.length - mealDbPage * MEALDB_PER_PAGE)}
+                                </span>
+                              </button>
+                            </div>
+                          )}
+                          {mealDbPage * MEALDB_PER_PAGE >= mealDbRecipes.length && mealDbRecipes.length > MEALDB_PER_PAGE && (
+                            <div style={{ textAlign:'center', fontSize:12, color:'var(--text-muted)', marginTop:14, fontWeight:600 }}>
+                              Εμφανίζονται όλες οι συνταγές ({mealDbRecipes.length}) ✓
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
