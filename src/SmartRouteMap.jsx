@@ -43,7 +43,7 @@ const loadLeaflet = () => {
 
 // ─── APIs ────────────────────────────────────────────────────────────────────
 let _overpassCache = null;
-export const clearOverpassCache = () => { _overpassCache = null; };
+const clearOverpassCache = () => { _overpassCache = null; };
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
@@ -101,7 +101,7 @@ const parseSteps = legs => {
   if (!legs?.length) return [];
   const r = [];
   legs.forEach((leg, li) => {
-    (leg.steps || []).forEach((s, si) => {
+    (leg.steps || []).forEach((s) => {
       // Skip intermediate arrive steps (not the final destination)
       if (s.maneuver?.type === 'arrive' && li < legs.length - 1) return;
       // Skip very short steps < 10m that are not depart/arrive
@@ -260,7 +260,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
     return () => { Object.assign(document.body.style, { overflow:'', position:'', top:'', width:'' }); window.scrollTo(0,y); };
   }, [isOpen]);
 
-  const doSearch = useCallback(async (pos, attempt = 1) => {
+  const doSearch = useCallback(async function runSearch(pos, attempt = 1) {
     setSearching(true);
     setErr('');
     try {
@@ -314,7 +314,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
       console.error('Search error:', error);
       if (attempt < 2) {
         // Auto-retry once on failure
-        setTimeout(() => doSearch(pos, attempt + 1), 1500);
+        setTimeout(() => { void runSearch(pos, attempt + 1); }, 1500);
         return;
       }
       setErr('Αποτυχία σύνδεσης. Έλεγξε το ίντερνετ και πάτα Ανανέωση.');

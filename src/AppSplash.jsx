@@ -24,7 +24,7 @@ function mkParticle(id) {
 //   2950ms → onDone() fires
 export default function AppSplash({ onDone }) {
   const [phase, setPhase] = useState('idle');
-  const dots    = useRef(Array.from({ length: N }, (_, i) => mkParticle(i)));
+  const [particles] = useState(() => Array.from({ length: N }, (_, i) => mkParticle(i)));
   // Keep onDone in a ref so we can call the latest version without it
   // being a useEffect dependency — otherwise an inline () => {} prop
   // creates a new reference every render and re-triggers the whole chain.
@@ -41,7 +41,7 @@ export default function AppSplash({ onDone }) {
       setTimeout(() => onDoneRef.current?.(),         2950),
     ];
     return () => ts.forEach(clearTimeout);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Helper: is the animation at or past this phase?
   const ORDER  = ['idle', 'bloom', 'wordmark', 'tagline', 'exit'];
@@ -70,7 +70,7 @@ export default function AppSplash({ onDone }) {
       }}
     >
       {/* ── Floating particles ──────────────────────────────────────────── */}
-      {dots.current.map(p => (
+      {particles.map(p => (
         <div
           key={p.id}
           style={{

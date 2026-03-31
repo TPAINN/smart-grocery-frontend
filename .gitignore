@@ -23,6 +23,9 @@ redesign_*.js
 android/app/build/
 android/.gradle/
 android/local.properties
+android/keystore.properties
+android/app/*.jks
+android/app/*.keystore
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 *.log

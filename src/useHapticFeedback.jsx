@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * Smart Grocery - Haptic Feedback Hook
  * Provides tactile feedback for premium mobile experience

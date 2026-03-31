@@ -3,7 +3,7 @@
  * Beautiful confetti animations for achievements and completions
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './Confetti.css';
 
 // Confetti colors matching the app's premium palette
@@ -37,6 +37,7 @@ function generateConfettiPiece(index) {
     rotation: Math.random() * 360,
     rotationSpeed: (Math.random() - 0.5) * 720,
     drift: (Math.random() - 0.5) * 30,
+    endY: -100 - Math.random() * 50,
     emoji: isEmoji ? EMOJI_CONFETTI[Math.floor(Math.random() * EMOJI_CONFETTI.length)] : null,
     shape: ['square', 'circle', 'strip'][Math.floor(Math.random() * 3)],
   };
@@ -78,25 +79,20 @@ export function SuccessCheckmark({ size = 64, color = '#22c55e' }) {
  * Confetti Overlay Component
  */
 export function Confetti({ isActive, onComplete, count = 80, duration = 3000 }) {
-  const [pieces, setPieces] = useState([]);
+  const pieces = useMemo(
+    () => (isActive ? Array.from({ length: count }, (_, i) => generateConfettiPiece(i)) : []),
+    [isActive, count]
+  );
 
   useEffect(() => {
-    if (isActive) {
-      // Generate confetti pieces
-      const newPieces = Array.from({ length: count }, (_, i) => generateConfettiPiece(i));
-      setPieces(newPieces);
+    if (!isActive) return undefined;
 
-      // Auto-cleanup after duration
-      const timer = setTimeout(() => {
-        setPieces([]);
-        onComplete?.();
-      }, duration);
+    const timer = setTimeout(() => {
+      onComplete?.();
+    }, duration);
 
-      return () => clearTimeout(timer);
-    } else {
-      setPieces([]);
-    }
-  }, [isActive, count, duration, onComplete]);
+    return () => clearTimeout(timer);
+  }, [isActive, duration, onComplete]);
 
   if (!isActive || pieces.length === 0) return null;
 
@@ -197,17 +193,10 @@ export function CelebrationModal({ isOpen, onClose, stats }) {
  * Mini confetti burst for smaller celebrations
  */
 export function ConfettiBurst({ trigger }) {
-  const [pieces, setPieces] = useState([]);
-
-  useEffect(() => {
-    if (trigger > 0) {
-      const newPieces = Array.from({ length: 20 }, (_, i) => generateConfettiPiece(i));
-      setPieces(newPieces);
-      
-      const timer = setTimeout(() => setPieces([]), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [trigger]);
+  const pieces = useMemo(
+    () => (trigger > 0 ? Array.from({ length: 20 }, (_, i) => generateConfettiPiece(i)) : []),
+    [trigger]
+  );
 
   return (
     <div className="confetti-burst-container">
@@ -217,7 +206,7 @@ export function ConfettiBurst({ trigger }) {
           className="confetti-burst-piece"
           style={{
             '--end-x': `${piece.drift}px`,
-            '--end-y': `${-100 - Math.random() * 50}px`,
+            '--end-y': `${piece.endY}px`,
             '--rotation': `${piece.rotationSpeed}deg`,
             backgroundColor: piece.color,
           }}
@@ -249,20 +238,22 @@ export function SparkleEffect({ children, active }) {
  * Badge Unlock Animation
  */
 export function BadgeUnlock({ badge, onCollect }) {
-  const [phase, setPhase] = useState('locked'); // locked, unlocking, unlocked
+  const [phase, setPhase] = useState('unlocking'); // unlocking, unlocked
 
   useEffect(() => {
-    if (badge) {
-      setPhase('unlocking');
-      const timer = setTimeout(() => {
-        setPhase('unlocked');
-        // Trigger haptic if available
-        try {
-          if (navigator.vibrate) navigator.vibrate([50, 30, 100]);
-        } catch {}
-      }, 800);
-      return () => clearTimeout(timer);
-    }
+    if (!badge) return undefined;
+
+    const timer = setTimeout(() => {
+      setPhase('unlocked');
+      // Trigger haptic if available
+      try {
+        if (navigator.vibrate) navigator.vibrate([50, 30, 100]);
+      } catch {
+        // Ignore missing vibration support.
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
   }, [badge]);
 
   if (!badge) return null;

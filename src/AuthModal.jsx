@@ -1,8 +1,7 @@
 // src/AuthModal.jsx
 import { useId, useState } from 'react';
 import './AuthModal.css';
-
-const API_BASE = "https://my-smart-grocery-api.onrender.com";
+import { API_BASE } from './config';
 
 export default function AuthModal({ isOpen, onClose, onLoginSuccess, initMode = 'login' }) {
   const titleId = useId();

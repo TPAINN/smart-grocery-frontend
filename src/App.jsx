@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import './App.css';
+import './EnhancedAnimations.css';
 import RecipeNotification from './RecipeNotification';
 import AuthModal from './AuthModal';
 import SavedListsModal from './SavedListsModal';
@@ -12,6 +13,7 @@ import { initCapacitor, initBackButton } from './capacitorInit';
 import { useAndroidPermissions } from './useAndroidPermissions.jsx';
 import AppSplash from './AppSplash';
 import ScrollReveal from './ScrollReveal';
+import { API_BASE, ENABLE_KEEPALIVE } from './config';
 import {
   IconShoppingCart, IconQrcode, IconUsers, IconMessage,
   IconNotes, IconUser, IconLogout,
@@ -26,7 +28,6 @@ import {
 } from '@tabler/icons-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const API_BASE      = 'https://my-smart-grocery-api.onrender.com';
 const CACHE_VERSION = 'v3';
 const CACHE_TTL_MS  = 10 * 60 * 1000; // 10 min
 
@@ -68,6 +69,7 @@ const cacheSet = (key, data) => {
 // Render free-tier spins down after 15min of inactivity. Ping every 9min to avoid that.
 const useKeepAlive = () => {
   useEffect(() => {
+    if (!ENABLE_KEEPALIVE) return undefined;
     const ping = () => fetch(`${API_BASE}/api/status`, { method: 'GET' }).catch(() => {});
     ping();
     const iv = setInterval(ping, 9 * 60 * 1000); // every 9 min
@@ -628,6 +630,7 @@ const getAvatarColor = (key = '') => {
 // ─── Server Status Bar ────────────────────────────────────────────────────────
 function ServerStatusBar({ isWakingUp }) {
   if (!isWakingUp) return null;
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 10,
@@ -2999,6 +3002,10 @@ export default function App() {
   const [showFriendsPanel, setShowFriendsPanel] = useState(false);
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
   const [friendPicker, setFriendPicker]       = useState({ open:false, item:null });
+  const friendsRef = useRef(friends);
+  const showChatPanelRef = useRef(showChatPanel);
+  const loadGroupChatRef = useRef(() => {});
+  const fetchRecipesRef = useRef(() => {});
 
   const [user, setUser]   = useState(() => JSON.parse(localStorage.getItem('smart_grocery_user')) || null);
   const [items, setItems] = useState(() => JSON.parse(localStorage.getItem('proGroceryItems_real')) || []);
@@ -3037,7 +3044,6 @@ export default function App() {
   // TheMealDB — Greek & Mediterranean section
   const [mealDbRecipes, setMealDbRecipes]       = useState([]);
   const [mealDbLoading, setMealDbLoading]       = useState(false);
-  const [mealDbExpanded, setMealDbExpanded]     = useState(null);
   const [selectedMealDbRecipe, setSelectedMealDbRecipe] = useState(null);
   const [mealDbTab, setMealDbTab]               = useState('greek'); // 'greek' | 'mediterranean'
   const [mealDbPanelKey, setMealDbPanelKey]     = useState(0); // increment to retrigger animation
@@ -3068,11 +3074,6 @@ export default function App() {
   const [tdeeHeight,   setTdeeHeight]   = useState(175);
   const [tdeeWeight,   setTdeeWeight]   = useState(75);
   const [tdeeActivity, setTdeeActivity] = useState('moderate');
-  const [tdeeBodyFat,  setTdeeBodyFat]  = useState('');
-  const [tdeeResult,   setTdeeResult]   = useState(null);
-  const [tdeeGoal,     setTdeeGoal]     = useState(null);
-  const [showTdeeCalc, setShowTdeeCalc] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [mealPlanStep, setMealPlanStep] = useState(1); // 1=Quiz slides, 3=Results
   const [quizSlide,    setQuizSlide]    = useState(0); // 0-8 quiz slides
   const [quizDir,      setQuizDir]      = useState('fwd'); // 'fwd' | 'bck'
@@ -3230,7 +3231,7 @@ export default function App() {
     const onlineH = () => {
       setIsOnline(true);
       setTimeout(() => setWasOffline(false), 3000);
-      fetchRecipes();
+      fetchRecipesRef.current?.();
     };
     window.addEventListener('offline', offlineH);
     window.addEventListener('online', onlineH);
@@ -3280,7 +3281,7 @@ export default function App() {
       // Join personal notification room (for friend_added events)
       socketRef.current.emit('join_user_room', user.shareKey);
       // Also join all existing friends' rooms so we receive their messages
-      friends.forEach(f => {
+      friendsRef.current.forEach(f => {
         if (f?.shareKey) socketRef.current.emit('join_cart', f.shareKey);
       });
     }
@@ -3297,7 +3298,7 @@ export default function App() {
         if (msg._id && prev.some(m => m._id === msg._id)) return prev;
         return [...prev, msg];
       });
-      if (!showChatPanel) {
+      if (!showChatPanelRef.current) {
         setUnreadChat(prev => prev + 1);
         if (navigator.vibrate) navigator.vibrate([50, 50]);
       }
@@ -3314,7 +3315,7 @@ export default function App() {
         if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
         const newFriend = { shareKey: data.from.shareKey, username: data.from.username || data.from.name || 'Φίλος', addedAt: Date.now() };
         // Reload chat to include their messages
-        setTimeout(() => loadGroupChat([...prev, newFriend]), 300);
+        setTimeout(() => loadGroupChatRef.current([...prev, newFriend]), 300);
         return [...prev, newFriend];
       });
     });
@@ -3343,6 +3344,18 @@ export default function App() {
           .catch(() => {});
       });
   }, [user, friends]);
+
+  useEffect(() => {
+    friendsRef.current = friends;
+  }, [friends]);
+
+  useEffect(() => {
+    showChatPanelRef.current = showChatPanel;
+  }, [showChatPanel]);
+
+  useEffect(() => {
+    loadGroupChatRef.current = loadGroupChat;
+  }, [loadGroupChat]);
 
   // Load friends from DB every time the user changes (login/logout)
   useEffect(() => {
@@ -3396,7 +3409,7 @@ export default function App() {
     }
   }, []); // eslint-disable-line
 
-  useEffect(() => { loadGroupChat(); }, [user, friends.length]);
+  useEffect(() => { loadGroupChat(); }, [loadGroupChat]);
 
   // Scroll to bottom στο chat
   useEffect(() => {
@@ -3457,16 +3470,18 @@ export default function App() {
       }
     } catch (err) {
       console.error('❌ fetchRecipes:', err);
-      if (recipes.length === 0) {
-        const ck = cacheGet('recipes');
-        if (ck) {
-          const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
-          setRecipes(cachedData);
-        }
+      const ck = cacheGet('recipes');
+      if (ck) {
+        const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
+        setRecipes(prev => (prev.length > 0 ? prev : cachedData));
       }
     }
     setRecipesLoading(false);
   }, [recipeCategory, recipeCuisine, recipeSearchDebounced]);
+
+  useEffect(() => {
+    fetchRecipesRef.current = fetchRecipes;
+  }, [fetchRecipes]);
 
   // Refetch when filters change
   useEffect(() => {
@@ -3512,7 +3527,6 @@ export default function App() {
   const fetchMealDb = useCallback(async (section = 'greek') => {
     setMealDbLoading(true);
     setMealDbRecipes([]);
-    setMealDbExpanded(null);
     setSelectedMealDbRecipe(null);
     setMealDbPage(1);
     setMealDbPanelKey(k => k + 1);
@@ -3967,49 +3981,6 @@ export default function App() {
   };
 
   // ── Meal Plan functions ────────────────────────────────────────────────────
-  // TDEE Calculator (Mifflin-St Jeor)
-  const calculateTDEE = () => {
-    const w = parseFloat(tdeeWeight), h = parseFloat(tdeeHeight);
-    // Use midpoint of selected age range
-    const ageStr = String(tdeeAge);
-    let a;
-    if (ageStr === '65+') { a = 68; }
-    else {
-      const ageParts = ageStr.split('-');
-      a = ageParts.length === 2
-        ? (parseFloat(ageParts[0]) + parseFloat(ageParts[1])) / 2
-        : parseFloat(ageStr);
-    }
-    if (!w || !h || !a) return;
-    // BMR
-    const bmr = tdeeGender === 'male'
-      ? 10 * w + 6.25 * h - 5 * a + 5
-      : 10 * w + 6.25 * h - 5 * a - 161;
-    const multipliers = { sedentary:1.2, light:1.375, moderate:1.55, active:1.725, veryactive:1.9 };
-    const tdee = Math.round(bmr * (multipliers[tdeeActivity] || 1.55));
-    // If body fat % provided, also show Katch-McArdle
-    let lbm = null;
-    if (tdeeBodyFat) {
-      lbm = w * (1 - parseFloat(tdeeBodyFat) / 100);
-    }
-    const goals = {
-      muscle:    { label: 'Μυϊκή ανάπτυξη (+300)',    kcal: tdee + 300,  color: '#8b5cf6' },
-      maintain:  { label: 'Διατήρηση βάρους',          kcal: tdee,        color: '#10b981' },
-      mild:      { label: 'Ήπια απώλεια (-250)',       kcal: tdee - 250,  color: '#6366f1' },
-      loss:      { label: 'Απώλεια βάρους (-500)',     kcal: tdee - 500,  color: '#f59e0b' },
-      extreme:   { label: 'Ακραία απώλεια (-1000)',    kcal: tdee - 1000, color: '#ef4444' },
-    };
-    // Zigzag: 7-day alternating high/low
-    const zigzag = (base) => {
-      const high = Math.round(base * 1.15);
-      const low  = Math.round(base * 0.85);
-      return [high, low, high, low, high, low, high];
-    };
-    const result = { bmr: Math.round(bmr), tdee, goals, lbm: lbm ? Math.round(lbm) : null };
-    Object.keys(goals).forEach(k => { result.goals[k].zigzag = zigzag(goals[k].kcal); });
-    setTdeeResult(result);
-  };
-
   const generateMealPlan = async () => {
     if (!user) { setAuthInitMode('login'); setShowAuthModal(true); return; }
     setMealPlanLoading(true);
@@ -4249,9 +4220,24 @@ export default function App() {
   const timeIcon     = hour < 5 ? '🌙' : hour < 12 ? '☀️' : hour < 18 ? '☕' : '🌙';
 
   // ── Smart Route: count unique stores in user's list ──────────────────────
+  const mealPlanLocked = !user || (!user.isPremium && !user.isOnTrial);
+  const planTierLabel = user?.isRealPremium
+    ? 'Premium'
+    : user?.isOnTrial
+      ? `Trial ${user.trialDaysLeft}ημ`
+      : user
+        ? 'Free'
+        : 'Guest';
+
   const uniqueStoresInList = [...new Set(
     items.filter(i => i.store && i.store !== 'Άγνωστο').map(i => i.store)
   )].length;
+
+  useEffect(() => {
+    if (activeTab === 'mealplan' && mealPlanLocked) {
+      setActiveTab('list');
+    }
+  }, [activeTab, mealPlanLocked]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -4466,12 +4452,63 @@ export default function App() {
           </div>
 
           {/* Τίτλος */}
-          <h1 style={{ textAlign: 'center', marginTop: '12px', letterSpacing:'-0.5px', fontSize: '24px', fontWeight: 900, display:'flex', alignItems:'center', justifyContent:'center', gap: 6, marginBottom: '8px' }}>
+          <h1 style={{ textAlign: 'center', marginTop: '12px', letterSpacing:'-0.5px', fontSize: '24px', fontWeight: 900, display:'flex', alignItems:'center', justifyContent:'center', gap: 6, marginBottom: '8px', fontFamily:'var(--font-display)' }}>
             <span style={{ fontSize: '22px' }}>Έξυπνο</span>
             <span style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
               Καλαθάκι
             </span>
           </h1>
+
+          <ScrollReveal y={18}>
+            <section className="hero-shell interactive-card">
+              <div className="hero-shell__orb hero-shell__orb--primary" />
+              <div className="hero-shell__orb hero-shell__orb--secondary" />
+
+              <div className="hero-shell__eyebrow">
+                <span className={`hero-shell__signal ${isOnline ? '' : 'offline'}`} />
+                {isOnline ? 'Cloud Sync Active' : 'Offline-first mode'}
+              </div>
+
+              <div className="hero-shell__headline-row">
+                <div>
+                  <div className="hero-shell__title">Planning, τιμές και AI προτάσεις σε ένα πιο καθαρό workflow.</div>
+                  <p className="hero-shell__subtitle">
+                    {user
+                      ? 'Οργάνωσε τις αγορές σου, συντόνισε το κοινό καλάθι και κράτα εικόνα για stores, lists και premium πρόσβαση.'
+                      : 'Σύνδεση για αποθήκευση λιστών, collaboration και προσωποποιημένο AI meal plan.'}
+                  </p>
+                </div>
+
+                <div className="hero-shell__tier-badge">
+                  <span className="hero-shell__tier-label">Workspace</span>
+                  <strong>{planTierLabel}</strong>
+                </div>
+              </div>
+
+              <div className="hero-shell__stats">
+                <div className="hero-stat-card">
+                  <span>Προϊόντα</span>
+                  <strong>{items.length}</strong>
+                  <em>ενεργά στη λίστα</em>
+                </div>
+                <div className="hero-stat-card">
+                  <span>Αποθηκευμένες</span>
+                  <strong>{user ? savedLists.length : 0}</strong>
+                  <em>έτοιμες λίστες</em>
+                </div>
+                <div className="hero-stat-card">
+                  <span>Συνεργάτες</span>
+                  <strong>{friends.length}</strong>
+                  <em>στο κοινό καλάθι</em>
+                </div>
+                <div className="hero-stat-card">
+                  <span>Καταστήματα</span>
+                  <strong>{uniqueStoresInList}</strong>
+                  <em>για smart route</em>
+                </div>
+              </div>
+            </section>
+          </ScrollReveal>
 
           {/* Streak badge */}
           {streak > 0 && (
@@ -4673,7 +4710,7 @@ export default function App() {
             ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Πλάνο</>, 'AI Πλάνο'],
             ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
           ].map(([tab, label]) => {
-            const isLocked = !user && tab === 'mealplan';
+            const isLocked = tab === 'mealplan' && mealPlanLocked;
             const isActive = activeTab === tab;
             return (
               <button
@@ -4681,17 +4718,21 @@ export default function App() {
                 className={`tab-btn ${isActive ? 'active' : ''} ${isLocked ? 'tab-btn-locked' : ''}`}
                 onClick={() => {
                   if (isLocked) {
-                    // #region agent log
-                    debugLog({
-                      runId: 'pre-repro',
-                      hypothesisId: 'H3',
-                      location: 'App.jsx:tabs',
-                      message: 'Locked tab clicked while unauthenticated',
-                      data: { tab },
-                    });
-                    // #endregion
-                    setAuthInitMode('register');
-                    setShowAuthModal(true);
+                    if (!user) {
+                      // #region agent log
+                      debugLog({
+                        runId: 'pre-repro',
+                        hypothesisId: 'H3',
+                        location: 'App.jsx:tabs',
+                        message: 'Locked mealplan tab clicked while unauthenticated',
+                        data: { tab },
+                      });
+                      // #endregion
+                      setAuthInitMode('register');
+                      setShowAuthModal(true);
+                    } else {
+                      setShowPremiumModal(true);
+                    }
                     return;
                   }
                   setActiveTab(tab);

@@ -5,6 +5,9 @@
 
 import './SkeletonLoaders.css';
 
+const getChatSkeletonWidth = (index) => `${60 + ((index % 4) * 8)}%`;
+const getCategoryPillWidth = (index) => `${54 + ((index % 5) * 7)}px`;
+
 // ── Base Skeleton Component ────────────────────────────────────────────────────
 export function Skeleton({
   width = '100%',
@@ -132,7 +135,7 @@ export function ChatMessageSkeleton({ isUser = false, index = 0 }) {
     >
       <Skeleton width="36px" height="36px" borderRadius="50%" />
       <div className="skeleton-chat-bubble">
-        <Skeleton width={`${60 + Math.random() * 30}%`} height="14px" />
+        <Skeleton width={getChatSkeletonWidth(index)} height="14px" />
         <Skeleton width="40%" height="14px" style={{ marginTop: '6px' }} />
       </div>
     </div>
@@ -160,7 +163,7 @@ export function CategoryPillsSkeleton() {
       {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
         <Skeleton
           key={i}
-          width={`${50 + Math.random() * 40}px`}
+          width={getCategoryPillWidth(i)}
           height="32px"
           borderRadius="16px"
           style={{ animationDelay: `${i * 0.04}s` }}
