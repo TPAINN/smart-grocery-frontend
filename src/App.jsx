@@ -2739,6 +2739,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
   const [isClosing, setIsClosing] = useState(false);
   const [activeSection, setActiveSection] = useState('ingredients');
   const [isAdding, setIsAdding] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   // Pre-clean ingredients and instructions once on mount
   const cleanIngredients = (recipe.ingredients || [])
@@ -2746,7 +2747,11 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
     .filter(s => s.length > 1);
 
   const cleanInstructions = (recipe.instructions || [])
-    .map(s => cleanRecipeText(s).replace(/^\d+[.)]\s*/, '')) // strip leading "1. "
+    .map(s => cleanRecipeText(s)
+      .replace(/^\d+[.)]\s*/, '')          // strip leading "1. "
+      .replace(/^step\s+\d+[.):\s]*/i, '') // strip leading "step 1" / "step 2:"
+      .trim()
+    )
     .filter(s => s.length > 5);
 
   useEffect(() => {
@@ -2814,10 +2819,28 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
         )}
 
         <div className="recipe-popup-body">
-          {recipe.description && (
-            <p style={{ fontSize:13, lineHeight:1.65, color:'var(--text-secondary)', margin:'0 0 16px', paddingBottom:16, borderBottom:'1px solid var(--border-light)' }}>{recipe.description}</p>
-          )}
+          {recipe.description && (() => {
+            const LIMIT = 160;
+            const isLong = recipe.description.length > LIMIT;
+            const shown = isLong && !descExpanded
+              ? recipe.description.slice(0, LIMIT).trimEnd() + '…'
+              : recipe.description;
+            return (
+              <div style={{ margin:'0 0 16px', paddingBottom:16, borderBottom:'1px solid var(--border-light)' }}>
+                <p style={{ fontSize:13, lineHeight:1.65, color:'var(--text-secondary)', margin:0 }}>{shown}</p>
+                {isLong && (
+                  <button
+                    onClick={() => setDescExpanded(e => !e)}
+                    style={{ marginTop:4, fontSize:12, fontWeight:700, color:'var(--accent)', background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'var(--font)' }}
+                  >
+                    {descExpanded ? 'Λιγότερα ▲' : 'Περισσότερα ▼'}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
 
+          {macros.some(m => m.value) && (
           <div className="recipe-nutri-dashboard" style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:14 }}>
             {macros.map((m, i) => (
               <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'12px 6px', borderRadius:14, background:'var(--bg-subtle)', border:'1px solid var(--border-light)', transition:'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)' }}>
@@ -2827,6 +2850,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
               </div>
             ))}
           </div>
+          )}
 
           {(recipe.fiber || recipe.sugar) && (
             <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:14 }}>
@@ -2849,6 +2873,19 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
                   tag === 'healthy' ? '💚 Υγιεινή' :
                   tag === 'budget' ? '💰 Οικονομική' :
                   tag === 'low-fat' ? '🫒 Low Fat' :
+                  tag.toLowerCase() === 'seafood' ? '🐟 Θαλασσινά' :
+                  tag.toLowerCase() === 'shellfish' ? '🦐 Οστρακόδερμα' :
+                  tag.toLowerCase() === 'beef' ? '🥩 Μοσχάρι' :
+                  tag.toLowerCase() === 'chicken' ? '🍗 Κοτόπουλο' :
+                  tag.toLowerCase() === 'lamb' ? '🍖 Αρνί' :
+                  tag.toLowerCase() === 'pork' ? '🥓 Χοιρινό' :
+                  tag.toLowerCase() === 'pasta' ? '🍝 Ζυμαρικά' :
+                  tag.toLowerCase() === 'dessert' ? '🍰 Γλυκό' :
+                  tag.toLowerCase() === 'breakfast' ? '🍳 Πρωινό' :
+                  tag.toLowerCase() === 'starter' ? '🥗 Ορεκτικό' :
+                  tag.toLowerCase() === 'side' ? '🥙 Συνοδευτικό' :
+                  tag.toLowerCase() === 'miscellaneous' ? '🍽️ Διάφορα' :
+                  tag.toLowerCase() === 'goat' ? '🐐 Κατσίκι' :
                   tag
                 }</span>
               ))}
@@ -4259,13 +4296,6 @@ export default function App() {
       <ConfirmModal isOpen={confirmModal.open} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={() => setConfirmModal({ open:false, message:'', onConfirm:null })} />
       <RecipeNotification show={notification.show} message={notification.message} onClose={() => setNotification({ show:false, message:'' })} />
 
-      {/* Streak toast */}
-      {streakToast && (
-        <div className="engagement-toast streak-toast">
-          {streakToast}
-        </div>
-      )}
-
       {/* Achievement toast */}
       {achievementToast && (
         <div className="engagement-toast achievement-toast">
@@ -4463,11 +4493,6 @@ export default function App() {
             <section className="hero-shell interactive-card">
               <div className="hero-shell__orb hero-shell__orb--primary" />
               <div className="hero-shell__orb hero-shell__orb--secondary" />
-
-              <div className="hero-shell__eyebrow">
-                <span className={`hero-shell__signal ${isOnline ? '' : 'offline'}`} />
-                {isOnline ? 'Cloud Sync Active' : 'Offline-first mode'}
-              </div>
 
               <div className="hero-shell__headline-row">
                 <div>

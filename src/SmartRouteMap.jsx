@@ -347,6 +347,16 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
           L.marker([pos.lat,pos.lng],{icon:mkUser(L),zIndexOffset:1000}).addTo(map).bindPopup('<b>📍 Εδώ είσαι</b>');
           mapRef.current = map;
           setTimeout(() => map.invalidateSize(), 150);
+
+          // Auto-search when user pans/zooms the map (debounced 800ms)
+          let idleTimer = null;
+          map.on('moveend', () => {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+              const center = map.getCenter();
+              void doSearch({ lat: center.lat, lng: center.lng });
+            }, 800);
+          });
         }
         setStatus('ready');
         await doSearch(pos);
@@ -474,7 +484,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
                 <div className={`smart-route-store-check ${sel?'checked':''}`}>{sel&&<IconCheck size={14} color="#fff"/>}</div>
               </div>
             )})}
-            {!searching&&!stores.length&&status==='ready'&&<div className="smart-route-empty"><IconBuildingStore size={32} color="#888"/><div>Δεν βρέθηκαν σούπερ κοντά</div></div>}
+            {!searching&&!stores.length&&status==='ready'&&<div className="smart-route-empty"><IconBuildingStore size={32} color="#888"/><div>Δεν βρέθηκαν Σούπερ Μάρκετ σε κοντινή απόσταση</div></div>}
           </div>
           {selected.length>0&&<button className="smart-route-calc-btn" onClick={calcRoute} disabled={routing}>
             {routing?<><IconLoader2 size={18} className="smart-route-spin-icon"/>Υπολογισμός...</>:<><IconRoute size={18}/>{route?'Επανυπολογισμός':'Υπολόγισε Διαδρομή'} ({selected.length})</>}
