@@ -6288,3 +6288,60 @@ html, body {
 .contextual-nudge-icon { font-size: 20px; flex-shrink: 0; }
 
 
+
+/* ── Typing indicator dots ──────────────────────────────── */
+@keyframes typingDot {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+  40%            { transform: scale(1.2); opacity: 1; }
+}
+
+/* ── Onboarding tour overlay ────────────────────────────── */
+.onboarding-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  background: rgba(0,0,0,0.72);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 0 0 24px;
+  animation: fadeIn 0.3s ease;
+}
+.onboarding-card {
+  background: var(--bg-container, #fff);
+  border-radius: 24px 24px 20px 20px;
+  padding: 28px 24px 24px;
+  max-width: 440px;
+  width: calc(100% - 32px);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.25);
+  animation: slideUp 0.35s cubic-bezier(0.34,1.2,0.64,1);
+}
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.onboarding-step-dots {
+  display: flex; gap: 6px; justify-content: center; margin-bottom: 20px;
+}
+.onboarding-step-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--bg-subtle);
+  transition: all 0.25s ease;
+}
+.onboarding-step-dot.active {
+  background: var(--accent, #6366f1);
+  width: 20px;
+  border-radius: 4px;
+}
+.onboarding-emoji { font-size: 44px; text-align: center; margin-bottom: 12px; }
+.onboarding-title { font-size: 20px; font-weight: 800; color: var(--text-primary); text-align: center; margin-bottom: 8px; }
+.onboarding-body  { font-size: 14px; color: var(--text-secondary); text-align: center; line-height: 1.55; margin-bottom: 24px; }
+.onboarding-btn   {
+  width: 100%; padding: 14px; border: none; border-radius: 14px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+  transition: transform 0.15s;
+}
+.onboarding-btn:active { transform: scale(0.97); }
+.onboarding-skip {
+  display: block; text-align: center; margin-top: 12px;
+  font-size: 13px; color: var(--text-muted); cursor: pointer;
+  background: none; border: none; width: 100%;
+}

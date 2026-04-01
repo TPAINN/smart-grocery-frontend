@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { openDB } from 'idb';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import './App.css';
 import './EnhancedAnimations.css';
@@ -66,7 +67,34 @@ const cacheSet = (key, data) => {
   }
 };
 
-// Render free-tier spins down after 15min of inactivity. Ping every 9min to avoid that.
+// ── IndexedDB helpers for offline-first list ─────────────────────────────────
+const IDB_NAME  = 'kalathaki';
+const IDB_STORE = 'list_items';
+
+function getListDB() {
+  return openDB(IDB_NAME, 1, {
+    upgrade(db) { db.createObjectStore(IDB_STORE, { keyPath: 'id' }); },
+  });
+}
+
+async function saveItemsToIDB(items) {
+  try {
+    const db = await getListDB();
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    await tx.store.clear();
+    await Promise.all(items.map(item => tx.store.put(item)));
+    await tx.done;
+  } catch { /* IDB unavailable — localStorage is the fallback */ }
+}
+
+async function loadItemsFromIDB() {
+  try {
+    const db = await getListDB();
+    return await db.getAll(IDB_STORE);
+  } catch { return []; }
+}
+
+// ── Render free-tier spins down after 15min of inactivity. Ping every 9min to avoid that.
 const useKeepAlive = () => {
   useEffect(() => {
     if (!ENABLE_KEEPALIVE) return undefined;
@@ -3087,6 +3115,25 @@ export default function App() {
   const [mealDbPage,    setMealDbPage]          = useState(1); // 12 per page
   const MEALDB_PER_PAGE = 12;
   const mealDbTabsRef                           = useRef(null);
+
+  // MealDB favorites (separate key-space from scraped recipe favorites)
+  const [mealDbFavIds, setMealDbFavIds]         = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sg_mealdb_fav_ids') || '[]'); } catch { return []; }
+  });
+  const [mealDbFavRecipes, setMealDbFavRecipes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sg_mealdb_fav_recipes') || '[]'); } catch { return []; }
+  });
+
+  // Typing indicators — { [friendShareKey]: senderName }
+  const [friendsTyping, setFriendsTyping]       = useState({});
+  const typingTimers                            = useRef({});
+
+  // Push notifications
+  const [pushEnabled, setPushEnabled]           = useState(() => !!localStorage.getItem('sg_push_sub'));
+
+  // Onboarding tour
+  const [showOnboarding, setShowOnboarding]     = useState(() => !localStorage.getItem('sg_onboarding_done'));
+  const [onboardingStep, setOnboardingStep]     = useState(0);
   const [showScanner, setShowScanner]     = useState(false);
   const [showSmartRoute, setShowSmartRoute] = useState(false);
   const [currentTime, setCurrentTime]     = useState(new Date());
@@ -3329,6 +3376,20 @@ export default function App() {
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
     });
 
+    // Typing indicators
+    socketRef.current.on('friend_typing', ({ senderName, shareKey }) => {
+      setFriendsTyping(prev => ({ ...prev, [shareKey]: senderName }));
+      // Auto-clear after 3s if typing_stop not received
+      clearTimeout(typingTimers.current[shareKey]);
+      typingTimers.current[shareKey] = setTimeout(() => {
+        setFriendsTyping(prev => { const n = { ...prev }; delete n[shareKey]; return n; });
+      }, 3000);
+    });
+    socketRef.current.on('friend_stopped_typing', ({ shareKey }) => {
+      clearTimeout(typingTimers.current[shareKey]);
+      setFriendsTyping(prev => { const n = { ...prev }; delete n[shareKey]; return n; });
+    });
+
     socketRef.current.on('receive_message', (msg) => {
       setChatMessages(prev => {
         // Avoid duplicate if we already have this exact _id
@@ -3362,6 +3423,8 @@ export default function App() {
       socketRef.current.off('receive_item');
       socketRef.current.off('receive_message');
       socketRef.current.off('friend_added');
+      socketRef.current.off('friend_typing');
+      socketRef.current.off('friend_stopped_typing');
       socketRef.current.disconnect();
     };
   }, [user]);
@@ -3596,7 +3659,72 @@ export default function App() {
     setFavoritesLoaded(true);
   }, [user]);
 
-  useEffect(() => { if (user) syncFavorites(); }, [user, syncFavorites]);
+  useEffect(() => {
+    if (user) { syncFavorites(); syncMealdbFavorites(); }
+  }, [user, syncFavorites]); // syncMealdbFavorites intentionally omitted from deps to avoid loop
+
+  // ── MealDB favorites ───────────────────────────────────────────────────────
+  const syncMealdbFavorites = useCallback(async () => {
+    if (!user) return;
+    try {
+      const token = localStorage.getItem('smart_grocery_token');
+      const r = await fetch(`${API_BASE}/api/favorites/ids`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const ids = d.mealdbIds || [];
+        setMealDbFavIds(ids);
+        localStorage.setItem('sg_mealdb_fav_ids', JSON.stringify(ids));
+      }
+    } catch { /* offline */ }
+  }, [user]);
+
+  const toggleMealdbFavorite = useCallback(async (meal) => {
+    const mealdbId = String(meal?._id || '');
+    if (!mealdbId) return;
+    if (!user) { setAuthInitMode('register'); setShowAuthModal(true); return; }
+    const isFav = mealDbFavIds.includes(mealdbId);
+    const token = localStorage.getItem('smart_grocery_token');
+
+    // Optimistic update
+    if (isFav) {
+      const newIds = mealDbFavIds.filter(id => id !== mealdbId);
+      setMealDbFavIds(newIds);
+      setMealDbFavRecipes(prev => prev.filter(r => String(r._id) !== mealdbId));
+      localStorage.setItem('sg_mealdb_fav_ids', JSON.stringify(newIds));
+    } else {
+      const newIds = [...mealDbFavIds, mealdbId];
+      const snap   = { ...meal, addedAt: new Date().toISOString() };
+      const updated = [snap, ...mealDbFavRecipes];
+      setMealDbFavIds(newIds);
+      setMealDbFavRecipes(updated);
+      localStorage.setItem('sg_mealdb_fav_ids', JSON.stringify(newIds));
+      localStorage.setItem('sg_mealdb_fav_recipes', JSON.stringify(updated));
+    }
+
+    // Sync backend
+    try {
+      await fetch(`${API_BASE}/api/favorites/mealdb/${mealdbId}`, {
+        method: isFav ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: isFav ? undefined : JSON.stringify({
+          recipe: {
+            title:        meal.title,
+            image:        meal.image,
+            category:     meal.category,
+            cuisine:      meal.area || '',
+            instructions: Array.isArray(meal.instructions)
+              ? meal.instructions
+              : (meal.instructions || '').split(/\r?\n/).filter(Boolean),
+            ingredients:  meal.ingredients || [],
+            tags:         meal.tags || [],
+            youtube:      meal.youtube || '',
+          },
+        }),
+      });
+    } catch { /* offline — will sync next login */ }
+  }, [user, mealDbFavIds, mealDbFavRecipes]);
 
   const toggleFavorite = useCallback(async (recipeId) => {
     if (!recipeId) return;
@@ -3652,6 +3780,56 @@ export default function App() {
     }
   }, [user, favoriteIds, favoriteRecipes, recipes]);
 
+  // ── Push notification subscription ────────────────────────────────────────
+  const subscribeToPush = useCallback(async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const keyRes = await fetch(`${API_BASE}/api/push/vapid-key`);
+      if (!keyRes.ok) return;
+      const { publicKey } = await keyRes.json();
+
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: publicKey,
+      });
+      const subJson = sub.toJSON();
+      const token = localStorage.getItem('smart_grocery_token');
+      await fetch(`${API_BASE}/api/push/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          endpoint: subJson.endpoint,
+          keys:     subJson.keys,
+          userAgent: navigator.userAgent.slice(0, 120),
+        }),
+      });
+      localStorage.setItem('sg_push_sub', '1');
+      setPushEnabled(true);
+      setNotification({ show: true, message: '🔔 Ειδοποιήσεις ενεργοποιήθηκαν!' });
+    } catch (err) {
+      console.warn('Push subscribe failed:', err);
+    }
+  }, []);
+
+  const unsubscribeFromPush = useCallback(async () => {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        const token = localStorage.getItem('smart_grocery_token');
+        await fetch(`${API_BASE}/api/push/subscribe`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        });
+        await sub.unsubscribe();
+      }
+    } catch { /* ignore */ }
+    localStorage.removeItem('sg_push_sub');
+    setPushEnabled(false);
+  }, []);
+
   // Server status check
   useEffect(() => {
     if (!isOnline) return;
@@ -3675,8 +3853,16 @@ export default function App() {
     return () => clearInterval(iv);
   }, [isOnline]);
 
+  // Load list from IndexedDB on first mount (supersedes localStorage initial value)
+  useEffect(() => {
+    loadItemsFromIDB().then(idbItems => {
+      if (idbItems && idbItems.length > 0) setItems(idbItems);
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     localStorage.setItem('proGroceryItems_real', JSON.stringify(items));
+    saveItemsToIDB(items); // async, no-await intentional
   }, [items]);
 
   // ── Saved lists ────────────────────────────────────────────────────────────
@@ -3846,11 +4032,28 @@ export default function App() {
     setIsSearching(false);
   };
 
+  const typingEmitTimer = useRef(null);
   const handleInputChange = (e) => {
     const val = e.target.value;
     setInputValue(val);
     clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(() => triggerSearch(val, selectedStore), 300);
+
+    // Emit typing indicator to friends when there's content and we have friends
+    if (socketRef.current?.connected && friends.length > 0 && user?.shareKey && val.trim()) {
+      socketRef.current.emit('typing_start', {
+        shareKey: user.shareKey,
+        senderName: user.name || user.username || 'Φίλος',
+        friendShareKeys: friends.map(f => f.shareKey),
+      });
+      clearTimeout(typingEmitTimer.current);
+      typingEmitTimer.current = setTimeout(() => {
+        socketRef.current?.emit('typing_stop', {
+          shareKey: user.shareKey,
+          friendShareKeys: friends.map(f => f.shareKey),
+        });
+      }, 1500);
+    }
   };
 
   const addFromSuggestion = (product) => {
@@ -4634,6 +4837,15 @@ export default function App() {
                           </div>
                         </div>
                         <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display:'flex', alignItems:'center', gap:8 }}>{isDarkMode ? <><IconSun size={16}/> Φωτεινό θέμα</> : <><IconMoon size={16}/> Σκούρο θέμα</>}</div>
+                        {'PushManager' in window && (
+                          <div
+                            className="dropdown-item"
+                            onClick={() => { pushEnabled ? unsubscribeFromPush() : subscribeToPush(); setShowProfileMenu(false); }}
+                            style={{ display:'flex', alignItems:'center', gap:8 }}
+                          >
+                            <IconBell size={16}/> {pushEnabled ? 'Ειδοποιήσεις ON ✓' : 'Ειδοποιήσεις OFF'}
+                          </div>
+                        )}
                         <div className="dropdown-item logout" onClick={handleLogout} style={{ display:'flex', alignItems:'center', gap:8 }}><IconLogout size={16}/> Αποσύνδεση</div>
                       </div>
                     </>
@@ -4946,6 +5158,32 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            {/* Typing indicator banner */}
+            {Object.entries(friendsTyping).length > 0 && (
+              <div style={{
+                padding: '6px 14px',
+                marginBottom: 8,
+                borderRadius: 10,
+                background: 'var(--bg-subtle)',
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}>
+                <span style={{ display:'inline-flex', gap:2 }}>
+                  {[0,1,2].map(i => (
+                    <span key={i} style={{
+                      width: 5, height: 5, borderRadius: '50%',
+                      background: 'var(--accent)',
+                      animation: `typingDot 1s ${i * 0.2}s infinite ease-in-out`,
+                    }} />
+                  ))}
+                </span>
+                {Object.values(friendsTyping).join(', ')} γράφει…
+              </div>
+            )}
 
             {items.length === 0 ? (
               <div className="empty-cart-state">
@@ -5352,6 +5590,15 @@ export default function App() {
                                     {meal.area && (
                                       <span className="mealdb-card-area-badge">{meal.area}</span>
                                     )}
+                                    {/* Favorite heart */}
+                                    <button
+                                      className={`recipe-fav-btn${mealDbFavIds.includes(String(meal._id)) ? ' is-fav' : ''}`}
+                                      style={{ position:'absolute', top:8, right:8 }}
+                                      onClick={(e) => { e.stopPropagation(); toggleMealdbFavorite(meal); }}
+                                      aria-label={mealDbFavIds.includes(String(meal._id)) ? 'Αφαίρεση από αγαπημένα' : 'Προσθήκη στα αγαπημένα'}
+                                    >
+                                      {mealDbFavIds.includes(String(meal._id)) ? '❤️' : '🤍'}
+                                    </button>
                                   </div>
                                 )}
 
@@ -5423,8 +5670,8 @@ export default function App() {
                       recipe={adapted}
                       onClose={() => setSelectedMealDbRecipe(null)}
                       onAddToList={() => addRecipeToList(meal)}
-                      isFavorite={false}
-                      onToggleFavorite={null}
+                      isFavorite={mealDbFavIds.includes(String(meal._id))}
+                      onToggleFavorite={() => toggleMealdbFavorite(meal)}
                     />
                   );
                 })()}
@@ -6152,6 +6399,83 @@ export default function App() {
         onClose={() => setShowSmartRoute(false)}
         items={items}
       />}
+
+      {/* ── Onboarding Tour ── */}
+      {showOnboarding && createPortal(
+        <OnboardingTour
+          step={onboardingStep}
+          onNext={() => {
+            const STEPS = 5;
+            if (onboardingStep < STEPS - 1) {
+              setOnboardingStep(s => s + 1);
+            } else {
+              localStorage.setItem('sg_onboarding_done', '1');
+              setShowOnboarding(false);
+            }
+          }}
+          onSkip={() => {
+            localStorage.setItem('sg_onboarding_done', '1');
+            setShowOnboarding(false);
+          }}
+        />,
+        document.body,
+      )}
+    </div>
+  );
+}
+
+// ── Onboarding Tour Component ─────────────────────────────────────────────────
+const ONBOARDING_STEPS = [
+  {
+    emoji: '👋',
+    title: 'Καλωσήρθες στο Καλαθάκι!',
+    body:  'Η έξυπνη λίστα ψώνων με σύγκριση τιμών από 9 σούπερ μάρκετ, συνταγές & AI πλάνο διατροφής.',
+    btn:   'Ας ξεκινήσουμε →',
+  },
+  {
+    emoji: '🔍',
+    title: 'Αναζήτηση προϊόντων',
+    body:  'Γράψε ένα προϊόν και δες αμέσως τις τρέχουσες τιμές από όλα τα σούπερ μάρκετ. Χτύπα "+" ή Enter για να το προσθέσεις.',
+    btn:   'Επόμενο →',
+  },
+  {
+    emoji: '🎤',
+    title: 'Φωνητική εισαγωγή',
+    body:  'Πάτα το 🎤 για να προσθέσεις προϊόντα με τη φωνή σου. Ιδανικό για γρήγορη εισαγωγή!',
+    btn:   'Επόμενο →',
+  },
+  {
+    emoji: '🍽️',
+    title: 'Συνταγές & Διατροφή',
+    body:  'Στην καρτέλα "Συνταγές" θα βρεις εκατοντάδες ελληνικές & διεθνείς συνταγές. Πάτα "📥 Προσθήκη" για να μπουν τα υλικά στη λίστα σου.',
+    btn:   'Επόμενο →',
+  },
+  {
+    emoji: '🤖',
+    title: 'AI Πλάνο Διατροφής',
+    body:  'Το "AI Πλάνο" δημιουργεί εξατομικευμένο πλάνο γεύματος για εβδομάδα. Δοκίμασέ το — χρειάζεσαι λογαριασμό Premium.',
+    btn:   '🚀 Ξεκίνα τώρα!',
+  },
+];
+
+function OnboardingTour({ step, onNext, onSkip }) {
+  const s = ONBOARDING_STEPS[step] || ONBOARDING_STEPS[0];
+  return (
+    <div className="onboarding-overlay" onClick={e => e.target === e.currentTarget && onSkip()}>
+      <div className="onboarding-card">
+        <div className="onboarding-step-dots">
+          {ONBOARDING_STEPS.map((_, i) => (
+            <div key={i} className={`onboarding-step-dot${i === step ? ' active' : ''}`} />
+          ))}
+        </div>
+        <div className="onboarding-emoji">{s.emoji}</div>
+        <div className="onboarding-title">{s.title}</div>
+        <div className="onboarding-body">{s.body}</div>
+        <button className="onboarding-btn" onClick={onNext}>{s.btn}</button>
+        {step < ONBOARDING_STEPS.length - 1 && (
+          <button className="onboarding-skip" onClick={onSkip}>Παράλειψη</button>
+        )}
+      </div>
     </div>
   );
 }
