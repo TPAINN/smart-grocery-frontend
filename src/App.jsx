@@ -4489,51 +4489,6 @@ export default function App() {
             </span>
           </h1>
 
-          <ScrollReveal y={18}>
-            <section className="hero-shell interactive-card">
-              <div className="hero-shell__orb hero-shell__orb--primary" />
-              <div className="hero-shell__orb hero-shell__orb--secondary" />
-
-              <div className="hero-shell__headline-row">
-                <div>
-                  <div className="hero-shell__title">Planning, τιμές και AI προτάσεις σε ένα πιο καθαρό workflow.</div>
-                  <p className="hero-shell__subtitle">
-                    {user
-                      ? 'Οργάνωσε τις αγορές σου, συντόνισε το κοινό καλάθι και κράτα εικόνα για stores, lists και premium πρόσβαση.'
-                      : 'Σύνδεση για αποθήκευση λιστών, collaboration και προσωποποιημένο AI meal plan.'}
-                  </p>
-                </div>
-
-                <div className="hero-shell__tier-badge">
-                  <span className="hero-shell__tier-label">Workspace</span>
-                  <strong>{planTierLabel}</strong>
-                </div>
-              </div>
-
-              <div className="hero-shell__stats">
-                <div className="hero-stat-card">
-                  <span>Προϊόντα</span>
-                  <strong>{items.length}</strong>
-                  <em>ενεργά στη λίστα</em>
-                </div>
-                <div className="hero-stat-card">
-                  <span>Αποθηκευμένες</span>
-                  <strong>{user ? savedLists.length : 0}</strong>
-                  <em>έτοιμες λίστες</em>
-                </div>
-                <div className="hero-stat-card">
-                  <span>Συνεργάτες</span>
-                  <strong>{friends.length}</strong>
-                  <em>στο κοινό καλάθι</em>
-                </div>
-                <div className="hero-stat-card">
-                  <span>Καταστήματα</span>
-                  <strong>{uniqueStoresInList}</strong>
-                  <em>για smart route</em>
-                </div>
-              </div>
-            </section>
-          </ScrollReveal>
 
           {/* Streak badge */}
           {streak > 0 && (
