@@ -3478,9 +3478,13 @@ export default function App() {
     if (page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
       const ck = cacheGet('recipes');
       if (ck && !ck.stale) {
-        const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
+        const cached = ck.data;
+        const cachedData  = Array.isArray(cached) ? cached : (cached.recipes || []);
+        const cachedPages = Array.isArray(cached) ? 1 : (cached.pages || 1);
         if (cachedData.length > 0) {
           setRecipes(cachedData);
+          setRecipeTotalPages(cachedPages);
+          setRecipePage(1);
           setRecipesLoading(false);
           return;
         }
@@ -3494,7 +3498,7 @@ export default function App() {
         const actualRecipes = d.recipes || d;
         if (Array.isArray(actualRecipes)) {
           if (page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
-            cacheSet('recipes', actualRecipes);
+            cacheSet('recipes', { recipes: actualRecipes, pages: d.pages || 1 });
           }
           if (append) {
             setRecipes(prev => [...prev, ...actualRecipes]);
@@ -3542,23 +3546,6 @@ export default function App() {
     }
   }, [recipePage, recipeTotalPages, recipesLoading, fetchRecipes]);
 
-  // ── Infinite Scroll: παρατηρεί το sentinel div και φορτώνει αυτόματα ────────
-  useEffect(() => {
-    const sentinel = recipesSentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMoreRecipes();
-        }
-      },
-      { rootMargin: '200px', threshold: 0 } // φορτώνει 200px πριν φτάσει ο χρήστης στο τέλος
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMoreRecipes]);
 
   // ── TheMealDB: fetch Greek or Mediterranean recipes ──────────────────────
   const fetchMealDb = useCallback(async (section = 'greek') => {
@@ -5256,9 +5243,9 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* ── Load-more sentinel + manual fallback ── */}
+                    {/* ── Load More button ── */}
                     {!showFavoritesOnly && (
-                      <div ref={recipesSentinelRef} className="recipes-load-more-sentinel">
+                      <div className="recipes-load-more-sentinel">
                         {recipesLoading && (
                           <div className="recipes-loading-row">
                             <div className="spinner-sm" />
@@ -5266,9 +5253,8 @@ export default function App() {
                           </div>
                         )}
                         {!recipesLoading && recipePage < recipeTotalPages && (
-                          // Manual fallback — in case IntersectionObserver misses a trigger
                           <button className="load-more-btn" onClick={loadMoreRecipes}>
-                            Φόρτωση περισσότερων ↓
+                            Φόρτωση περισσότερων συνταγών ↓
                           </button>
                         )}
                         {!recipesLoading && recipePage >= recipeTotalPages && recipes.length > 0 && (
