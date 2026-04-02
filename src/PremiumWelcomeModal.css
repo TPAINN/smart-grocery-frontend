@@ -1,0 +1,294 @@
+/* ═══════════════════════════════════════════════════════
+   PremiumWelcomeModal.css
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Overlay ─────────────────────────────────────────── */
+.pwm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 5, 15, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: pwmFadeIn 0.35s ease;
+}
+
+@keyframes pwmFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Confetti ────────────────────────────────────────── */
+.pwm-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pwm-piece {
+  position: absolute;
+  top: -20px;
+  opacity: 0;
+  animation: pwmFall linear forwards;
+  transform-origin: center center;
+}
+
+.pwm-piece--circle  { border-radius: 50%; }
+.pwm-piece--rect    { border-radius: 2px; }
+.pwm-piece--diamond { border-radius: 2px; transform: rotate(var(--rotate, 45deg)); }
+
+@keyframes pwmFall {
+  0%   { transform: translateY(0)    rotate(0deg)   scale(0); opacity: 1; }
+  15%  { opacity: 1; transform: translateY(10vh)  rotate(120deg) scale(1); }
+  85%  { opacity: 0.9; }
+  100% { transform: translateY(110vh) rotate(420deg) scale(0.6); opacity: 0; }
+}
+
+/* ── Card ────────────────────────────────────────────── */
+.pwm-card {
+  position: relative;
+  background: var(--bg-card, #1c1c2e);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 28px;
+  padding: 36px 28px 30px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  overflow: hidden;
+  animation: pwmSlideUp 0.45s cubic-bezier(.16,1,.3,1);
+  box-shadow:
+    0 0 0 1px rgba(251,191,36,.12),
+    0 24px 80px rgba(0,0,0,.6),
+    0 0 120px rgba(251,191,36,.06);
+}
+
+@keyframes pwmSlideUp {
+  from { opacity: 0; transform: translateY(40px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* ── Glow backdrop ───────────────────────────────────── */
+.pwm-glow {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(251,191,36,.18) 0%, transparent 70%);
+  pointer-events: none;
+  animation: pwmGlowPulse 3s ease-in-out infinite;
+}
+
+@keyframes pwmGlowPulse {
+  0%,100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;   transform: translateX(-50%) scale(1.12); }
+}
+
+/* ── Icon burst ──────────────────────────────────────── */
+.pwm-icon-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pwm-icon-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  opacity: 0.18;
+  animation: pwmRingPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pwmRingPulse {
+  0%,100% { transform: scale(1);    opacity: 0.18; }
+  50%      { transform: scale(1.22); opacity: 0.32; }
+}
+
+.pwm-icon {
+  position: relative;
+  font-size: 42px;
+  line-height: 1;
+  animation: pwmIconBounce 0.6s cubic-bezier(.36,1.56,.64,1) 0.15s both;
+  filter: drop-shadow(0 4px 16px rgba(251,191,36,.5));
+}
+
+@keyframes pwmIconBounce {
+  from { transform: scale(0) rotate(-15deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0deg);   opacity: 1; }
+}
+
+/* ── Text ────────────────────────────────────────────── */
+.pwm-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fbbf24;
+  margin: 0 0 10px;
+  opacity: 0;
+  animation: pwmFadeUp 0.4s ease 0.25s forwards;
+}
+
+.pwm-title {
+  font-size: clamp(26px, 6vw, 32px);
+  font-weight: 900;
+  line-height: 1.15;
+  color: var(--text-primary, #f9fafb);
+  margin: 0 0 14px;
+  letter-spacing: -0.5px;
+  opacity: 0;
+  animation: pwmFadeUp 0.4s ease 0.32s forwards;
+}
+
+.pwm-title-highlight {
+  background: linear-gradient(90deg, #fbbf24, #f97316, #fbbf24);
+  background-size: 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: pwmShimmer 2.5s linear 0.8s infinite;
+}
+
+@keyframes pwmShimmer {
+  0%   { background-position: 0% }
+  100% { background-position: 200% }
+}
+
+.pwm-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #9ca3af);
+  line-height: 1.6;
+  margin: 0 0 24px;
+  opacity: 0;
+  animation: pwmFadeUp 0.4s ease 0.38s forwards;
+}
+
+.pwm-subtitle strong {
+  color: var(--text-primary, #f9fafb);
+}
+
+/* ── Features list ───────────────────────────────────── */
+.pwm-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  text-align: left;
+}
+
+.pwm-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(251, 191, 36, 0.06);
+  border: 1px solid rgba(251, 191, 36, 0.12);
+  border-radius: 12px;
+  padding: 10px 13px;
+  opacity: 0;
+  transform: translateX(-12px);
+  animation: pwmFeatureIn 0.35s cubic-bezier(.16,1,.3,1) forwards;
+}
+
+@keyframes pwmFeatureIn {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.pwm-feature-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.pwm-feature-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #f9fafb);
+  flex: 1;
+}
+
+.pwm-feature-check {
+  font-size: 13px;
+  font-weight: 800;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+/* ── CTA button ──────────────────────────────────────── */
+.pwm-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1c1400;
+  font-size: 17px;
+  font-weight: 800;
+  font-family: var(--font, system-ui);
+  cursor: pointer;
+  letter-spacing: -0.2px;
+  box-shadow: 0 4px 24px rgba(251,191,36,.4), 0 1px 4px rgba(0,0,0,.2);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  margin-bottom: 14px;
+  opacity: 0;
+  animation: pwmFadeUp 0.4s ease 0.9s forwards;
+}
+
+.pwm-cta:hover  { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(251,191,36,.55); filter: brightness(1.06); }
+.pwm-cta:active { transform: translateY(0px);  box-shadow: 0 3px 12px rgba(251,191,36,.35); }
+
+.pwm-cta-arrow {
+  font-size: 20px;
+  transition: transform 0.2s ease;
+}
+.pwm-cta:hover .pwm-cta-arrow { transform: translateX(4px); }
+
+/* ── Fine print ──────────────────────────────────────── */
+.pwm-fine {
+  font-size: 11px;
+  color: var(--text-muted, #6b7280);
+  margin: 0;
+  opacity: 0;
+  animation: pwmFadeUp 0.4s ease 1s forwards;
+}
+
+/* ── Shared fade-up keyframe ─────────────────────────── */
+@keyframes pwmFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Dark/Light mode ─────────────────────────────────── */
+@media (prefers-color-scheme: light) {
+  .pwm-card {
+    background: #fff;
+    border-color: rgba(251, 191, 36, 0.3);
+    box-shadow: 0 24px 80px rgba(0,0,0,.18), 0 0 120px rgba(251,191,36,.1);
+  }
+  .pwm-feature { background: rgba(251,191,36,.07); }
+}
+
+/* ── Mobile ──────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .pwm-card       { padding: 30px 20px 24px; border-radius: 22px; }
+  .pwm-title      { font-size: 26px; }
+  .pwm-cta        { font-size: 16px; padding: 14px 20px; }
+  .pwm-overlay    { align-items: flex-end; padding: 0; }
+  .pwm-card       { border-radius: 24px 24px 0 0; max-width: 100%; }
+}

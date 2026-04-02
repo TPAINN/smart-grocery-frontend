@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { openDB } from 'idb';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+// html5-qrcode is dynamically imported on first scanner open (saves ~210KB on initial load)
 import './App.css';
 import './EnhancedAnimations.css';
 import RecipeNotification from './RecipeNotification';
@@ -14,6 +14,7 @@ import { initCapacitor, initBackButton } from './capacitorInit';
 import { useAndroidPermissions } from './useAndroidPermissions.jsx';
 import AppSplash from './AppSplash';
 import ScrollReveal from './ScrollReveal';
+import PremiumWelcomeModal from './PremiumWelcomeModal';
 import { API_BASE, ENABLE_KEEPALIVE } from './config';
 import {
   IconShoppingCart, IconQrcode, IconUsers, IconMessage,
@@ -2198,7 +2199,9 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         const container = document.getElementById(scannerDivId);
         if (container) container.innerHTML = '';
 
-        html5Qr = new Html5Qrcode(scannerDivId);
+        // Dynamic import — loads ~210KB only when scanner is actually opened
+        const { Html5Qrcode: H5QR, Html5QrcodeSupportedFormats: Fmts } = await import('html5-qrcode');
+        html5Qr = new H5QR(scannerDivId);
         scannerRef.current = html5Qr;
         if (cancelled) return;
         await html5Qr.start(
@@ -2209,15 +2212,15 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             aspectRatio: 1.5,
             disableFlip: false,
             formatsToSupport: [
-              Html5QrcodeSupportedFormats.EAN_13,
-              Html5QrcodeSupportedFormats.EAN_8,
-              Html5QrcodeSupportedFormats.UPC_A,
-              Html5QrcodeSupportedFormats.UPC_E,
-              Html5QrcodeSupportedFormats.CODE_128,
-              Html5QrcodeSupportedFormats.CODE_39,
-              Html5QrcodeSupportedFormats.QR_CODE,
-              Html5QrcodeSupportedFormats.DATA_MATRIX,
-              Html5QrcodeSupportedFormats.ITF,
+              Fmts.EAN_13,
+              Fmts.EAN_8,
+              Fmts.UPC_A,
+              Fmts.UPC_E,
+              Fmts.CODE_128,
+              Fmts.CODE_39,
+              Fmts.QR_CODE,
+              Fmts.DATA_MATRIX,
+              Fmts.ITF,
             ],
             experimentalFeatures: { useBarCodeDetectorIfSupported: true },
           },
@@ -3055,6 +3058,7 @@ export default function App() {
   const [chatInput, setChatInput] = useState('');
   const [dmTarget, setDmTarget] = useState(null); // null = group, friend object = private DM
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showPremiumWelcome, setShowPremiumWelcome] = useState(false);
   const [shoppingBudget, setShoppingBudget] = useState(() => {
     const v = localStorage.getItem('sg_budget');
     return v ? parseFloat(v) : null;
@@ -3484,9 +3488,13 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const payment = params.get('payment');
     if (payment === 'success') {
-      setNotification({ show: true, message: '🎉 Η πληρωμή ολοκληρώθηκε! Καλώς ήρθες στο Premium!' });
-      // Clean URL
+      // Clean URL first
       window.history.replaceState({}, '', window.location.pathname);
+      // Show celebration modal (guard: only once per session)
+      if (!sessionStorage.getItem('sg_premium_welcomed')) {
+        sessionStorage.setItem('sg_premium_welcomed', '1');
+        setShowPremiumWelcome(true);
+      }
       // Refresh premium status
       const token = localStorage.getItem('smart_grocery_token');
       if (token) {
@@ -4478,6 +4486,7 @@ export default function App() {
       {showWelcome && !user && <WelcomeModal onLogin={handleWelcomeLogin} onRegister={handleWelcomeRegister} onSkip={handleWelcomeSkip} />}
 
       <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} user={user} />
+      {showPremiumWelcome && <PremiumWelcomeModal onClose={() => setShowPremiumWelcome(false)} />}
       <SavedListsModal isOpen={showListsModal} onClose={() => setShowListsModal(false)} lists={savedLists} onDelete={deleteList} onToggleItem={toggleListItem} />
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onLoginSuccess={(u) => {
           setUser(u);

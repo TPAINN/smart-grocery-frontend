@@ -4,6 +4,46 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   base: './',
+
+  build: {
+    // Raise chunk-size warning threshold (we'll split manually below)
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // ── React core ───────────────────────────────────────────
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'vendor-react';
+          }
+          // ── Socket.IO ────────────────────────────────────────────
+          if (id.includes('node_modules/socket.io-client') || id.includes('node_modules/engine.io-client')) {
+            return 'vendor-socket';
+          }
+          // ── Stripe ───────────────────────────────────────────────
+          if (id.includes('node_modules/@stripe/')) {
+            return 'vendor-stripe';
+          }
+          // ── Tabler icons ─────────────────────────────────────────
+          if (id.includes('node_modules/@tabler/')) {
+            return 'vendor-icons';
+          }
+          // ── Barcode / QR ─────────────────────────────────────────
+          if (id.includes('node_modules/html5-qrcode') || id.includes('node_modules/zxing')) {
+            return 'vendor-qrcode';
+          }
+          // ── IndexedDB ────────────────────────────────────────────
+          if (id.includes('node_modules/idb')) {
+            return 'vendor-idb';
+          }
+          // ── Workbox / PWA ────────────────────────────────────────
+          if (id.includes('node_modules/workbox-')) {
+            return 'vendor-pwa';
+          }
+        },
+      },
+    },
+  },
+
   plugins:[
     react(),
     VitePWA({
