@@ -444,15 +444,18 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         {selected.length>0&&userLoc&&status==='ready'&&(
           <div className="smart-route-map-nav-overlay">
             <button className="smart-route-map-nav-fab" onClick={()=>openNav(userLoc,selected,mode)}>
-              <IconNavigation size={15}/>
-              <span className="smart-route-map-nav-fab-label">
-                {route?`${fmtD(route.duration)} · ${fmtM(route.distance)}`:`Πλοήγηση (${selected.length})`}
-              </span>
-              <span className="smart-route-map-nav-fab-sub">
-                {selected.length > 1
-                  ? selected.map(s=>s.chainName||s.name).join(' → ')
-                  : 'Google Maps →'}
-              </span>
+              <div className="nav-fab-gps-dot"/>
+              <div className="nav-fab-text">
+                <span className="smart-route-map-nav-fab-label">
+                  {route?`${fmtD(route.duration)} · ${fmtM(route.distance)}`:`Πλοήγηση (${selected.length})`}
+                </span>
+                <span className="smart-route-map-nav-fab-sub">
+                  {selected.length > 1
+                    ? selected.map(s=>s.chainName||s.name).join(' → ')
+                    : 'Google Maps'}
+                </span>
+              </div>
+              <div className="nav-fab-arrow"><IconNavigation size={16}/></div>
             </button>
           </div>
         )}

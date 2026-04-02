@@ -139,26 +139,129 @@
 
 /* ── Map nav overlay (floating button inside map) ────────────── */
 .smart-route-map-nav-overlay {
-  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%);
   z-index: 800; pointer-events: none;
-  animation: srResultIn .35s cubic-bezier(.16,1,.3,1);
+  /* Bounce-in entrance */
+  animation: navFabEntrance .65s cubic-bezier(.34,1.56,.64,1) both;
 }
+
+@keyframes navFabEntrance {
+  0%   { opacity:0; transform:translateX(-50%) translateY(48px) scale(.7); }
+  55%  { opacity:1; transform:translateX(-50%) translateY(-10px) scale(1.05); }
+  75%  { transform:translateX(-50%) translateY(4px) scale(.97); }
+  100% { opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+}
+
+/* Ambient glow halo behind the button */
+.smart-route-map-nav-overlay::before {
+  content:'';
+  position:absolute; inset:-14px; border-radius:72px;
+  background:radial-gradient(ellipse at 50% 70%, rgba(16,185,129,.32) 0%, transparent 68%);
+  animation:navFabHalo 2.4s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes navFabHalo {
+  0%,100% { opacity:.6; transform:scaleX(1); }
+  50%      { opacity:1;  transform:scaleX(1.1); }
+}
+
+/* ── The button itself ── */
 .smart-route-map-nav-fab {
-  pointer-events: all;
-  display: flex; align-items: center; gap: 8px;
-  padding: 11px 18px; border: none; border-radius: 50px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: #fff; font-family: inherit; font-weight: 800; font-size: 13px;
-  cursor: pointer; white-space: nowrap;
-  box-shadow: 0 4px 20px rgba(16,185,129,.5), 0 2px 8px rgba(0,0,0,.2);
-  transition: transform .2s, box-shadow .2s;
-  -webkit-tap-highlight-color: transparent;
+  pointer-events:all;
+  position:relative; overflow:hidden;
+  display:flex; align-items:center; gap:12px;
+  padding:13px 20px 13px 16px;
+  border:none; border-radius:60px;
+  background:linear-gradient(135deg, #10b981 0%, #059669 55%, #0d9488 100%);
+  color:#fff; font-family:inherit; cursor:pointer; white-space:nowrap;
+  box-shadow:
+    0 0 0 0 rgba(16,185,129,.55),
+    0 10px 36px rgba(16,185,129,.5),
+    0 3px 10px rgba(0,0,0,.22),
+    inset 0 1px 0 rgba(255,255,255,.22);
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1), box-shadow .28s ease;
+  -webkit-tap-highlight-color:transparent;
+  animation:navFabRingPulse 2.8s ease-in-out infinite;
 }
-.smart-route-map-nav-fab:active { transform: scale(.95); }
-.smart-route-map-nav-fab-label { font-size: 13px; font-weight: 800; }
-.smart-route-map-nav-fab-sub { font-size: 10px; font-weight: 600; opacity: .8; }
+
+/* Pulsing ring expand */
+@keyframes navFabRingPulse {
+  0%  { box-shadow: 0 0 0 0 rgba(16,185,129,.55), 0 10px 36px rgba(16,185,129,.5), 0 3px 10px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.22); }
+  50% { box-shadow: 0 0 0 12px rgba(16,185,129,.0), 0 14px 44px rgba(16,185,129,.55), 0 3px 10px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.22); }
+  100%{ box-shadow: 0 0 0 0 rgba(16,185,129,.55), 0 10px 36px rgba(16,185,129,.5), 0 3px 10px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.22); }
+}
+
+/* Shimmer sweep */
+.smart-route-map-nav-fab::before {
+  content:'';
+  position:absolute; top:0; left:-120%; width:55%; height:100%;
+  background:linear-gradient(90deg, transparent 0%, rgba(255,255,255,.28) 50%, transparent 100%);
+  animation:navFabShimmer 3.2s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes navFabShimmer {
+  0%     { left:-120%; }
+  35%,100% { left:220%; }
+}
+
+/* Border ring layer */
+.smart-route-map-nav-fab::after {
+  content:'';
+  position:absolute; inset:0; border-radius:60px;
+  border:1.5px solid rgba(255,255,255,.18);
+  pointer-events:none;
+}
+
+.smart-route-map-nav-fab:active {
+  transform:scale(.93);
+  box-shadow:0 4px 16px rgba(16,185,129,.4), 0 2px 6px rgba(0,0,0,.18);
+  transition-duration:.08s;
+}
+
+/* GPS live dot */
+.nav-fab-gps-dot {
+  width:10px; height:10px; border-radius:50%;
+  background:#fff; flex-shrink:0;
+  box-shadow:0 0 0 0 rgba(255,255,255,.7);
+  animation:navFabGpsPulse 1.9s ease-in-out infinite;
+}
+@keyframes navFabGpsPulse {
+  0%   { box-shadow:0 0 0 0 rgba(255,255,255,.75); }
+  65%  { box-shadow:0 0 0 8px rgba(255,255,255,.0); }
+  100% { box-shadow:0 0 0 0 rgba(255,255,255,.0); }
+}
+
+/* Text stack */
+.nav-fab-text {
+  display:flex; flex-direction:column; gap:1px;
+}
+.smart-route-map-nav-fab-label {
+  font-size:14px; font-weight:800; letter-spacing:-.25px; line-height:1.1;
+}
+.smart-route-map-nav-fab-sub {
+  font-size:10px; font-weight:600; opacity:.78; letter-spacing:.05px; line-height:1;
+}
+
+/* Arrow icon — slides right on loop */
+.nav-fab-arrow {
+  display:flex; align-items:center; flex-shrink:0;
+  animation:navFabArrow 1.9s ease-in-out infinite;
+}
+@keyframes navFabArrow {
+  0%,100% { transform:translateX(0); opacity:1; }
+  45%      { transform:translateX(5px); opacity:.7; }
+  50%      { transform:translateX(-3px); opacity:1; }
+}
+
 @media(hover:hover) {
-  .smart-route-map-nav-fab:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(16,185,129,.5); }
+  .smart-route-map-nav-fab:hover {
+    transform:translateY(-4px) scale(1.04);
+    box-shadow:
+      0 0 0 0 rgba(16,185,129,.0),
+      0 20px 52px rgba(16,185,129,.58),
+      0 4px 14px rgba(0,0,0,.22),
+      inset 0 1px 0 rgba(255,255,255,.25);
+  }
 }
 
 /* ── Nav buttons ──────────────────────────────────────────────── */

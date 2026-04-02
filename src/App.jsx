@@ -15,6 +15,8 @@ import { useAndroidPermissions } from './useAndroidPermissions.jsx';
 import AppSplash from './AppSplash';
 import ScrollReveal from './ScrollReveal';
 import PremiumWelcomeModal from './PremiumWelcomeModal';
+import LazyImage from './LazyImage';
+import { useHapticFeedback } from './useHapticFeedback';
 import { API_BASE, ENABLE_KEEPALIVE } from './config';
 import {
   IconShoppingCart, IconQrcode, IconUsers, IconMessage,
@@ -433,6 +435,29 @@ const getCategory = (name) => {
   return bestCat;
 };
 
+// ─── Category avatar helpers ──────────────────────────────────────────────────
+const CAT_GRADIENTS = {
+  '🍎': ['#86efac','#22c55e'],  // fruits & veg — green
+  '🥛': ['#93c5fd','#60a5fa'],  // dairy — blue
+  '🥩': ['#fca5a5','#ef4444'],  // meat — red
+  '🐟': ['#7dd3fc','#0ea5e9'],  // fish — ocean blue
+  '🍞': ['#fde68a','#f59e0b'],  // bakery — amber
+  '🍝': ['#fed7aa','#f97316'],  // pantry — orange
+  '🥫': ['#d9f99d','#84cc16'],  // cans & sauces — lime
+  '❄️': ['#bae6fd','#38bdf8'],  // frozen — ice blue
+  '🥤': ['#6ee7b7','#10b981'],  // drinks — teal
+  '🍪': ['#ddd6fe','#8b5cf6'],  // snacks & sweets — purple
+  '☕': ['#d6b4a7','#92400e'],  // coffee — brown
+  '🧹': ['#e2e8f0','#64748b'],  // cleaning — slate
+  '🧴': ['#fbcfe8','#ec4899'],  // personal care — pink
+  '📦': ['#e5e7eb','#9ca3af'],  // misc — gray
+};
+const getCatEmoji  = (cat) => [...(cat || '📦')][0] || '📦';
+const getCatGradient = (cat) => {
+  const cols = CAT_GRADIENTS[getCatEmoji(cat)] || CAT_GRADIENTS['📦'];
+  return `linear-gradient(135deg, ${cols[0]}, ${cols[1]})`;
+};
+
 // ─── NON-FOOD blacklist (checked FIRST — if match → not food) ─────────────────
 const NON_FOOD_KEYWORDS = [
   // Καθαριστικά / Απορρυπαντικά
@@ -836,6 +861,26 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
   const [offsetX, setOffsetX]     = useState(0);
   const [swiping, setSwiping]     = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  // ── AI substitutions ──────────────────────────────────────────────────────
+  const [showSub,   setShowSub]   = useState(false);
+  const [subLoading,setSubLoading]= useState(false);
+  const [subResult, setSubResult] = useState(null);
+  const [subError,  setSubError]  = useState('');
+
+  useEffect(() => {
+    if (!showSub || subResult || subLoading) return;
+    setSubLoading(true);
+    setSubError('');
+    fetch(`${API_BASE}/api/prices/substitute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productName: item.text, currentStore: item.store, currentPrice: item.price }),
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+      .then(data => setSubResult(data))
+      .catch(() => setSubError('Αδυναμία σύνδεσης με τον server.'))
+      .finally(() => setSubLoading(false));
+  }, [showSub]); // eslint-disable-line
   const startX    = useRef(0);
   const startY    = useRef(0);
   const isLocked  = useRef(false);
@@ -955,6 +1000,16 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
           {item.isChecked && <span style={{ fontSize:11, lineHeight:1 }}>✓</span>}
         </button>
 
+        {/* ── Product avatar (image or category emoji) ── */}
+        <div className="item-avatar" style={{ opacity: item.isChecked ? 0.45 : 1, transition:'opacity 0.2s' }}>
+          {item.imageUrl
+            ? <img src={item.imageUrl} alt="" className="item-avatar-img" loading="lazy"/>
+            : <div className="item-avatar-emoji" style={{ background: getCatGradient(item.category) }}>
+                <span style={{ filter:'drop-shadow(0 1px 2px rgba(0,0,0,.25))' }}>{getCatEmoji(item.category)}</span>
+              </div>
+          }
+        </div>
+
         <div className="item-content" style={{ opacity: item.isChecked ? 0.45 : 1, transition:'opacity 0.2s' }}>
           <span className="item-text" style={{ textDecoration: item.isChecked ? 'line-through' : 'none' }}>{item.text}</span>
           {item.recipeSource && (
@@ -992,9 +1047,39 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
             >+</button>
           </div>
           {user && <button className="send-friend-btn" onClick={() => onSend(item)} title="Στείλε σε φίλο">📤</button>}
+          {item.price > 0 && <button className="substitute-btn" onClick={() => setShowSub(s => !s)} title="AI Εναλλακτικά">💡</button>}
           <button className="delete-btn" onClick={() => onDelete(item.id)} title="Διαγραφή">✕</button>
         </div>
       </div>
+
+      {/* ── AI Substitutions panel ── */}
+      {showSub && (
+        <div className="sub-panel">
+          {subLoading && <div className="sub-loading"><span className="sub-spinner"/>Αναζήτηση εναλλακτικών…</div>}
+          {subError  && <div className="sub-error">⚠️ {subError}</div>}
+          {subResult && (
+            <>
+              <div className="sub-panel-title">💡 AI Εναλλακτικά για «{item.text}»</div>
+              {(subResult.aiTop3 || subResult.alternatives || []).map((alt, i) => (
+                <div key={i} className="sub-alt">
+                  <div className="sub-alt-info">
+                    <span className="sub-alt-name">{alt.name || alt.chainName}</span>
+                    <span className="sub-alt-store">📍 {alt.supermarket || alt.store}</span>
+                    {alt.reason && <span className="sub-alt-reason">{alt.reason}</span>}
+                  </div>
+                  <span className="sub-alt-price">€{(alt.price||0).toFixed(2)}</span>
+                  {item.price > 0 && alt.price < item.price && (
+                    <span className="sub-alt-save">-€{(item.price - alt.price).toFixed(2)}</span>
+                  )}
+                </div>
+              ))}
+              {(!subResult.aiTop3 && !subResult.alternatives?.length) && (
+                <div className="sub-none">Δεν βρέθηκαν φθηνότερα εναλλακτικά.</div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </li>
   );
 }
@@ -3014,6 +3099,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   useKeepAlive(); // 🔑 keeps Render free-tier alive
+  const haptic = useHapticFeedback();
 
   // ── Capacitor Android init ─────────────────────────────────────────────────
   const { requestLocation, requestCamera, PermissionDialog } = useAndroidPermissions();
@@ -4006,7 +4092,7 @@ export default function App() {
       onConfirm: () => {
         setItems([]);
         setConfirmModal({ open:false, message:'', onConfirm:null });
-        if (navigator.vibrate) navigator.vibrate(50);
+        haptic.heavy();
       },
     });
   };
@@ -4072,6 +4158,7 @@ export default function App() {
       category: getCategory(product.name),
       price: product.price,
       store: product.supermarket,
+      imageUrl: product.imageUrl || null,
     }, ...prev]);
     setInputValue('');
     setSuggestions([]);
@@ -4090,7 +4177,7 @@ export default function App() {
       store: '—',
     }, ...prev]);
     setInputValue('');
-    if (navigator.vibrate) navigator.vibrate(30);
+    haptic.medium();
   };
 
   // ── Voice ──────────────────────────────────────────────────────────────────
@@ -4209,6 +4296,7 @@ export default function App() {
       return next;
     });
     setActiveTab('list');
+    haptic.success();
   };
 
   const closeRecipeAddModal = () => {
@@ -4309,9 +4397,14 @@ export default function App() {
 
   const deleteItem = useCallback((id) => setItems(prev => prev.filter(i => i.id !== id)), []);
   const toggleItemCheck = useCallback((id) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, isChecked: !i.isChecked } : i));
-    if (navigator.vibrate) navigator.vibrate(15);
-  }, []);
+    setItems(prev => {
+      const updated = prev.map(i => i.id === id ? { ...i, isChecked: !i.isChecked } : i);
+      // Heavy success pulse when EVERY item is now checked — shopping complete!
+      const allDone = updated.length > 0 && updated.every(i => i.isChecked);
+      if (allDone) haptic.success(); else haptic.light();
+      return updated;
+    });
+  }, [haptic]);
 
   const changeItemQty = useCallback((id, delta) => {
     setItems(prev => prev.map(i => {
@@ -5198,7 +5291,7 @@ export default function App() {
             {items.length === 0 ? (
               <div className="empty-cart-state">
                 <span className="empty-cart-icon">🛒</span>
-                <h3>Η λίστα είναι άδεια</h3>
+                <h2 className="empty-cart-heading">Η λίστα είναι άδεια</h2>
                 <p style={{ marginBottom: 18 }}>
                   {user
                     ? 'Αναζήτησε προϊόντα παραπάνω ή χρησιμοποίησε 🎤 για φωνητική εισαγωγή'
@@ -5451,13 +5544,13 @@ export default function App() {
                             style={{ animationName: 'none' }} // disable old CSS-only animation now that ScrollReveal handles entrance
                           >
                             <div className="recipe-card-img-wrap">
-                              {recipe.image ? (
-                                <div className="recipe-card-img" style={{ backgroundImage: `url(${recipe.image})` }} />
-                              ) : (
-                                <div className="recipe-card-img" style={{ height:135, background:'linear-gradient(135deg, var(--bg-subtle), var(--bg-card))', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                                  <span style={{ fontSize:36, opacity:0.3 }}>🍽️</span>
-                                </div>
-                              )}
+                              <LazyImage
+                                src={recipe.image || ''}
+                                className="recipe-card-img"
+                                style={!recipe.image ? { height:135, background:'linear-gradient(135deg, var(--bg-subtle), var(--bg-card))', display:'flex', alignItems:'center', justifyContent:'center' } : {}}
+                              >
+                                {!recipe.image && <span style={{ fontSize:36, opacity:0.3 }}>🍽️</span>}
+                              </LazyImage>
                               <div className="recipe-card-time-badge">⏱️ {recipe.time || 30}'</div>
                               <div style={{ position:'absolute', top:10, left:10, width:8, height:8, borderRadius:'50%', zIndex:2, background: recipe.difficulty === 'Εύκολη' ? '#10b981' : recipe.difficulty === 'Δύσκολη' ? '#ef4444' : '#f59e0b' }} />
                               <button
@@ -6439,7 +6532,7 @@ const ONBOARDING_STEPS = [
   {
     emoji: '👋',
     title: 'Καλωσήρθες στο Καλαθάκι!',
-    body:  'Η έξυπνη λίστα ψώνων με σύγκριση τιμών από 9 σούπερ μάρκετ, συνταγές & AI πλάνο διατροφής.',
+    body:  'Η έξυπνη λίστα ψώνων με σύγκριση τιμών από 8 σούπερ μάρκετ, συνταγές & AI πλάνο διατροφής.',
     btn:   'Ας ξεκινήσουμε →',
   },
   {

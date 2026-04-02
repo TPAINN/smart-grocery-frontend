@@ -1,14 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Production: μόνο HTTPS για το backend -->
+    <!-- Base config: HTTPS only for all domains by default -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+
+    <!-- Backend + external APIs — HTTPS only -->
     <domain-config cleartextTrafficPermitted="false">
+        <!-- Render backend -->
         <domain includeSubdomains="true">my-smart-grocery-api.onrender.com</domain>
+        <!-- OpenFoodFacts -->
         <domain includeSubdomains="true">world.openfoodfacts.org</domain>
         <domain includeSubdomains="true">gr.openfoodfacts.org</domain>
+        <!-- Maps & Routing -->
         <domain includeSubdomains="true">router.project-osrm.org</domain>
         <domain includeSubdomains="true">maps.googleapis.com</domain>
+        <domain includeSubdomains="true">maps.gstatic.com</domain>
+        <!-- Overpass (map store discovery) -->
+        <domain includeSubdomains="true">overpass-api.de</domain>
+        <domain includeSubdomains="true">overpass.kumi.systems</domain>
+        <domain includeSubdomains="true">maps.mail.ru</domain>
+        <!-- Leaflet tiles -->
+        <domain includeSubdomains="true">tile.openstreetmap.org</domain>
+        <domain includeSubdomains="true">unpkg.com</domain>
+        <!-- Fonts & CDN -->
+        <domain includeSubdomains="true">fonts.googleapis.com</domain>
+        <domain includeSubdomains="true">fonts.gstatic.com</domain>
+        <!-- Stripe -->
+        <domain includeSubdomains="true">api.stripe.com</domain>
+        <domain includeSubdomains="true">js.stripe.com</domain>
+        <!-- TheMealDB -->
+        <domain includeSubdomains="true">themealdb.com</domain>
+        <domain includeSubdomains="true">www.themealdb.com</domain>
     </domain-config>
-    <!-- Capacitor local WebView — επιτρέπεται cleartext μόνο για localhost -->
+
+    <!-- Capacitor local WebView — localhost only -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">localhost</domain>
     </domain-config>
