@@ -114,20 +114,33 @@ const parseSteps = legs => {
 
 const openNav = (loc, stores, mode) => {
   const gm = {driving:'driving',walking:'walking',cycling:'bicycling'}[mode]||'driving';
+  const label = s => encodeURIComponent(s.chainName || s.name || `${s.lat},${s.lng}`);
   if (stores.length === 1) {
-    // Single store — simple A→B
     const s = stores[0];
-    window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${s.lat},${s.lng}&travelmode=${gm}`,'_blank');
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${label(s)}&destination_place_id=&travelmode=${gm}`,'_blank');
   } else {
-    // Multiple stores — origin → waypoints → last store as destination
     const dest = stores[stores.length - 1];
     const wp = stores.slice(0, -1).map(s=>`${s.lat},${s.lng}`).join('|');
-    window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${dest.lat},${dest.lng}&waypoints=${wp}&travelmode=${gm}`,'_blank');
+    const wpNames = stores.slice(0, -1).map(s=>label(s)).join('|');
+    window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${label(dest)}&waypoints=${wp}&waypoint_place_ids=&travelmode=${gm}`,'_blank');
+    // Side-effect: log the ordered stop names for the FAB subtitle
+    console.info('[Χάρτης] Stops:', stores.map((s,i)=>`${i+1}. ${s.chainName||s.name}`).join(' → '));
   }
 };
 
 // Icons
-const mkStore = (L,c) => L.divIcon({className:'',html:`<div style="width:28px;height:28px;border-radius:50% 50% 50% 4px;background:${c};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center"><div style="transform:rotate(45deg);font-size:12px">🏪</div></div>`,iconSize:[28,28],iconAnchor:[14,28],popupAnchor:[0,-30]});
+const mkStore = (L, s) => {
+  const color = s?.chainColor || (typeof s === 'string' ? s : '#6b7280');
+  const logo   = s?.chain?.logo || null;
+  const inner  = logo
+    ? `<img src="${logo}" alt="" style="width:22px;height:22px;object-fit:contain;border-radius:3px;display:block"/>`
+    : `<div style="transform:rotate(45deg);font-size:12px">${s?.chainEmoji || '🏪'}</div>`;
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 4px;background:${color};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;overflow:hidden"><div style="transform:rotate(45deg)">${inner}</div></div>`,
+    iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -34],
+  });
+};
 const mkUser = L => L.divIcon({className:'',html:`<div style="width:16px;height:16px;border-radius:50%;background:#4285F4;border:3px solid #fff;box-shadow:0 0 0 4px rgba(66,133,244,.25),0 2px 6px rgba(0,0,0,.2)"></div>`,iconSize:[16,16],iconAnchor:[8,8]});
 
 // ─── FAB position persistence ────────────────────────────────────────────────
@@ -215,7 +228,7 @@ export function FloatingMapButton({ onClick, itemCount = 0 }) {
       onTouchMove={e => { e.stopPropagation(); handleMove(e.touches[0].clientX, e.touches[0].clientY); }}
       onTouchEnd={e => { e.stopPropagation(); handleEnd(); }}
       onMouseDown={e => { e.preventDefault(); handleStart(e.clientX, e.clientY); }}
-      aria-label="Smart Route"
+      aria-label="Χάρτης"
     >
       <span className="smart-route-fab-inner">
         <IconMap2 size={18} stroke={2.2} />
@@ -285,7 +298,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
 
       if (map && L) {
         enriched.forEach(s => {
-          const m = L.marker([s.lat,s.lng],{icon:mkStore(L,s.chainColor)}).addTo(map);
+          const m = L.marker([s.lat,s.lng],{icon:mkStore(L,s)}).addTo(map);
           let p = `<div style="font-family:-apple-system,sans-serif;min-width:180px;max-width:250px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:16px">${s.chainEmoji}</span><div><div style="font-weight:700;font-size:13px">${s.name}</div>${s.address?`<div style="font-size:11px;color:#666">${s.address}</div>`:''}</div></div><div style="font-size:11px;color:#555">📍 ${fmtM(s.distance)}</div>`;
           if (s.itemCount > 0 && s.chain) {
             const si = items.filter(i=>s.chain.tags.some(t=>(i.store||'').toLowerCase().includes(t.toLowerCase())));
@@ -411,7 +424,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         <div className="smart-route-topbar-left">
           <IconMap2 size={20} stroke={2}/>
           <div>
-            <div className="smart-route-title">Smart Route</div>
+            <div className="smart-route-title">Χάρτης</div>
             <div className="smart-route-subtitle">
               {searching?'Αναζήτηση...':stores.length>0?`${stores.length} κοντινά σούπερ`:status==='ready'?'Έτοιμο':'Φόρτωση...'}
             </div>
@@ -435,7 +448,11 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
               <span className="smart-route-map-nav-fab-label">
                 {route?`${fmtD(route.duration)} · ${fmtM(route.distance)}`:`Πλοήγηση (${selected.length})`}
               </span>
-              <span className="smart-route-map-nav-fab-sub">Google Maps →</span>
+              <span className="smart-route-map-nav-fab-sub">
+                {selected.length > 1
+                  ? selected.map(s=>s.chainName||s.name).join(' → ')
+                  : 'Google Maps →'}
+              </span>
             </button>
           </div>
         )}

@@ -1373,7 +1373,7 @@ function PremiumModal({ isOpen, onClose, user }) {
     { icon:'🤖', text:'Εβδομαδιαίο AI Πλάνο Διατροφής' },
     { icon:'🤝', text:'Κοινό καλάθι με απεριόριστους φίλους' },
     { icon:'📊', text:'Ιστορικό αγορών & στατιστικά budget' },
-    { icon:'🗺️', text:'Smart Route — Έξυπνη διαδρομή αγορών' },
+    { icon:'🗺️', text:'Χάρτης — Έξυπνη διαδρομή αγορών' },
     { icon:'🔔', text:'Push notifications για φίλους & προσφορές' },
     { icon:'📷', text:'Barcode scanner χωρίς διαφημίσεις' },
     { icon:'⭐', text:'Προτεραιότητα στη νέα ύλη & features' },
@@ -2776,8 +2776,9 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
 
   const cleanInstructions = (recipe.instructions || [])
     .map(s => cleanRecipeText(s)
-      .replace(/^\d+[.)]\s*/, '')          // strip leading "1. "
-      .replace(/^step\s+\d+[.):\s]*/i, '') // strip leading "step 1" / "step 2:"
+      .replace(/^[0-9]\uFE0F\u20E3\s*/u, '')  // strip keycap emoji: 1️⃣ 2️⃣ 3️⃣…
+      .replace(/^\d+[.)]\s*/, '')              // strip leading "1. "
+      .replace(/^step\s+\d+[.):\s]*/i, '')    // strip leading "step 1" / "step 2:"
       .trim()
     )
     .filter(s => s.length > 5);
@@ -4446,7 +4447,7 @@ export default function App() {
   const timeGreeting = hour < 5 ? 'Καλό βράδυ' : hour < 12 ? 'Καλημέρα' : hour < 18 ? 'Καλό απόγευμα' : 'Καλησπέρα';
   const timeIcon     = hour < 5 ? '🌙' : hour < 12 ? '☀️' : hour < 18 ? '☕' : '🌙';
 
-  // ── Smart Route: count unique stores in user's list ──────────────────────
+  // ── Χάρτης: count unique stores in user's list ──────────────────────────
   const mealPlanLocked = !user || (!user.isPremium && !user.isOnTrial);
   const planTierLabel = user?.isRealPremium
     ? 'Premium'
@@ -6371,7 +6372,7 @@ export default function App() {
         )}
       </div>
 
-      {/* ── Smart Route — only for Premium & Trial users ── */}
+      {/* ── Χάρτης — only for Premium & Trial users ── */}
       {user && (user.isPremium || user.isOnTrial) && <FloatingMapButton
         onClick={async () => {
           // #region agent log
