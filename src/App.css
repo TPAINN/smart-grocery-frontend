@@ -6837,8 +6837,11 @@ body.dark-mode .bottom-nav-btn:not(.active):hover {
   display: none !important;
 }
 
-/* ── Floating toolbar container ─────────────────────────────── */
+/* ── Floating toolbar container — HIDDEN: tools merged into more-overlay ── */
 .floating-toolbar {
+  display: none !important;
+}
+.floating-toolbar-hidden-ref {
   position: fixed;
   bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   left: 50%;
@@ -7023,6 +7026,19 @@ body.dark-mode .ftb-btn:hover {
   right: 0 !important;
   transform-origin: bottom right !important;
   animation: dropUpIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards !important;
+}
+
+/* Profile dropdown portal — fixed position, triggered from more-overlay */
+.profile-dropdown-fixed {
+  position: fixed !important;
+  bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important;
+  right: 16px !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: 9801 !important;
+  transform-origin: bottom right !important;
+  animation: dropUpIn 0.32s cubic-bezier(0.34, 1.4, 0.64, 1) both !important;
+  min-width: 220px !important;
 }
 
 @keyframes dropUpIn {
@@ -9479,3 +9495,275 @@ body.dark-mode .more-grid {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ════════════════════════════════════════════════════════
+   COMPREHENSIVE VISUAL POLISH — v4.1
+   ════════════════════════════════════════════════════════ */
+
+/* ── More grid — 9 items (3×3), tighter, more professional ── */
+.more-grid-items {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Unread badge on more-grid Φίλοι / Chat items */
+.more-grid-item-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--bg-container);
+  line-height: 1;
+}
+
+.more-grid-item { position: relative; }
+
+/* ── Server status bar polish ─────────────────────────── */
+.server-status-bar {
+  border-radius: var(--radius-lg) !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  margin-bottom: 12px !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* ── Hero card polish ────────────────────────────────── */
+.hero-card {
+  border-radius: var(--radius-xl) !important;
+  overflow: hidden !important;
+}
+
+/* ── Store filter chips — no-scrollbar + snap ────────── */
+.store-filter-container {
+  scroll-snap-type: x mandatory !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.store-chip {
+  scroll-snap-align: start !important;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    transform var(--dur-normal) var(--spring) !important;
+}
+
+.store-chip:active { transform: scale(0.95) !important; }
+
+/* ── Input section — remove ugly default add-btn box ─── */
+.add-btn {
+  border-radius: var(--radius-md) !important;
+  transition: all var(--dur-normal) var(--spring) !important;
+}
+
+.add-btn:active { transform: scale(0.9) !important; }
+
+/* ── Voice btn polish ────────────────────────────────── */
+.voice-btn {
+  transition: transform var(--dur-normal) var(--spring) !important;
+}
+
+.voice-btn:hover { transform: scale(1.08) !important; }
+.voice-btn:active { transform: scale(0.9) !important; }
+
+/* ── Notification banner upgrade ────────────────────── */
+.notification-banner {
+  border-radius: var(--radius-lg) !important;
+  font-weight: 700 !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* ── Items list vertical spacing ────────────────────── */
+.items-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+/* ── Individual grocery item card v4 ────────────────── */
+.grocery-item, .item-row {
+  border-radius: var(--radius-lg) !important;
+  transition:
+    transform var(--dur-normal) var(--spring),
+    box-shadow var(--dur-fast) var(--ease) !important;
+}
+
+.grocery-item:hover, .item-row:hover {
+  transform: translateX(3px) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* ── Budget bar at top of list ───────────────────────── */
+.budget-display {
+  border-radius: var(--radius-lg) !important;
+  margin-bottom: 12px !important;
+}
+
+/* ── Recipe cards ────────────────────────────────────── */
+.recipe-card {
+  border-radius: var(--radius-xl) !important;
+  transition:
+    transform var(--dur-normal) var(--spring),
+    box-shadow var(--dur-normal) var(--ease) !important;
+}
+
+.recipe-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* ── Meal plan card ──────────────────────────────────── */
+.meal-plan-card, .plan-card {
+  border-radius: var(--radius-xl) !important;
+  transition: transform var(--dur-normal) var(--spring) !important;
+}
+
+/* ── Scanner promo card ──────────────────────────────── */
+.scanner-promo-card {
+  border-radius: var(--radius-xl) !important;
+  transition:
+    transform var(--dur-normal) var(--spring),
+    box-shadow var(--dur-normal) var(--ease) !important;
+  cursor: pointer !important;
+}
+
+.scanner-promo-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.scanner-promo-card:active { transform: scale(0.98) !important; }
+
+/* ── Premium modal ───────────────────────────────────── */
+.premium-modal, [class*="premium-modal"] {
+  border-radius: 24px 24px 0 0 !important;
+}
+
+@media (min-width: 600px) {
+  .premium-modal, [class*="premium-modal"] {
+    border-radius: 24px !important;
+  }
+}
+
+/* ── Auth modal backdrop ─────────────────────────────── */
+.auth-modal-overlay {
+  backdrop-filter: blur(12px) saturate(160%) !important;
+}
+
+/* ── Dropdown item hover ─────────────────────────────── */
+.dropdown-item {
+  transition: background var(--dur-instant) var(--ease) !important;
+}
+
+/* ── Smooth tab-content transitions ─────────────────── */
+.tab-content {
+  animation: fadeUp 0.35s var(--smooth) both !important;
+}
+
+/* ── List tab container ──────────────────────────────── */
+.list-tab {
+  padding-top: 0 !important;
+}
+
+/* ── Streak badge polish ─────────────────────────────── */
+[class*="streak"] {
+  border-radius: var(--radius-full) !important;
+  font-weight: 800 !important;
+}
+
+/* ── Suggestion dropdown max-height ─────────────────── */
+.suggestions-dropdown {
+  max-height: 72dvh !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-xl) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* ── No horizontal scroll bleed ─────────────────────── */
+body {
+  overscroll-behavior-x: none !important;
+}
+
+/* ── Tap highlight removal (all buttons) ────────────── */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* ── Focus ring standardization ─────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+/* ── Scrollbar styling (desktop) ────────────────────── */
+@media (min-width: 768px) {
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+}
+
+/* ── Dark mode fix: suggestions dropdown bg ──────────── */
+body.dark-mode .suggestions-dropdown {
+  background: var(--bg-container) !important;
+  border-color: var(--border) !important;
+}
+
+body.dark-mode .more-grid {
+  background: rgba(13, 14, 23, 0.97) !important;
+}
+
+/* ── Improved empty state suggestion chips ───────────── */
+.empty-suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.empty-suggestion-chip {
+  padding: 9px 16px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font);
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-normal) var(--spring);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.empty-suggestion-chip:hover {
+  background: var(--accent-subtle);
+  border-color: rgba(37,99,235,.2);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.empty-suggestion-chip:active { transform: scale(0.95); }

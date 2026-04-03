@@ -6720,12 +6720,15 @@ export default function App() {
             <div className="more-grid-title">Εργαλεία</div>
             <div className="more-grid-items">
               {[
-                { icon: '🍽️', label: 'AI Πλάνο', tab: 'mealplan' },
-                { icon: '📋', label: 'Συνταγές', tab: 'recipes' },
-                { icon: '📰', label: 'Φυλλάδια', tab: 'brochures' },
+                { icon: '🍽️', label: 'AI Πλάνο',    tab: 'mealplan' },
+                { icon: '📋', label: 'Συνταγές',     tab: 'recipes' },
+                { icon: '📰', label: 'Φυλλάδια',     tab: 'brochures' },
                 { icon: '📷', label: 'Plate Scanner', tab: null, action: () => { setShowPlateScanner(true); setShowMoreMenu(false); } },
-                { icon: '🛒', label: 'Σαρωτής', tab: null, action: () => setShowMoreMenu(false) },
-                { icon: '💰', label: 'Προϋπολογισμός', tab: null, action: () => setShowMoreMenu(false) },
+                { icon: '🛒', label: 'Σαρωτής',      tab: null, action: async () => { const { granted } = await requestCamera(); if (granted) setShowScanner(true); setShowMoreMenu(false); } },
+                { icon: '👥', label: 'Φίλοι',         tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowFriendsPanel(true); setShowMoreMenu(false); } },
+                { icon: '💬', label: 'Chat',           tab: null, action: () => { setShowChatPanel(true); setShowMoreMenu(false); } },
+                { icon: '📂', label: 'Λίστες μου',    tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowListsModal(true); setShowMoreMenu(false); } },
+                { icon: '👤', label: 'Προφίλ',        tab: null, action: () => { if (!user) { setShowAuthModal(true); setShowMoreMenu(false); } else { setShowMoreMenu(false); setShowProfileMenu(v => !v); } } },
               ].map(item => (
                 <button
                   key={item.label}
@@ -6793,6 +6796,33 @@ export default function App() {
           <span className="bottom-nav-label">Περισσότερα</span>
         </button>
       </nav>
+
+      {/* ── Profile dropdown portal — fixed position, triggered from more-overlay ── */}
+      {user && showProfileMenu && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9800 }} onClick={() => setShowProfileMenu(false)} />
+          <div className="profile-dropdown profile-dropdown-fixed">
+            <div className="dropdown-info" style={{ padding: '15px 16px', borderBottom: '1px solid var(--border-light)' }}>
+              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>{user.name}</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
+                <button onClick={handleCopyShareKey} style={{ background: 'var(--bg-surface-hover)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', padding: '4px 8px', borderRadius: '6px' }}>📋</button>
+              </div>
+            </div>
+            <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {isDarkMode ? <><IconSun size={16} /> Φωτεινό θέμα</> : <><IconMoon size={16} /> Σκούρο θέμα</>}
+            </div>
+            {'PushManager' in window && (
+              <div className="dropdown-item" onClick={() => { pushEnabled ? unsubscribeFromPush() : subscribeToPush(); setShowProfileMenu(false); }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <IconBell size={16} /> {pushEnabled ? 'Ειδοποιήσεις ON ✓' : 'Ειδοποιήσεις OFF'}
+              </div>
+            )}
+            <div className="dropdown-item logout" onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <IconLogout size={16} /> Αποσύνδεση
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Χάρτης — only for Premium & Trial users ── */}
       {user && (user.isPremium || user.isOnTrial) && <FloatingMapButton
