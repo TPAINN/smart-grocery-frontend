@@ -1,0 +1,842 @@
+/* ════════════════════════════════════════════════════════
+   PLATE SCANNER MODAL
+   ════════════════════════════════════════════════════════ */
+
+/* ── CSS custom properties ── */
+:root {
+  --psm-green:  #10b981;
+  --psm-blue:   #3b82f6;
+  --psm-orange: #f97316;
+  --psm-yellow: #eab308;
+  --psm-red:    #ef4444;
+
+  --psm-green-subtle:  rgba(16, 185, 129, 0.12);
+  --psm-amber-subtle:  rgba(234, 179, 8,   0.10);
+  --psm-red-subtle:    rgba(239, 68, 68,   0.10);
+
+  --psm-radius-card: 20px;
+  --psm-radius-pill: 999px;
+}
+
+/* ════════════════════════════════════════════════════════
+   MODAL SHELL — full-screen slide-up
+   ════════════════════════════════════════════════════════ */
+.psm-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: psmSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes psmSlideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Shared header ── */
+.psm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+  background: #fff;
+  position: relative;
+  z-index: 2;
+}
+
+.psm-header--results {
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.psm-title {
+  font-family: var(--font-display, 'Sora', sans-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #0a0f1e);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.psm-title-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.psm-close-btn {
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 15px;
+  color: var(--text-secondary, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s, color 0.18s;
+  flex-shrink: 0;
+}
+
+.psm-close-btn:hover {
+  background: rgba(0, 0, 0, 0.12);
+  color: var(--text-primary, #0a0f1e);
+}
+
+/* ════════════════════════════════════════════════════════
+   SCREENS
+   ════════════════════════════════════════════════════════ */
+.psm-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ════════════════════════════════════════════════════════
+   CAPTURE SCREEN
+   ════════════════════════════════════════════════════════ */
+.psm-capture-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 32px 24px 40px;
+}
+
+/* Dashed capture circle */
+.psm-capture-circle {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 3px dashed var(--psm-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  flex-shrink: 0;
+}
+
+.psm-capture-circle--filled {
+  border-style: solid;
+  border-color: var(--psm-green);
+  box-shadow: 0 0 0 4px var(--psm-green-subtle), 0 12px 40px rgba(16,185,129,.18);
+}
+
+.psm-capture-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 20px;
+}
+
+.psm-plate-emoji {
+  font-size: 56px;
+  line-height: 1;
+}
+
+.psm-capture-hint {
+  font-size: 14px;
+  color: var(--text-secondary, #64748b);
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.psm-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.psm-tip-text {
+  font-size: 13px;
+  color: var(--text-muted, #94a3b8);
+  text-align: center;
+  max-width: 280px;
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* Hidden file input */
+.psm-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Capture action buttons */
+.psm-capture-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+}
+
+/* ════════════════════════════════════════════════════════
+   SHARED BUTTON STYLES
+   ════════════════════════════════════════════════════════ */
+.psm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--psm-radius-pill);
+  cursor: pointer;
+  font-family: var(--font, 'Plus Jakarta Sans', sans-serif);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 14px 28px;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+  text-decoration: none;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.psm-btn:active { transform: scale(0.97); }
+.psm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.psm-btn--primary {
+  background: var(--psm-green);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(16,185,129,.30);
+  width: 100%;
+}
+
+.psm-btn--primary:hover:not(:disabled) {
+  background: #0da872;
+  box-shadow: 0 6px 24px rgba(16,185,129,.38);
+}
+
+.psm-btn--success {
+  background: #059669;
+  box-shadow: 0 4px 18px rgba(5,150,105,.30);
+}
+
+.psm-btn--outline {
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  border: 1.5px solid rgba(0,0,0,0.14);
+  flex: 1;
+}
+
+.psm-btn--outline:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+.psm-btn--ghost {
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.psm-btn--ghost:hover { color: var(--text-primary, #0a0f1e); }
+
+.psm-btn--pill { border-radius: var(--psm-radius-pill); }
+
+.psm-btn--sm {
+  font-size: 13px;
+  padding: 10px 20px;
+}
+
+/* ════════════════════════════════════════════════════════
+   SCANNING SCREEN
+   ════════════════════════════════════════════════════════ */
+.psm-scanning {
+  position: relative;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Blurred photo background */
+.psm-scan-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(14px) brightness(0.6) saturate(0.8);
+  transform: scale(1.06);
+}
+
+.psm-scan-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Floating food emojis */
+.psm-float-emojis {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.psm-float-emoji {
+  position: absolute;
+  font-size: 32px;
+  animation: psmFloat 3s ease-in-out infinite;
+  opacity: 0.85;
+}
+
+.psm-float-emoji--1 { top: 15%; left: 10%;  animation-delay: 0s;    animation-duration: 3.2s; }
+.psm-float-emoji--2 { top: 12%; right: 12%; animation-delay: 0.7s;  animation-duration: 2.8s; }
+.psm-float-emoji--3 { bottom: 18%; left: 8%;  animation-delay: 1.2s; animation-duration: 3.5s; }
+.psm-float-emoji--4 { bottom: 15%; right: 9%; animation-delay: 0.4s; animation-duration: 3.0s; }
+
+@keyframes psmFloat {
+  0%, 100% { transform: translateY(0)    rotate(-4deg); }
+  50%       { transform: translateY(-16px) rotate(4deg); }
+}
+
+/* Scan card */
+.psm-scan-card {
+  position: relative;
+  z-index: 2;
+  background: #fff;
+  border-radius: var(--psm-radius-card);
+  padding: 36px 40px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 280px;
+  width: calc(100% - 48px);
+  animation: psmFadeIn 0.45s ease both;
+}
+
+@keyframes psmFadeIn {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* Spinner */
+.psm-spinner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 5px solid rgba(16,185,129,0.15);
+  border-top-color: var(--psm-green);
+  animation: psmSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes psmSpin {
+  to { transform: rotate(360deg); }
+}
+
+.psm-scan-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #0a0f1e);
+  margin: 0;
+}
+
+.psm-scan-subtext {
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+}
+
+/* Animated dots */
+.psm-dots span {
+  animation: psmDotBlink 1.4s infinite;
+  font-weight: 700;
+}
+
+.psm-dots span:nth-child(2) { animation-delay: 0.2s; }
+.psm-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes psmDotBlink {
+  0%, 80%, 100% { opacity: 0.15; }
+  40%           { opacity: 1; }
+}
+
+/* ════════════════════════════════════════════════════════
+   RESULTS SCREEN
+   ════════════════════════════════════════════════════════ */
+.psm-results {
+  background: var(--bg-app, #eef1f7);
+}
+
+.psm-results-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Results card */
+.psm-results-card {
+  background: #fff;
+  border-radius: var(--psm-radius-card);
+  padding: 20px 16px 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.psm-slide-up {
+  animation: psmSlideUpIn 0.45s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes psmSlideUpIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Badges row */
+.psm-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.psm-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--psm-radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+.psm-badge--meal {
+  background: rgba(37,99,235,0.10);
+  color: #2563eb;
+}
+
+.badge-high   { background: var(--psm-green-subtle); color: var(--psm-green); }
+.badge-medium { background: rgba(234,179,8,0.12);    color: #b45309; }
+.badge-low    { background: var(--psm-red-subtle);   color: var(--psm-red); }
+
+/* Photo thumbnail */
+.psm-thumb-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(16,185,129,.25);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  flex-shrink: 0;
+}
+
+.psm-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Macro rings row */
+.psm-rings-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.macro-ring-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 64px;
+}
+
+.macro-ring-unit {
+  font-size: 10px;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 500;
+  margin-top: -4px;
+}
+
+.macro-ring-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  text-align: center;
+}
+
+.psm-fiber-note {
+  font-size: 12px;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+}
+
+/* ── Food items section ── */
+.psm-foods-section {
+  background: #fff;
+  border-radius: var(--psm-radius-card);
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.psm-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 0 0 12px;
+}
+
+.psm-foods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 460px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Individual food card */
+.psm-food-card {
+  background: var(--bg-subtle, rgba(248,250,252,0.92));
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid rgba(0,0,0,0.04);
+}
+
+.psm-food-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.psm-food-emoji {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.psm-food-names {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.psm-food-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #0a0f1e);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.psm-food-name-en {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 400;
+}
+
+.psm-food-chips {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.psm-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--psm-radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+.psm-chip--portion {
+  background: rgba(37,99,235,0.09);
+  color: #2563eb;
+}
+
+.psm-chip--cal {
+  background: rgba(249,115,22,0.10);
+  color: #c2410c;
+}
+
+/* Macro dots row */
+.psm-food-macros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-left: 36px;
+}
+
+.psm-macro-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary, #64748b);
+}
+
+.psm-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.psm-macro-dot--protein .psm-dot { background: var(--psm-blue); }
+.psm-macro-dot--carbs   .psm-dot { background: var(--psm-green); }
+.psm-macro-dot--fat     .psm-dot { background: var(--psm-yellow); }
+
+/* ── AI Tip box ── */
+.psm-tip-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(234,179,8,0.09);
+  border: 1px solid rgba(234,179,8,0.22);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.psm-tip-icon { font-size: 20px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+
+.psm-tip-content {
+  font-size: 13px;
+  color: #92400e;
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+/* ── Results action buttons ── */
+.psm-results-actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.psm-results-actions .psm-btn--primary {
+  flex: 1.4;
+}
+
+/* ════════════════════════════════════════════════════════
+   ERROR SCREEN
+   ════════════════════════════════════════════════════════ */
+.psm-error-screen {
+  background: #fff;
+}
+
+.psm-error-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.psm-error-card {
+  background: var(--psm-red-subtle);
+  border: 1px solid rgba(239,68,68,0.20);
+  border-radius: var(--psm-radius-card);
+  padding: 36px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(239,68,68,0.08);
+}
+
+.psm-error-icon  { font-size: 44px; line-height: 1; }
+
+.psm-error-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #b91c1c;
+  margin: 0;
+}
+
+.psm-error-message {
+  font-size: 14px;
+  color: #7f1d1d;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ════════════════════════════════════════════════════════
+   DARK MODE
+   ════════════════════════════════════════════════════════ */
+body.dark-mode .psm-modal,
+body.dark-mode .psm-header,
+body.dark-mode .psm-capture,
+body.dark-mode .psm-error-screen {
+  background: var(--bg-container, rgba(10,16,30,0.98));
+}
+
+body.dark-mode .psm-header {
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+
+body.dark-mode .psm-close-btn {
+  background: rgba(255,255,255,0.08);
+  color: var(--text-secondary, #7a96bb);
+}
+
+body.dark-mode .psm-close-btn:hover {
+  background: rgba(255,255,255,0.14);
+}
+
+body.dark-mode .psm-capture-circle {
+  border-color: var(--psm-green);
+}
+
+body.dark-mode .psm-results {
+  background: var(--bg-app, #04070f);
+}
+
+body.dark-mode .psm-results-card,
+body.dark-mode .psm-foods-section,
+body.dark-mode .psm-scan-card {
+  background: var(--bg-card, rgba(14,21,40,0.96));
+  box-shadow: 0 4px 24px rgba(0,0,0,0.30);
+}
+
+body.dark-mode .psm-food-card {
+  background: var(--bg-subtle, rgba(12,18,34,0.92));
+  border-color: rgba(255,255,255,0.04);
+}
+
+body.dark-mode .psm-tip-box {
+  background: rgba(234,179,8,0.07);
+  border-color: rgba(234,179,8,0.15);
+}
+
+body.dark-mode .psm-tip-content { color: #fbbf24; }
+
+body.dark-mode .psm-btn--outline {
+  border-color: rgba(255,255,255,0.14);
+  color: var(--text-secondary, #7a96bb);
+}
+
+body.dark-mode .psm-btn--outline:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+body.dark-mode .psm-error-card {
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.18);
+}
+
+body.dark-mode .psm-error-title   { color: #fca5a5; }
+body.dark-mode .psm-error-message { color: #fecaca; }
+
+body.dark-mode .psm-scan-text    { color: var(--text-primary, #eef2ff); }
+body.dark-mode .psm-food-name    { color: var(--text-primary, #eef2ff); }
+body.dark-mode .psm-section-title { color: var(--text-secondary, #7a96bb); }
+
+/* ════════════════════════════════════════════════════════
+   DESKTOP / LARGE SCREENS
+   Render as a centered modal instead of full-screen
+   ════════════════════════════════════════════════════════ */
+@media (min-width: 640px) {
+  .psm-modal {
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 480px;
+    max-height: 92vh;
+    border-radius: 28px;
+    animation: psmScaleIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.18), 0 8px 32px rgba(0,0,0,0.10);
+  }
+
+  /* Backdrop for desktop */
+  .psm-modal::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: -1;
+    border-radius: 0;
+    pointer-events: none;
+  }
+
+  @keyframes psmScaleIn {
+    from { opacity: 0; transform: translate(-50%, -48%) scale(0.93); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  .psm-results-scroll {
+    padding: 16px 20px 32px;
+  }
+
+  .psm-foods-list {
+    max-height: 260px;
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   REDUCED MOTION
+   ════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .psm-modal,
+  .psm-results-card,
+  .psm-scan-card,
+  .psm-slide-up {
+    animation: none !important;
+  }
+
+  .psm-spinner {
+    animation-duration: 1.4s;
+  }
+
+  .psm-float-emoji {
+    animation: none;
+  }
+
+  circle {
+    transition: none !important;
+  }
+}

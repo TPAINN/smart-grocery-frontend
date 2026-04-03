@@ -15,6 +15,7 @@ import { useAndroidPermissions } from './useAndroidPermissions.jsx';
 import AppSplash from './AppSplash';
 import ScrollReveal from './ScrollReveal';
 import PremiumWelcomeModal from './PremiumWelcomeModal';
+import PlateScannerModal from './PlateScannerModal';
 import LazyImage from './LazyImage';
 import { useHapticFeedback } from './useHapticFeedback';
 import { API_BASE, ENABLE_KEEPALIVE } from './config';
@@ -3225,7 +3226,8 @@ export default function App() {
   // Onboarding tour
   const [showOnboarding, setShowOnboarding]     = useState(() => !localStorage.getItem('sg_onboarding_done'));
   const [onboardingStep, setOnboardingStep]     = useState(0);
-  const [showScanner, setShowScanner]     = useState(false);
+  const [showScanner, setShowScanner]       = useState(false);
+  const [showPlateScanner, setShowPlateScanner] = useState(false);
   const [showSmartRoute, setShowSmartRoute] = useState(false);
   const [currentTime, setCurrentTime]     = useState(new Date());
   const [isOnline, setIsOnline]           = useState(() => navigator.onLine);
@@ -4597,6 +4599,23 @@ export default function App() {
       )}
       <RecipeAddModal isOpen={recipeAddModal.open} recipeName={recipeAddModal.recipeName} progress={recipeAddModal.progress} total={recipeAddModal.total} onClose={closeRecipeAddModal} />
       <BarcodeScannerModal isOpen={showScanner} onClose={() => setShowScanner(false)} />
+      <PlateScannerModal
+        isOpen={showPlateScanner}
+        onClose={() => setShowPlateScanner(false)}
+        apiBase={API_BASE}
+        onAddToList={(foodNames) => {
+          const newItems = foodNames.map(name => ({
+            id: Date.now() + Math.random(),
+            text: name,
+            category: getCategory(name),
+            price: 0,
+            store: '—',
+          }));
+          setItems(prev => [...newItems, ...prev]);
+          haptic.success();
+          setNotification({ show: true, message: `✅ Προστέθηκαν ${foodNames.length} τρόφιμα στη λίστα!` });
+        }}
+      />
       {/* Friend modals & panel */}
       <FriendPickerModal isOpen={friendPicker.open} friends={friends} item={friendPicker.item} onSend={handlePickerSend} onClose={() => setFriendPicker({ open:false, item:null })} />
       <AddFriendModal isOpen={showAddFriendModal} onAdd={addFriend} onClose={() => setShowAddFriendModal(false)} existingFriends={friends} />
@@ -4852,6 +4871,18 @@ export default function App() {
                 </div>
               )}
 
+              {/* Plate Macro Scanner button */}
+              {user && (
+                <div
+                  className="action-btn-new scanner-btn-header psm-header-btn"
+                  onClick={() => setShowPlateScanner(true)}
+                  title="Macro Scanner — Σκάναρε το πιάτο σου"
+                  style={{ fontSize: 18 }}
+                >
+                  🍽️
+                </div>
+              )}
+
               {/* Barcode scanner button — asks camera permission first */}
               {user && (
                 <div className="action-btn-new scanner-btn-header" onClick={async () => {
@@ -4983,51 +5014,6 @@ export default function App() {
           </div>
         </header>
         
-
-        {/* ── Tabs ── */}
-        <div className="tabs-container">
-          {[
-            ['list', <><IconShoppingCart size={16} stroke={2}/> Λίστα{items.length > 0 && <span className="tab-count-badge">{items.length}</span>}</>, 'Λίστα'],
-            ['recipes', <><IconChefHat size={16} stroke={2}/> Συνταγές</>, 'Συνταγές'],
-            ['mealplan', <><IconSparkles size={16} stroke={2}/> AI Πλάνο</>, 'AI Πλάνο'],
-            ['brochures', <><IconTag size={16} stroke={2}/> Φυλλάδια</>, 'Φυλλάδια'],
-          ].map(([tab, label]) => {
-            const isLocked = tab === 'mealplan' && mealPlanLocked;
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                className={`tab-btn ${isActive ? 'active' : ''} ${isLocked ? 'tab-btn-locked' : ''}`}
-                onClick={() => {
-                  if (isLocked) {
-                    if (!user) {
-                      // #region agent log
-                      debugLog({
-                        runId: 'pre-repro',
-                        hypothesisId: 'H3',
-                        location: 'App.jsx:tabs',
-                        message: 'Locked mealplan tab clicked while unauthenticated',
-                        data: { tab },
-                      });
-                      // #endregion
-                      setAuthInitMode('register');
-                      setShowAuthModal(true);
-                    } else {
-                      setShowPremiumModal(true);
-                    }
-                    return;
-                  }
-                  setActiveTab(tab);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                style={{ display:'flex', alignItems:'center', gap:5 }}
-              >
-                {label}
-                {isLocked && <span className="tab-lock-indicator">🔒</span>}
-              </button>
-            );
-          })}
-        </div>
 
         {/* ════ LIST TAB ════ */}
         {activeTab === 'list' && (
@@ -6473,6 +6459,160 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* ── Floating Tools Bar — action buttons moved from header ── */}
+      <div className="floating-toolbar">
+        {!isOnline && (
+          <div className="ftb-offline-chip">📡 Offline</div>
+        )}
+        {user && !user.isPremium && !user.isOnTrial && (
+          <div className="ftb-btn" onClick={() => setShowPremiumModal(true)} title="Αναβάθμιση σε Premium">
+            <span style={{ fontSize: 15 }}>⭐</span>
+          </div>
+        )}
+        {user?.isOnTrial && (() => {
+          const urgent = (user.trialDaysLeft || 0) <= 3;
+          return (
+            <div
+              onClick={() => setShowPremiumModal(true)}
+              title="Δωρεάν Δοκιμή"
+              className={`ftb-trial-chip${urgent ? ' urgent' : ''}`}
+            >
+              {urgent ? '⚠️' : '🎁'} {user.trialDaysLeft}μ
+            </div>
+          );
+        })()}
+        {user?.isRealPremium && (
+          <span className="ftb-premium-badge">⭐</span>
+        )}
+        {user && (
+          <div className="ftb-btn" onClick={() => setShowPlateScanner(true)} title="Macro Scanner — Σκάναρε το πιάτο σου">
+            <span style={{ fontSize: 18 }}>🍽️</span>
+          </div>
+        )}
+        {user && (
+          <div className="ftb-btn" onClick={async () => {
+            const { granted } = await requestCamera();
+            if (granted) setShowScanner(true);
+          }} title="Σάρωση Barcode">
+            <IconQrcode size={20} stroke={1.8} />
+          </div>
+        )}
+        <div
+          className="ftb-btn"
+          style={{ position: 'relative' }}
+          onClick={() => { if (!user) return setShowAuthModal(true); setShowFriendsPanel(true); }}
+          title="Κοινό Καλάθι"
+        >
+          <IconUsers size={20} stroke={1.8} />
+          {friends.length > 0 && (
+            <span className="ftb-badge ftb-badge-purple">{friends.length}</span>
+          )}
+        </div>
+        {user && friends.length > 0 && (
+          <div className="ftb-btn" style={{ position: 'relative' }} onClick={() => setShowChatPanel(true)} title="Chat Καλαθιού">
+            <IconMessage size={20} stroke={1.8} />
+            {unreadChat > 0 && (
+              <span className="ftb-badge ftb-badge-red">{unreadChat}</span>
+            )}
+          </div>
+        )}
+        <div
+          className="ftb-btn"
+          onClick={() => {
+            if (!user) { setShowAuthModal(true); return; }
+            setShowListsModal(true);
+          }}
+          title="Λίστες μου"
+          style={{ position: 'relative' }}
+        >
+          <IconNotes size={20} stroke={1.8} />
+          {savedLists.length > 0 && <span className="ftb-badge ftb-badge-primary">{savedLists.length}</span>}
+        </div>
+        {user ? (
+          <div style={{ position: 'relative' }}>
+            <div className="ftb-btn" onClick={() => setShowProfileMenu(v => !v)} title={user.name}>
+              <IconUser size={20} stroke={1.8} />
+            </div>
+            {showProfileMenu && (
+              <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowProfileMenu(false)} />
+                <div className="profile-dropdown ftb-dropdown">
+                  <div className="dropdown-info" style={{ padding: '15px', borderBottom: '1px solid var(--border-light)' }}>
+                    <strong style={{ display: 'block', fontSize: '14px' }}>{user.name}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
+                      <button onClick={handleCopyShareKey} style={{ background: 'var(--bg-surface-hover)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', padding: '4px 8px', borderRadius: '6px' }}>📋</button>
+                    </div>
+                  </div>
+                  <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{isDarkMode ? <><IconSun size={16} /> Φωτεινό θέμα</> : <><IconMoon size={16} /> Σκούρο θέμα</>}</div>
+                  {'PushManager' in window && (
+                    <div
+                      className="dropdown-item"
+                      onClick={() => { pushEnabled ? unsubscribeFromPush() : subscribeToPush(); setShowProfileMenu(false); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                    >
+                      <IconBell size={16} /> {pushEnabled ? 'Ειδοποιήσεις ON ✓' : 'Ειδοποιήσεις OFF'}
+                    </div>
+                  )}
+                  <div className="dropdown-item logout" onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconLogout size={16} /> Αποσύνδεση</div>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div
+            className="ftb-btn"
+            onClick={() => setShowAuthModal(true)}
+            title="Σύνδεση"
+          >
+            <IconLock size={20} stroke={1.8} />
+          </div>
+        )}
+      </div>
+
+      {/* ── Floating Bottom Nav — lives OUTSIDE .container to avoid backdrop-filter stacking context ── */}
+      <nav className="bottom-nav">
+        {[
+          { id: 'list',      Icon: IconShoppingCart, label: 'Λίστα',    badge: items.length > 0 ? items.length : null },
+          { id: 'recipes',   Icon: IconChefHat,      label: 'Συνταγές', badge: null },
+          { id: 'mealplan',  Icon: IconSparkles,     label: 'AI Πλάνο', locked: mealPlanLocked },
+          { id: 'brochures', Icon: IconTag,           label: 'Φυλλάδια', badge: null },
+        ].map(({ id, Icon, label, badge, locked }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              className={`bottom-nav-btn${isActive ? ' active' : ''}${locked ? ' locked' : ''}`}
+              onClick={() => {
+                if (locked) {
+                  if (!user) {
+                    debugLog({ runId:'pre-repro', hypothesisId:'H3', location:'App.jsx:bottom-nav', message:'Locked mealplan tab clicked', data:{ id } });
+                    setAuthInitMode('register');
+                    setShowAuthModal(true);
+                  } else {
+                    setShowPremiumModal(true);
+                  }
+                  return;
+                }
+                setActiveTab(id);
+                haptic.light();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              aria-label={label}
+            >
+              <span className="bottom-nav-icon">
+                <Icon size={22} stroke={isActive ? 2.2 : 1.6} />
+                {badge !== null && !isActive && badge > 0 && (
+                  <span className="bottom-nav-badge">{badge > 99 ? '99+' : badge}</span>
+                )}
+                {locked && <span className="bottom-nav-lock">🔒</span>}
+              </span>
+              <span className="bottom-nav-label">{label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       {/* ── Χάρτης — only for Premium & Trial users ── */}
       {user && (user.isPremium || user.isOnTrial) && <FloatingMapButton
