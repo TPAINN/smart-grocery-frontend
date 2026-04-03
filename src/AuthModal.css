@@ -1,118 +1,199 @@
 /* ════════════════════════════════════════════════════════
-   AUTH MODAL — Premium
+   AUTH MODAL — Premium v4
+   Mobile-first bottom sheet with glassmorphism
    ════════════════════════════════════════════════════════ */
+
+/* ── Overlay ─────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.62);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
   z-index: 10000;
-  animation: overlayIn 0.35s var(--ease) forwards;
-  padding: 20px;
+  animation: overlayIn 0.28s ease both;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+@media (min-width: 600px) {
+  .modal-overlay {
+    align-items: center;
+    padding: 24px;
+  }
+}
+
+/* ── Sheet ───────────────────────────────────────────── */
 .modal-content {
-  background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--bg-container);
   border: 1px solid var(--border);
-  padding: 38px 30px;
-  border-radius: var(--radius-xl);
+  border-radius: 28px 28px 0 0;
+  padding: 0 0 calc(28px + env(safe-area-inset-bottom, 0px));
   width: 100%;
-  max-width: 400px;
+  max-width: 480px;
   position: relative;
-  box-shadow: var(--shadow-xl);
-  animation: modalIn 0.65s var(--spring) forwards;
+  box-shadow:
+    0 -4px 24px rgba(0,0,0,.06),
+    0 -16px 60px rgba(0,0,0,.12),
+    0 -40px 80px rgba(0,0,0,.08);
+  animation: sheetIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   overflow: hidden;
-  /* Highlight top edge */
-  background-image: linear-gradient(
-    180deg,
-    rgba(255,255,255,0.05) 0px,
-    transparent 50px
-  );
+  max-height: 96dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-body.dark-mode .modal-content {
-  background-image: linear-gradient(
-    180deg,
-    rgba(255,255,255,0.025) 0px,
-    transparent 50px
-  );
+@media (min-width: 600px) {
+  .modal-content {
+    border-radius: 28px;
+    padding-bottom: 32px;
+    animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
 }
 
+/* ── Drag handle ─────────────────────────────────────── */
+.modal-content::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  opacity: 0.4;
+  margin: 12px auto 0;
+}
+
+@media (min-width: 600px) {
+  .modal-content::before { display: none; }
+}
+
+/* ── Top gradient accent line ────────────────────────── */
+.modal-content::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #2563eb, #7c3aed, #2563eb);
+  background-size: 200% 100%;
+  animation: gradientSlide 4s linear infinite;
+}
+
+@keyframes gradientSlide {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+/* ── Close button ────────────────────────────────────── */
 .close-btn {
   position: absolute;
-  top: 16px; right: 16px;
+  top: 20px; right: 20px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   font-size: 13px;
   font-weight: 700;
-  width: 30px; height: 30px;
+  width: 32px; height: 32px;
   border-radius: 50%;
   color: var(--text-secondary);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition:
-    transform    0.36s var(--spring),
-    background   0.28s var(--ease),
-    color        0.28s var(--ease),
-    box-shadow   0.28s var(--ease);
+    transform 0.3s var(--spring),
+    background 0.2s ease,
+    color 0.2s ease;
+  z-index: 1;
 }
 
 .close-btn:hover {
-  background: var(--bg-chip-hover);
-  color: var(--text-primary);
-  transform: scale(1.12) rotate(90deg);
-  box-shadow: var(--shadow-sm);
+  background: var(--danger-subtle, rgba(254,226,226,.8));
+  color: var(--danger);
+  transform: scale(1.1) rotate(90deg);
+}
+.close-btn:active { transform: scale(0.88) !important; }
+
+/* ── Header ──────────────────────────────────────────── */
+.modal-header {
+  text-align: center;
+  padding: 28px 28px 20px;
+  margin-bottom: 0;
 }
 
-.close-btn:active { transform: scale(0.9) !important; }
-
-.modal-header { text-align: center; margin-bottom: 28px; }
-
 .modal-header h2 {
-  margin: 0 0 8px 0;
-  font-size: 24px;
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 900;
   color: var(--text-primary);
-  font-weight: 800;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
 }
 
 .modal-header p {
   margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: 13.5px;
   font-weight: 500;
   line-height: 1.5;
 }
 
-/* Form */
+/* ── Tab switcher (Login / Register) ─────────────────── */
+.auth-tabs-row {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 4px;
+  margin: 4px 24px 20px;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 12px;
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.2s ease,
+    box-shadow 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.auth-tab-btn.active {
+  background: var(--bg-card);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0,0,0,.08), 0 0 0 1px rgba(255,255,255,.08);
+}
+
+/* ── Form ────────────────────────────────────────────── */
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  padding: 0 24px;
 }
 
 .auth-form input {
-  padding: 15px 18px;
+  padding: 14px 16px;
   background: var(--bg-input);
   border: 1.5px solid var(--border);
-  border-radius: var(--radius-md);
-  font-size: 14px;
+  border-radius: 14px;
+  font-size: 15px;
   font-family: var(--font);
   font-weight: 500;
   color: var(--text-primary);
   outline: none;
   width: 100%;
   transition:
-    border-color 0.32s var(--ease),
-    background   0.32s var(--ease),
-    box-shadow   0.32s var(--ease);
-  appearance: none;
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
   -webkit-appearance: none;
 }
 
@@ -121,70 +202,74 @@ body.dark-mode .modal-content {
 .auth-form input:focus {
   border-color: var(--accent);
   background: var(--bg-card);
-  box-shadow: var(--glow-accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.12), 0 4px 16px rgba(37,99,235,.08);
 }
 
+/* ── Submit button ───────────────────────────────────── */
 .submit-btn {
   padding: 15px;
-  background: var(--text-primary);
-  color: var(--bg-container);
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  color: #fff;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 16px;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   font-family: var(--font);
+  letter-spacing: -0.1px;
   cursor: pointer;
-  margin-top: 6px;
+  margin-top: 4px;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 50px;
-  letter-spacing: 0.1px;
+  min-height: 52px;
+  box-shadow: 0 4px 20px rgba(37,99,235,.3), 0 8px 32px rgba(37,99,235,.15);
   transition:
-    transform   0.36s var(--spring),
-    opacity     0.28s var(--ease),
-    box-shadow  0.32s var(--ease);
-  /* Subtle gradient */
-  background-image: linear-gradient(135deg, var(--text-primary) 0%, rgba(30,40,60,0.92) 100%);
+    transform 0.25s var(--spring),
+    box-shadow 0.25s ease,
+    opacity 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body.dark-mode .submit-btn {
-  background-image: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  color: var(--text-primary);
+.submit-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
 }
 
 .submit-btn:hover {
-  opacity: 0.9;
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 28px rgba(37,99,235,.4), 0 12px 40px rgba(37,99,235,.2);
 }
+.submit-btn:active  { transform: scale(0.96) !important; transition-duration: 0.07s !important; }
+.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
-.submit-btn:active { transform: scale(0.97) !important; }
-
-.submit-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
+/* ── Error message ───────────────────────────────────── */
 .error-message {
-  background: rgba(239,68,68,.07);
+  background: var(--danger-subtle, rgba(254,226,226,.8));
   color: var(--danger);
-  padding: 12px 15px;
-  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  border-radius: 12px;
   font-size: 13px;
-  text-align: center;
   font-weight: 600;
-  border: 1px solid rgba(239,68,68,.18);
-  animation: shakeError 0.4s var(--ease) forwards;
+  border: 1px solid rgba(220,38,38,.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: shakeError 0.4s ease both;
 }
 
+/* ── Toggle link ─────────────────────────────────────── */
 .toggle-text {
   text-align: center;
-  margin-top: 22px;
-  font-size: 14px;
-  color: var(--text-secondary);
+  margin-top: 16px;
+  padding: 0 24px;
+  font-size: 13.5px;
+  color: var(--text-muted);
 }
 
 .toggle-link-btn {
@@ -195,44 +280,34 @@ body.dark-mode .submit-btn {
   color: var(--accent);
   font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.15s var(--ease);
+  transition: color 0.15s ease;
 }
+.toggle-link-btn:hover { color: var(--accent-2); text-decoration: underline; }
+.toggle-link-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.toggle-link-btn:hover { opacity: 0.75; text-decoration: underline; }
-.toggle-link-btn:disabled { opacity: 0.45; cursor: not-allowed; text-decoration: none; }
-
-/* Spinner */
+/* ── Spinner ─────────────────────────────────────────── */
 .auth-spinner {
   width: 20px; height: 20px;
-  border: 2.5px solid rgba(255,255,255,.25);
+  border: 2.5px solid rgba(255,255,255,.3);
   border-radius: 50%;
   border-top-color: white;
-  animation: spin 0.85s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
-/* Staggered entry */
-.staggered-1 { opacity: 0; animation: fadeUp 0.6s var(--smooth) forwards 0.12s; }
-.staggered-2 { opacity: 0; animation: fadeUp 0.6s var(--smooth) forwards 0.24s; }
-.staggered-3 { opacity: 0; animation: fadeUp 0.6s var(--smooth) forwards 0.38s; }
+/* ── Staggered entry helpers ─────────────────────────── */
+.staggered-1 { opacity: 0; animation: fadeUp 0.5s var(--smooth) both 0.08s; }
+.staggered-2 { opacity: 0; animation: fadeUp 0.5s var(--smooth) both 0.16s; }
+.staggered-3 { opacity: 0; animation: fadeUp 0.5s var(--smooth) both 0.26s; }
+.slide-down-input { animation: slideDownIn 0.4s var(--spring) both; }
 
-.slide-down-input {
-  animation: slideDownIn 0.45s var(--spring) forwards;
-}
-
-/* Keyframes */
-@keyframes overlayIn  { from { opacity: 0; } to { opacity: 1; } }
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.92) translateY(20px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0); }
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes slideDownIn {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
+/* ── Keyframes ───────────────────────────────────────── */
+@keyframes overlayIn  { from { opacity: 0; }                              to { opacity: 1; } }
+@keyframes sheetIn    { from { transform: translateY(100%); }             to { transform: translateY(0); } }
+@keyframes modalIn    { from { opacity:0; transform: scale(0.93) translateY(16px); } to { opacity:1; transform: scale(1) translateY(0); } }
+@keyframes fadeUp     { from { opacity:0; transform: translateY(10px); }  to { opacity:1; transform: translateY(0); } }
+@keyframes slideDownIn{ from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform: translateY(0); } }
+@keyframes spin       { to   { transform: rotate(360deg); } }
+@keyframes shimmer    { 0%{background-position:-200% center;} 100%{background-position:200% center;} }
 @keyframes shakeError {
   0%,100% { transform: translateX(0); }
   20%     { transform: translateX(-6px); }
@@ -240,4 +315,3 @@ body.dark-mode .submit-btn {
   60%     { transform: translateX(-4px); }
   80%     { transform: translateX(4px); }
 }
-@keyframes spin { to { transform: rotate(360deg); } }

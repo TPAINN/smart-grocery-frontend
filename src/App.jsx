@@ -3145,6 +3145,7 @@ export default function App() {
   const [chatInput, setChatInput] = useState('');
   const [dmTarget, setDmTarget] = useState(null); // null = group, friend object = private DM
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showPremiumWelcome, setShowPremiumWelcome] = useState(false);
   const [shoppingBudget, setShoppingBudget] = useState(() => {
     const v = localStorage.getItem('sg_budget');
@@ -3171,6 +3172,12 @@ export default function App() {
   const [notification, setNotification]   = useState({ show:false, message:'' });
   const [suggestions, setSuggestions]     = useState([]);
   const [isSearching, setIsSearching]     = useState(false);
+  const [noResults, setNoResults]         = useState(false);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sg_recent_searches') || '[]'); } catch { return []; }
+  });
+  const [searchInputFocused, setSearchInputFocused] = useState(false);
+  const [searchSort, setSearchSort] = useState('relevance'); // 'relevance' | 'price'
   const [selectedStore, setSelectedStore] = useState('Όλα');
   const [isScraping, setIsScraping]       = useState(false);
   const [isServerWaking, setIsServerWaking] = useState(false);
@@ -4103,14 +4110,16 @@ export default function App() {
   const triggerSearch = async (query, store) => {
     if (!user)   { setSuggestions([]); return; }
     if (!isOnline) { setNotification({ show:true, message:'📡 Offline — αναζήτηση μη διαθέσιμη' }); return; }
-    if (query.trim().length < 2) { setSuggestions([]); return; }
+    if (query.trim().length < 2) { setSuggestions([]); setNoResults(false); return; }
 
+    setNoResults(false);
     const q        = greeklishToGreek(normalizeText(query));
     const cacheKey = `search_${q}_${store}`;
     const cached   = cacheGet(cacheKey);
 
     if (cached) {
-      setSuggestions(cached.data.slice(0, 30));
+      setSuggestions(cached.data.slice(0, 40));
+      setNoResults(cached.data.length === 0);
       if (!cached.stale) return;
     } else {
       setIsSearching(true);
@@ -4121,7 +4130,15 @@ export default function App() {
       if (r.ok) {
         const data = await r.json();
         cacheSet(cacheKey, data);
-        setSuggestions(data.slice(0, 30));
+        setSuggestions(data.slice(0, 40));
+        setNoResults(data.length === 0);
+        if (data.length > 0 && query.trim()) {
+          setRecentSearches(prev => {
+            const next = [query.trim(), ...prev.filter(r => r.toLowerCase() !== query.trim().toLowerCase())].slice(0, 6);
+            try { localStorage.setItem('sg_recent_searches', JSON.stringify(next)); } catch {}
+            return next;
+          });
+        }
       }
     } catch {
       // Ignore search failures and keep existing suggestions.
@@ -5217,6 +5234,8 @@ export default function App() {
                   value={inputValue}
                   onChange={user ? handleInputChange : (e) => setInputValue(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { user ? triggerSearch(inputValue, selectedStore) : addPlainItem(); } }}
+                  onFocus={() => setSearchInputFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchInputFocused(false), 200)}
                   readOnly={!isOnline}
                   style={!isOnline ? { cursor:'not-allowed', opacity:0.7 } : {}}
                 />
@@ -5228,22 +5247,142 @@ export default function App() {
                 <button className="add-btn" onClick={() => user ? triggerSearch(inputValue, selectedStore) : addPlainItem()} title={user ? 'Αναζήτηση' : 'Προσθήκη'}>+</button>
               </div>
 
-              {/* Skeleton while loading */}
+              {/* ── Recent searches — shown when focused with empty input ── */}
+              {searchInputFocused && !inputValue.trim() && !suggestions.length && !isSearching && recentSearches.length > 0 && (
+                <div className="suggestions-dropdown sug-recents-panel">
+                  <div className="sug-header">
+                    <span className="sug-recents-label">🕐 Πρόσφατες αναζητήσεις</span>
+                    <button className="sug-clear" onClick={() => {
+                      setRecentSearches([]);
+                      try { localStorage.removeItem('sg_recent_searches'); } catch {}
+                    }}>Εκκαθάριση</button>
+                  </div>
+                  {recentSearches.map((term, i) => (
+                    <div key={i} className="sug-recent-item" onClick={() => {
+                      setInputValue(term);
+                      triggerSearch(term, selectedStore);
+                    }}>
+                      <span className="sug-recent-icon">🔍</span>
+                      <span className="sug-recent-text">{term}</span>
+                      <span className="sug-recent-arrow">›</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── Skeleton while loading ── */}
               {isSearching && !suggestions.length && (
                 <div className="suggestions-dropdown">
+                  <div className="sug-header">
+                    <span className="sug-count sug-count-loading">Αναζήτηση<span className="sug-dots"><span/><span/><span/></span></span>
+                  </div>
                   {[1,2,3].map(i => <SuggestionSkeleton key={i} />)}
                 </div>
               )}
 
+              {/* ── No results ── */}
+              {!isSearching && noResults && inputValue.trim().length >= 2 && (
+                <div className="suggestions-dropdown">
+                  <div className="sug-no-results">
+                    <span className="sug-no-results-icon">🔍</span>
+                    <p className="sug-no-results-title">Δεν βρέθηκαν αποτελέσματα</p>
+                    <p className="sug-no-results-sub">Δοκίμασε διαφορετική λέξη ή αλλαγή καταστήματος</p>
+                    {recentSearches.length > 0 && (
+                      <div className="sug-no-results-recents">
+                        <p className="sug-no-results-recents-label">Δοκίμασε:</p>
+                        <div className="sug-no-results-chips">
+                          {recentSearches.slice(0, 3).map((t, i) => (
+                            <button key={i} className="sug-chip" onClick={() => {
+                              setInputValue(t);
+                              triggerSearch(t, selectedStore);
+                            }}>{t}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Premium search results ── */}
               {suggestions.length > 0 && (
                 <div className="suggestions-dropdown">
-                  {suggestions.map(sug => (
-                    <div key={sug._id} className="suggestion-item" onClick={() => addFromSuggestion(sug)}>
-                      <img src={SUPERMARKET_LOGOS[sug.supermarket]} alt={sug.supermarket} className="sug-logo" />
-                      <span className="sug-name">{sug.name}</span>
-                      <strong className="sug-price">{sug.price?.toFixed(2)}€</strong>
-                    </div>
-                  ))}
+                  {/* Rich header: count + stores + price range + sort */}
+                  {(() => {
+                    const prices     = suggestions.map(s => s.price).filter(Boolean);
+                    const minP       = prices.length ? Math.min(...prices) : null;
+                    const maxP       = prices.length ? Math.max(...prices) : null;
+                    const storeSet   = new Set(suggestions.map(s => s.supermarket).filter(Boolean));
+                    const storeCount = storeSet.size;
+                    const hasPriceRange = minP && maxP && parseFloat((maxP - minP).toFixed(2)) > 0;
+                    return (
+                      <div className="sug-header sug-header-rich">
+                        <div className="sug-header-left">
+                          <span className="sug-count">{suggestions.length} αποτελέσματα</span>
+                          {storeCount > 1 && <span className="sug-meta-pill">🏪 {storeCount} καταστήματα</span>}
+                          {hasPriceRange && <span className="sug-meta-pill sug-price-range-pill">€{minP.toFixed(2)} – €{maxP.toFixed(2)}</span>}
+                        </div>
+                        <div className="sug-header-right">
+                          <button
+                            className={`sug-sort-btn${searchSort === 'price' ? ' active' : ''}`}
+                            onClick={() => setSearchSort(s => s === 'price' ? 'relevance' : 'price')}
+                          >
+                            {searchSort === 'price' ? '↑ Τιμή' : '⇅'}
+                          </button>
+                          <button className="sug-clear" onClick={() => {
+                            setSuggestions([]);
+                            setNoResults(false);
+                            setInputValue('');
+                            setSearchInputFocused(false);
+                          }}>✕</button>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Result items */}
+                  {(() => {
+                    const sorted   = searchSort === 'price'
+                      ? [...suggestions].sort((a, b) => (a.price || 9999) - (b.price || 9999))
+                      : suggestions;
+                    const minPrice = Math.min(...suggestions.map(s => s.price || Infinity));
+                    return sorted.map((sug, idx) => {
+                      const cat      = getCategory(sug.name);
+                      const emoji    = getCatEmoji(cat);
+                      const gradient = getCatGradient(cat);
+                      const isBest   = sug.price && sug.price === minPrice && suggestions.length > 1;
+                      return (
+                        <div
+                          key={sug._id || idx}
+                          className={`suggestion-item${isBest ? ' suggestion-item-best' : ''}`}
+                          onClick={() => addFromSuggestion(sug)}
+                          style={{ animationDelay: `${idx * 25}ms` }}
+                        >
+                          <div className="sug-avatar" style={{ background: gradient }}>
+                            <span className="sug-avatar-emoji">{emoji}</span>
+                          </div>
+                          <div className="sug-info">
+                            <span className="sug-name">{sug.name}</span>
+                            <div className="sug-meta">
+                              {SUPERMARKET_LOGOS[sug.supermarket] && (
+                                <img src={SUPERMARKET_LOGOS[sug.supermarket]} alt={sug.supermarket} className="sug-logo" />
+                              )}
+                              <span className="sug-store">{sug.supermarket}</span>
+                              {isBest && <span className="sug-best-badge">✓ Καλύτερη τιμή</span>}
+                            </div>
+                          </div>
+                          <div className="sug-price-col">
+                            <strong className={`sug-price${isBest ? ' sug-price-best' : ''}`}>{sug.price?.toFixed(2)}€</strong>
+                            <div className="sug-add-btn">+</div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+
+                  {suggestions.length >= 10 && (
+                    <div className="sug-footer">Εμφανίζονται τα {suggestions.length} πρώτα αποτελέσματα</div>
+                  )}
                 </div>
               )}
             </div>
@@ -6572,46 +6711,87 @@ export default function App() {
       </div>
 
       {/* ── Floating Bottom Nav — lives OUTSIDE .container to avoid backdrop-filter stacking context ── */}
+
+      {/* More menu overlay */}
+      {showMoreMenu && (
+        <div className="more-overlay" onClick={() => setShowMoreMenu(false)}>
+          <div className="more-grid" onClick={e => e.stopPropagation()}>
+            <div className="more-grid-handle" />
+            <div className="more-grid-title">Εργαλεία</div>
+            <div className="more-grid-items">
+              {[
+                { icon: '🍽️', label: 'AI Πλάνο', tab: 'mealplan' },
+                { icon: '📋', label: 'Συνταγές', tab: 'recipes' },
+                { icon: '📰', label: 'Φυλλάδια', tab: 'brochures' },
+                { icon: '📷', label: 'Plate Scanner', tab: null, action: () => { setShowPlateScanner(true); setShowMoreMenu(false); } },
+                { icon: '🛒', label: 'Σαρωτής', tab: null, action: () => setShowMoreMenu(false) },
+                { icon: '💰', label: 'Προϋπολογισμός', tab: null, action: () => setShowMoreMenu(false) },
+              ].map(item => (
+                <button
+                  key={item.label}
+                  className={`more-grid-item${item.tab && activeTab === item.tab ? ' active' : ''}`}
+                  onClick={() => {
+                    if (item.action) { item.action(); return; }
+                    setActiveTab(item.tab);
+                    haptic.light();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setShowMoreMenu(false);
+                  }}
+                >
+                  <span className="more-grid-icon">{item.icon}</span>
+                  <span className="more-grid-label">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <nav className="bottom-nav">
         {[
-          { id: 'list',      Icon: IconShoppingCart, label: 'Λίστα',    badge: items.length > 0 ? items.length : null },
-          { id: 'recipes',   Icon: IconChefHat,      label: 'Συνταγές', badge: null },
-          { id: 'mealplan',  Icon: IconSparkles,     label: 'AI Πλάνο', locked: mealPlanLocked },
-          { id: 'brochures', Icon: IconTag,           label: 'Φυλλάδια', badge: null },
-        ].map(({ id, Icon, label, badge, locked }) => {
-          const isActive = activeTab === id;
-          return (
-            <button
-              key={id}
-              className={`bottom-nav-btn${isActive ? ' active' : ''}${locked ? ' locked' : ''}`}
-              onClick={() => {
-                if (locked) {
-                  if (!user) {
-                    debugLog({ runId:'pre-repro', hypothesisId:'H3', location:'App.jsx:bottom-nav', message:'Locked mealplan tab clicked', data:{ id } });
-                    setAuthInitMode('register');
-                    setShowAuthModal(true);
-                  } else {
-                    setShowPremiumModal(true);
-                  }
-                  return;
-                }
-                setActiveTab(id);
-                haptic.light();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              aria-label={label}
-            >
-              <span className="bottom-nav-icon">
-                <Icon size={22} stroke={isActive ? 2.2 : 1.6} />
-                {badge !== null && !isActive && badge > 0 && (
-                  <span className="bottom-nav-badge">{badge > 99 ? '99+' : badge}</span>
-                )}
-                {locked && <span className="bottom-nav-lock">🔒</span>}
-              </span>
-              <span className="bottom-nav-label">{label}</span>
-            </button>
-          );
-        })}
+          { id: 'list', icon: '🏠', label: 'Αρχική' },
+          { id: 'search', icon: '🔍', label: 'Αναζήτηση' },
+          { id: 'map', icon: '🗺️', label: 'Χάρτης' },
+        ].map(item => (
+          <button
+            key={item.id}
+            className={`bottom-nav-btn${activeTab === item.id ? ' active' : ''}`}
+            onClick={() => {
+              setActiveTab(item.id);
+              haptic.light();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              setShowMoreMenu(false);
+            }}
+            aria-label={item.label}
+          >
+            <span className="bottom-nav-icon">{item.icon}</span>
+            <span className="bottom-nav-label">{item.label}</span>
+          </button>
+        ))}
+
+        {/* Center add FAB */}
+        <button
+          className="bottom-nav-btn nav-tab-fab"
+          onClick={() => {
+            setActiveTab('list');
+            haptic.light();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setShowMoreMenu(false);
+          }}
+          aria-label="Προσθήκη"
+        >
+          <span className="nav-fab-inner">+</span>
+        </button>
+
+        {/* More */}
+        <button
+          className={`bottom-nav-btn${showMoreMenu ? ' active' : ''}`}
+          onClick={() => setShowMoreMenu(m => !m)}
+          aria-label="Περισσότερα"
+        >
+          <span className="bottom-nav-icon">⋯</span>
+          <span className="bottom-nav-label">Περισσότερα</span>
+        </button>
       </nav>
 
       {/* ── Χάρτης — only for Premium & Trial users ── */}
