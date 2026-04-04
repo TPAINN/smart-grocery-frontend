@@ -30,7 +30,7 @@ import {
   IconLock, IconFingerprint, IconRefresh, IconHistory,
   IconEdit, IconBell, IconHome, IconBookmark, IconTag,
   IconCoin, IconTrendingDown, IconAlertTriangle,
-  IconMap, IconDots,
+  IconMap, IconDots, IconMicrophone,
 } from '@tabler/icons-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -4861,31 +4861,19 @@ export default function App() {
           </h1>
 
 
-          {/* Streak badge + Savings progress */}
-          {streak > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <div className="streak-bar">
-                <span className="streak-flame">🔥</span>
-                <span className="streak-count">{streak}</span>
-                <span className="streak-label">{streak === 1 ? 'μέρα' : 'μέρες'} streak</span>
-                {isNewStreakRecord && streak >= 3 && (
-                  <span className="streak-record-badge">Νέο ρεκόρ! 🏆</span>
-                )}
-              </div>
-              {/* Gamified savings bar */}
-              {streak >= 2 && (
-                <div style={{ width: '100%', maxWidth: 220, textAlign: 'center' }}>
-                  <div className="savings-progress-bar">
-                    <div
-                      className="savings-progress-fill"
-                      style={{ width: `${Math.min((streak / 7) * 100, 100)}%` }}
-                    />
-                  </div>
-                  <div className="savings-label">
-                    <span>🎯</span>
-                    <span>{streak < 7 ? `${7 - streak} μέρες μέχρι το επόμενο επίπεδο` : 'Μέγιστο επίπεδο! 🏆'}</span>
-                  </div>
-                </div>
+          {/* Trial / Premium status pill — replaces streak */}
+          {user && (
+            <div
+              className="hero-status-pill"
+              onClick={!user.isPremium ? () => setShowPremiumModal(true) : undefined}
+              style={!user.isPremium ? { cursor:'pointer' } : {}}
+            >
+              {user.isPremium ? (
+                <><span className="hero-status-dot hero-status-dot--premium" />Premium ✦</>
+              ) : user.isOnTrial ? (
+                <><span className="hero-status-dot hero-status-dot--trial" />{user.trialDaysLeft} {user.trialDaysLeft === 1 ? 'μέρα' : 'μέρες'} Trial απομένουν →</>
+              ) : (
+                <><span className="hero-status-dot hero-status-dot--free" />Free Plan · Αναβάθμιση →</>
               )}
             </div>
           )}
@@ -5286,10 +5274,14 @@ export default function App() {
               </div>
               )}
 
-              <div className="input-section" style={{ position:'relative' }}>
+              <div className="input-section input-section--v2" style={{ position:'relative' }}>
+                <span className="input-search-icon" aria-hidden="true">
+                  <IconSearch size={18} stroke={2} />
+                </span>
                 <input
+                  className="search-input"
                   type="text"
-                  placeholder={!isOnline ? '📡 Offline — αναζήτηση μη διαθέσιμη' : user ? 'Αναζήτηση προϊόντος...' : 'Γράψε προϊόν...'}
+                  placeholder={!isOnline ? '📡 Offline — αναζήτηση μη διαθέσιμη' : user ? 'Αναζήτηση προϊόντος...' : 'Γράψε προϊόν για να ξεκινήσεις...'}
                   value={inputValue}
                   onChange={user ? handleInputChange : (e) => setInputValue(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { user ? triggerSearch(inputValue, selectedStore) : addPlainItem(); } }}
@@ -5300,10 +5292,16 @@ export default function App() {
                 />
                 {user && (
                   <button className={`voice-btn ${isListening ? 'listening' : ''}`} onClick={handleVoiceClick} title="Φωνητική αναζήτηση">
-                    {isListening ? '🔴' : '🎤'}
+                    {isListening ? <IconX size={16} /> : <IconMicrophone size={16} />}
                   </button>
                 )}
-                <button className="add-btn press-scale" onClick={() => user ? triggerSearch(inputValue, selectedStore) : addPlainItem()} title={user ? 'Αναζήτηση' : 'Προσθήκη'}>+</button>
+                <button
+                  className="search-submit-btn"
+                  onClick={() => user ? triggerSearch(inputValue, selectedStore) : addPlainItem()}
+                  title={user ? 'Αναζήτηση' : 'Προσθήκη'}
+                >
+                  {user ? <IconSearch size={17} stroke={2.5} /> : <IconPlus size={17} stroke={2.5} />}
+                </button>
               </div>
 
               {/* ── Recent searches — shown when focused with empty input ── */}

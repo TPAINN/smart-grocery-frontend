@@ -6683,73 +6683,56 @@ body.dark-mode .bottom-nav {
   }
 }
 
-/* ── Individual nav button ─────────────────────────────── */
+/* ── Individual nav button — clean minimal design ── */
 .bottom-nav-btn {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 11px 6px;
+  gap: 4px;
+  padding: 8px 6px 10px;
   border: none;
   background: transparent;
-  border-radius: 22px;
+  border-radius: 0;
   cursor: pointer;
-  color: var(--text-secondary, #6b7280);
+  color: rgba(255, 255, 255, 0.35);
   font-family: var(--font);
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: -0.1px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   position: relative;
   transition:
-    background 0.28s cubic-bezier(0.34, 1.2, 0.64, 1),
-    color      0.2s ease,
-    flex       0.35s cubic-bezier(0.34, 1.2, 0.64, 1),
-    transform  0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.25s ease;
+    color 0.18s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Active state: gradient pill expands to show label */
+/* Active state — icon + label only, no box */
 .bottom-nav-btn.active {
-  flex: 1.9;
-  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 50%, #7c3aed 100%);
-  background-size: 200% 200%;
   color: #fff;
-  box-shadow:
-    0 6px 24px rgba(99, 102, 241, 0.45),
-    0 2px 8px rgba(99, 102, 241, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-  animation: activePillShimmer 3s ease infinite;
 }
 
-@keyframes activePillShimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50%       { background-position: 100% 50%; }
+.bottom-nav-btn.active svg {
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.7));
+  transform: scale(1.08) translateY(-1px);
 }
 
-body.dark-mode .bottom-nav-btn.active {
-  box-shadow:
-    0 6px 28px rgba(99, 102, 241, 0.6),
-    0 2px 10px rgba(99, 102, 241, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+.bottom-nav-btn.active .bottom-nav-label {
+  color: rgba(196, 181, 253, 0.95);
+  font-weight: 700;
 }
 
 /* Inactive hover */
 .bottom-nav-btn:not(.active):hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-primary);
-}
-body.dark-mode .bottom-nav-btn:not(.active):hover {
-  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* Press feedback */
 .bottom-nav-btn:active {
-  transform: scale(0.9) !important;
+  transform: scale(0.88) !important;
   transition-duration: 0.08s !important;
 }
 
@@ -6764,23 +6747,34 @@ body.dark-mode .bottom-nav-btn:not(.active):hover {
   height: 24px;
 }
 
-/* Label — hidden until active, slides in via max-width */
+/* Label — always visible, small */
 .bottom-nav-label {
-  max-width: 0;
-  overflow: hidden;
-  opacity: 0;
-  font-size: 12.5px;
-  font-weight: 700;
-  transition:
-    max-width 0.32s cubic-bezier(0.34, 1.2, 0.64, 1),
-    opacity   0.22s ease;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 1;
   white-space: nowrap;
+  transition: color 0.18s ease;
 }
 
-.bottom-nav-btn.active .bottom-nav-label {
-  max-width: 72px;
-  opacity: 1;
-  transition-delay: 0.04s;
+/* Light mode overrides */
+body:not(.dark-mode) .bottom-nav-btn {
+  color: rgba(10, 10, 10, 0.35);
+}
+
+body:not(.dark-mode) .bottom-nav-btn.active {
+  color: #5C67F5;
+}
+
+body:not(.dark-mode) .bottom-nav-btn.active svg {
+  filter: drop-shadow(0 0 6px rgba(92, 103, 245, 0.5));
+}
+
+body:not(.dark-mode) .bottom-nav-btn.active .bottom-nav-label {
+  color: #5C67F5;
+}
+
+body:not(.dark-mode) .bottom-nav-btn:not(.active):hover {
+  color: rgba(10, 10, 10, 0.6);
 }
 
 /* Item count badge on icon */
@@ -11346,5 +11340,363 @@ body.dark-mode::before {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PHASE 1 — PREMIUM OVERHAUL (Linear/Vercel Light + Dark)
+   Search bar · Nav contrast · Trial pill · Spring interactions
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Hero status pill (replaces streak bar) ── */
+.hero-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.25s var(--spring, cubic-bezier(0.34,1.56,0.64,1));
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+/* Light mode pill */
+body:not(.dark-mode) .hero-status-pill {
+  background: rgba(92,103,245,0.07);
+  border: 1px solid rgba(92,103,245,0.18);
+  color: #5C67F5;
+}
+
+.hero-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hero-status-dot--premium {
+  background: #fbbf24;
+  box-shadow: 0 0 6px rgba(251,191,36,0.8);
+}
+
+.hero-status-dot--trial {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16,185,129,0.7);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+.hero-status-dot--free {
+  background: #a3a3a3;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ── Search section — v2 redesign ── */
+.smart-search-wrapper {
+  position: relative;
+  z-index: 10;
+  margin-bottom: 0 !important;
+}
+
+/* ── Input section v2 — prominent, icon-led ── */
+.input-section--v2 {
+  display: flex !important;
+  align-items: center !important;
+  background: var(--bg-input, #fff) !important;
+  border: 1.5px solid var(--border, rgba(0,0,0,0.07)) !important;
+  border-radius: 16px !important;
+  padding: 0 6px 0 14px !important;
+  gap: 8px !important;
+  height: 52px !important;
+  box-shadow: var(--shadow-md) !important;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.3s ease,
+    transform 0.25s cubic-bezier(0.34,1.56,0.64,1) !important;
+}
+
+.input-section--v2:focus-within {
+  border-color: var(--accent, #5C67F5) !important;
+  box-shadow: 0 0 0 3px rgba(92,103,245,0.12), var(--shadow-lg) !important;
+  transform: translateY(-1px) !important;
+}
+
+.input-search-icon {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted, #717171);
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.input-section--v2:focus-within .input-search-icon {
+  color: var(--accent, #5C67F5);
+}
+
+.input-section--v2 input,
+.input-section--v2 .search-input {
+  flex: 1 !important;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  color: var(--text-primary, #0A0A0A) !important;
+  padding: 0 !important;
+  min-width: 0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.input-section--v2 input::placeholder,
+.input-section--v2 .search-input::placeholder {
+  color: var(--text-muted, #717171) !important;
+  font-weight: 400 !important;
+}
+
+/* Voice button inside new input */
+.input-section--v2 .voice-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+}
+
+.input-section--v2 .voice-btn:hover {
+  background: var(--bg-surface) !important;
+  color: var(--accent) !important;
+}
+
+.input-section--v2 .voice-btn.listening {
+  background: rgba(239,68,68,0.1) !important;
+  color: #ef4444 !important;
+}
+
+/* ── Search submit button — prominent gradient CTA ── */
+.search-submit-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  background: linear-gradient(135deg, #5C67F5, #a855f7) !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 2px 12px rgba(92,103,245,0.40) !important;
+  transition: all 0.2s cubic-bezier(0.34,1.56,0.64,1) !important;
+}
+
+.search-submit-btn:hover {
+  transform: scale(1.08) !important;
+  box-shadow: 0 4px 20px rgba(92,103,245,0.55) !important;
+}
+
+.search-submit-btn:active {
+  transform: scale(0.92) !important;
+}
+
+/* ── Bottom Nav — light mode contrast fix ── */
+body:not(.dark-mode) .bottom-nav {
+  background: rgba(245,245,243,0.92) !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+  box-shadow: 0 -1px 0 rgba(0,0,0,0.04), 0 -8px 24px rgba(0,0,0,0.06) !important;
+}
+
+body:not(.dark-mode) .bottom-nav-btn {
+  color: rgba(10,10,10,0.40) !important;
+}
+
+body:not(.dark-mode) .bottom-nav-btn.active {
+  color: #5C67F5 !important;
+}
+
+body:not(.dark-mode) .bottom-nav-btn.active svg {
+  filter: drop-shadow(0 0 6px rgba(92,103,245,0.5)) !important;
+}
+
+body:not(.dark-mode) .bottom-nav-btn.active .bottom-nav-label {
+  color: #5C67F5 !important;
+}
+
+body:not(.dark-mode) .nav-pill-indicator {
+  background: linear-gradient(90deg, #5C67F5, #a855f7) !important;
+  box-shadow: 0 0 8px rgba(92,103,245,0.5) !important;
+}
+
+/* ── Cards — light mode polish ── */
+body:not(.dark-mode) .hero-card {
+  background: rgba(255,255,255,0.95) !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.06),
+    0 8px 24px rgba(0,0,0,0.06),
+    inset 0 1px 0 rgba(255,255,255,1) !important;
+}
+
+/* ── List items — light mode ── */
+body:not(.dark-mode) .list-item,
+body:not(.dark-mode) .item-row,
+body:not(.dark-mode) .grocery-item {
+  background: #fff !important;
+  border-color: rgba(0,0,0,0.06) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+}
+
+/* ── Store chips — light mode ── */
+body:not(.dark-mode) .store-chip {
+  background: rgba(255,255,255,0.9) !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  color: #3D3D3D !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+}
+
+body:not(.dark-mode) .store-chip.active {
+  background: #5C67F5 !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(92,103,245,0.35) !important;
+}
+
+/* ── More overlay — light mode ── */
+body:not(.dark-mode) .more-grid {
+  background: rgba(250,250,248,0.96) !important;
+  border-top: 1px solid rgba(0,0,0,0.06) !important;
+}
+
+body:not(.dark-mode) .more-grid-item {
+  background: rgba(255,255,255,0.8) !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+  color: #0A0A0A !important;
+}
+
+body:not(.dark-mode) .more-grid-item:hover {
+  background: #fff !important;
+  border-color: rgba(92,103,245,0.2) !important;
+  box-shadow: 0 2px 8px rgba(92,103,245,0.12) !important;
+}
+
+body:not(.dark-mode) .more-grid-label {
+  color: #3D3D3D !important;
+}
+
+/* ── Hero gradient (light mode adjustment) ── */
+body:not(.dark-mode) .hero-title-gradient {
+  background: linear-gradient(135deg, #5C67F5 0%, #a855f7 50%, #E03D8E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+body:not(.dark-mode) h1 span:first-child {
+  color: #0A0A0A !important;
+}
+
+/* ── Suggestions dropdown — light mode ── */
+body:not(.dark-mode) .suggestions-dropdown {
+  background: #fff !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Framer-motion tab content wrapper ── */
+.tab-motion-wrapper {
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ── Dynamic Island toast (Phase 2 prep) ── */
+.dynamic-island-wrap {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.dynamic-island-pill {
+  background: #0A0A0A;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 99px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
+  min-width: 200px;
+  white-space: nowrap;
+}
+
+.dynamic-island-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #5C67F5;
+  box-shadow: 0 0 8px #5C67F5;
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.dynamic-island-text {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── Glow card (Linear/Vercel style, Phase 2 prep) ── */
+.glow-card-v2 {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34,1.4,0.64,1);
+}
+
+.glow-card-v2::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(92,103,245,0.10),
+    transparent 40%
+  );
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.glow-card-v2:hover::before {
+  opacity: 1;
+}
+
+body:not(.dark-mode) .glow-card-v2 {
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(0,0,0,0.07);
+}
+
+/* ═══ END PHASE 1 OVERHAUL ═══ */
 
 /* ═══ END OVERHAUL V3 ═══ */

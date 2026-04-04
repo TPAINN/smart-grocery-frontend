@@ -33,29 +33,30 @@ body {
 
 /* ── Brand Palette ────────────────────────────────────────────────── */
 :root {
-  /* Brand blues */
-  --brand-50:  #eff6ff;
-  --brand-100: #dbeafe;
-  --brand-200: #bfdbfe;
-  --brand-300: #93c5fd;
-  --brand-400: #60a5fa;
-  --brand-500: #3b82f6;
-  --brand-600: #2563eb;
-  --brand-700: #1d4ed8;
-  --brand-800: #1e40af;
-  --brand-900: #1e3a8a;
+  /* ── Brand Palette ─────────────────────────────────────────── */
+  /* Indigo — primary accent (Linear vibe) */
+  --brand-50:  #eef0ff;
+  --brand-100: #e0e3ff;
+  --brand-200: #c7cbfd;
+  --brand-300: #a5aafc;
+  --brand-400: #8488f8;
+  --brand-500: #6366f1;
+  --brand-600: #5C67F5;
+  --brand-700: #4338ca;
+  --brand-800: #3730a3;
+  --brand-900: #312e81;
 
-  /* Violet accent */
-  --violet-400: #a78bfa;
-  --violet-500: #8b5cf6;
-  --violet-600: #7c3aed;
+  /* Fuchsia — secondary accent */
+  --violet-400: #e879f9;
+  --violet-500: #d946ef;
+  --violet-600: #c026d3;
 
-  /* Emerald */
+  /* Emerald — success / price savings */
   --emerald-400: #34d399;
   --emerald-500: #10b981;
   --emerald-600: #059669;
 
-  /* Rose */
+  /* Rose — danger */
   --rose-400: #fb7185;
   --rose-500: #f43f5e;
   --rose-600: #e11d48;
@@ -65,70 +66,70 @@ body {
   --amber-500: #f59e0b;
   --amber-600: #d97706;
 
-  /* ── Semantic Tokens (Light) ────────────────────────────────────── */
-  --accent:          var(--brand-600);
-  --accent-light:    var(--brand-400);
-  --accent-2:        var(--violet-600);
-  --accent-subtle:   rgba(37, 99, 235, 0.08);
-  --accent-subtle-2: rgba(37, 99, 235, 0.14);
+  /* ── Semantic Tokens — Light Mode (Linear/Vercel palette) ── */
+  --accent:          #5C67F5;
+  --accent-light:    #8488f8;
+  --accent-2:        #d946ef;
+  --accent-subtle:   rgba(92, 103, 245, 0.08);
+  --accent-subtle-2: rgba(92, 103, 245, 0.14);
 
-  --success:        var(--emerald-500);
+  --success:        #10b981;
   --success-subtle: rgba(16, 185, 129, 0.08);
-  --danger:         var(--rose-500);
+  --danger:         #f43f5e;
   --danger-subtle:  rgba(244, 63, 94, 0.08);
-  --warning:        var(--amber-500);
+  --warning:        #f59e0b;
   --warning-subtle: rgba(245, 158, 11, 0.08);
-  --info-subtle:    rgba(59, 130, 246, 0.08);
+  --info-subtle:    rgba(92, 103, 245, 0.08);
 
-  /* Backgrounds */
-  --bg-app:          #f8fafc;
-  --bg-card:         #ffffff;
-  --bg-surface:      #f1f5f9;
-  --bg-subtle:       rgba(241, 245, 249, 0.92);
-  --bg-input:        rgba(248, 250, 252, 0.95);
-  --bg-container:    rgba(255, 255, 255, 0.95);
-  --bg-overlay:      rgba(15, 23, 42, 0.55);
-  --bg-chip:         rgba(241, 245, 249, 0.9);
-  --bg-chip-hover:   rgba(226, 232, 240, 0.98);
-  --bg-surface-hover: rgba(226, 232, 240, 0.7);
+  /* Backgrounds — warm off-white (not cold blue-white) */
+  --bg-app:          #F5F5F3;
+  --bg-card:         #FFFFFF;
+  --bg-surface:      #EDEDEB;
+  --bg-subtle:       rgba(237, 237, 235, 0.92);
+  --bg-input:        #FFFFFF;
+  --bg-container:    rgba(255, 255, 255, 0.96);
+  --bg-overlay:      rgba(10, 10, 10, 0.55);
+  --bg-chip:         rgba(237, 237, 235, 0.9);
+  --bg-chip-hover:   rgba(229, 229, 227, 0.98);
+  --bg-surface-hover: rgba(229, 229, 227, 0.8);
 
-  /* Nav (Liquid Glass) */
-  --bg-nav:          rgba(255, 255, 255, 0.82);
-  --bg-nav-border:   rgba(255, 255, 255, 0.55);
+  /* Nav — frosted warm glass */
+  --bg-nav:          rgba(245, 245, 243, 0.88);
+  --bg-nav-border:   rgba(0, 0, 0, 0.06);
 
-  /* Text */
-  --text-primary:    #0f172a;
-  --text-secondary:  #334155;
-  --text-muted:      #64748b;
-  --text-faint:      #94a3b8;
+  /* Text — near-black for maximum contrast */
+  --text-primary:    #0A0A0A;
+  --text-secondary:  #3D3D3D;
+  --text-muted:      #717171;
+  --text-faint:      #A3A3A3;
   --text-inverse:    #ffffff;
-  --text-brand:      var(--brand-600);
+  --text-brand:      #5C67F5;
 
-  /* Borders */
-  --border:          rgba(148, 163, 184, 0.25);
-  --border-light:    rgba(148, 163, 184, 0.12);
-  --border-strong:   rgba(100, 116, 139, 0.35);
-  --border-focus:    var(--brand-500);
-  --border-brand:    rgba(37, 99, 235, 0.3);
+  /* Borders — ultra-subtle */
+  --border:          rgba(0, 0, 0, 0.07);
+  --border-light:    rgba(0, 0, 0, 0.04);
+  --border-strong:   rgba(0, 0, 0, 0.14);
+  --border-focus:    #5C67F5;
+  --border-brand:    rgba(92, 103, 245, 0.3);
 
-  /* Shadows */
-  --shadow-xs:    0 1px 2px rgba(15,23,42,.04);
-  --shadow-sm:    0 2px 4px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
-  --shadow-md:    0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
-  --shadow-lg:    0 8px 24px rgba(15,23,42,.10), 0 3px 8px rgba(15,23,42,.06);
-  --shadow-xl:    0 16px 48px rgba(15,23,42,.12), 0 6px 16px rgba(15,23,42,.08);
-  --shadow-2xl:   0 24px 64px rgba(15,23,42,.16), 0 8px 24px rgba(15,23,42,.10);
-  --shadow-card:  0 2px 8px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04), inset 0 1px 0 rgba(255,255,255,.8);
-  --shadow-brand: 0 4px 20px rgba(37,99,235,.30), 0 2px 6px rgba(37,99,235,.15);
-  --shadow-danger: 0 4px 16px rgba(244,63,94,.30);
-  --shadow-success: 0 4px 16px rgba(16,185,129,.30);
+  /* Shadows — soft, warm (no cold blue tint) */
+  --shadow-xs:    0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg:    0 8px 24px rgba(0,0,0,0.09), 0 3px 8px rgba(0,0,0,0.05);
+  --shadow-xl:    0 16px 40px rgba(0,0,0,0.10), 0 6px 16px rgba(0,0,0,0.06);
+  --shadow-2xl:   0 24px 60px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.07);
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,1);
+  --shadow-brand: 0 4px 20px rgba(92,103,245,0.30), 0 2px 6px rgba(92,103,245,0.15);
+  --shadow-danger: 0 4px 16px rgba(244,63,94,0.28);
+  --shadow-success: 0 4px 16px rgba(16,185,129,0.28);
 
   /* Glows */
-  --glow-accent:  0 0 0 3px rgba(37,99,235,.15), 0 0 20px rgba(37,99,235,.08);
-  --glow-danger:  0 0 0 3px rgba(244,63,94,.15);
-  --glow-success: 0 0 0 3px rgba(16,185,129,.15);
+  --glow-accent:  0 0 0 3px rgba(92,103,245,0.15), 0 0 20px rgba(92,103,245,0.08);
+  --glow-danger:  0 0 0 3px rgba(244,63,94,0.15);
+  --glow-success: 0 0 0 3px rgba(16,185,129,0.15);
 
-  /* ── Spacing Scale ────────────────────────────────────────────── */
+  /* ── Spacing Scale ───────────────────────────────────────────── */
   --sp-1:  4px;
   --sp-2:  8px;
   --sp-3:  12px;
@@ -140,7 +141,7 @@ body {
   --sp-12: 48px;
   --sp-16: 64px;
 
-  /* ── Border Radius ────────────────────────────────────────────── */
+  /* ── Border Radius ───────────────────────────────────────────── */
   --radius-xs:   4px;
   --radius-sm:   8px;
   --radius-md:   12px;
@@ -150,12 +151,12 @@ body {
   --radius-3xl:  32px;
   --radius-full: 9999px;
 
-  /* ── Typography ───────────────────────────────────────────────── */
+  /* ── Typography ──────────────────────────────────────────────── */
   --font:         'Inter', 'Plus Jakarta Sans', -apple-system, sans-serif;
   --font-display: 'Plus Jakarta Sans', 'Inter', sans-serif;
   --font-mono:    'JetBrains Mono', 'Fira Code', monospace;
 
-  /* ── Duration Scale ───────────────────────────────────────────── */
+  /* ── Duration Scale ──────────────────────────────────────────── */
   --dur-instant: 60ms;
   --dur-fast:    120ms;
   --dur-normal:  220ms;
@@ -163,18 +164,21 @@ body {
   --dur-slower:  500ms;
   --dur-slowest: 700ms;
 
-  /* ── Easing (Spring Physics) ──────────────────────────────────── */
+  /* ── Easing (Spring Physics) ─────────────────────────────────── */
   --ease:       cubic-bezier(0.16, 1, 0.3, 1);
   --smooth:     cubic-bezier(0.16, 1, 0.3, 1);
   --spring:     cubic-bezier(0.34, 1.56, 0.64, 1);
-  --bounce:     cubic-bezier(0.34, 1.72, 0.64, 1);
+  --bounce:     cubic-bezier(0.43, 1.94, 0.31, 0.99);
   --swift:      cubic-bezier(0.4, 0, 0.2, 1);
   --decel:      cubic-bezier(0.0, 0.0, 0.2, 1);
   --accel:      cubic-bezier(0.4, 0.0, 1, 1);
 
-  /* ── Nav Heights ──────────────────────────────────────────────── */
+  /* ── Nav Heights ─────────────────────────────────────────────── */
   --nav-height:        72px;
   --nav-bottom-offset: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom, 0px));
+
+  /* ── Brand primary for legacy usage ─────────────────────── */
+  --brand-primary: #5C67F5;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -239,6 +243,8 @@ body.dark-mode {
   --glow-accent:  0 0 0 3px rgba(79,142,247,.2), 0 0 24px rgba(79,142,247,.12);
   --glow-danger:  0 0 0 3px rgba(251,113,133,.2);
   --glow-success: 0 0 0 3px rgba(52,211,153,.2);
+
+  --brand-primary: #6366f1;
 }
 
 /* ── Base Styles ─────────────────────────────────────────────────── */
