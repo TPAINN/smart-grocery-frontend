@@ -5,6 +5,9 @@ import { openDB } from 'idb';
 import './App.css';
 import './EnhancedAnimations.css';
 import RecipeNotification from './RecipeNotification';
+import DynamicIsland from './DynamicIsland';
+import SavingsRing from './SavingsRing';
+import GlowCard from './GlowCard';
 import AuthModal from './AuthModal';
 import SavedListsModal from './SavedListsModal';
 import SmartRouteMap from './SmartRouteMap';
@@ -3160,6 +3163,7 @@ export default function App() {
   const [showBudgetInput, setShowBudgetInput] = useState(false);
   const [budgetInputVal, setBudgetInputVal] = useState('');
   const chatEndRef = useRef(null);
+  const navRef     = useRef(null);
 
   // ── Friends state ──────────────────────────────────────────────────────────
   const [friends, setFriends]                 = useState([]);  // loaded from DB on login
@@ -4491,6 +4495,92 @@ export default function App() {
   const totalCost = items.reduce((s, i) => s + (i.price > 0 ? i.price * (i.quantity || 1) : 0), 0);
   const checkedItems = items.filter(i => i.isChecked);
   const checkedCost  = checkedItems.reduce((s, i) => s + (i.price > 0 ? i.price * (i.quantity || 1) : 0), 0);
+
+  // ── Scroll-aware nav: finger-accurate hide/reveal ─────────────────────────
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    let offset    = 0;          // 0 = visible, NAV_H = fully hidden
+    let lastScY   = window.scrollY;
+    let tStartY   = 0;
+    let tPrevY    = 0;
+    let tLastY    = 0;
+    let touching  = false;
+    let snapTimer = null;
+    const NAV_H   = () => nav.offsetHeight || 72;
+
+    const apply = (o, animated = false) => {
+      const h = NAV_H();
+      offset = Math.max(0, Math.min(h, o));
+      nav.style.transition = animated
+        ? 'transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        : 'none';
+      // Preserve the CSS translateX(-50%) centering while animating Y
+      nav.style.transform = `translateX(-50%) translateY(${offset}px)`;
+    };
+
+    const snapTo = (target) => {
+      clearTimeout(snapTimer);
+      apply(target, true);
+    };
+
+    // Desktop scroll
+    const onScroll = () => {
+      if (touching) return;
+      const y     = window.scrollY;
+      const delta = y - lastScY;
+      lastScY     = y;
+      if (Math.abs(delta) < 2) return;
+      if (y <= 0) { snapTo(0); return; }
+      apply(offset + delta * 1.5);
+      clearTimeout(snapTimer);
+      snapTimer = setTimeout(() => snapTo(offset > NAV_H() * 0.45 ? NAV_H() : 0), 160);
+    };
+
+    // Touch: pixel-for-pixel tracking
+    const onTouchStart = (e) => {
+      tStartY  = e.touches[0].clientY;
+      tPrevY   = tStartY;
+      tLastY   = tStartY;
+      touching = true;
+      clearTimeout(snapTimer);
+      nav.style.transition = 'none';
+    };
+
+    const onTouchMove = (e) => {
+      if (!touching) return;
+      const y     = e.touches[0].clientY;
+      const delta = tPrevY - y; // positive = finger up = scrolling down = hide nav
+      tPrevY      = tLastY;
+      tLastY      = y;
+      apply(offset + delta);
+    };
+
+    const onTouchEnd = () => {
+      if (!touching) return;
+      touching = false;
+      const velocity  = tPrevY - tLastY; // positive = last motion was downward scroll
+      const h         = NAV_H();
+      const shouldHide = offset > h * 0.42 || velocity > 4;
+      snapTo(shouldHide ? h : 0);
+    };
+
+    window.addEventListener('scroll',      onScroll,      { passive: true });
+    window.addEventListener('touchstart',  onTouchStart,  { passive: true });
+    window.addEventListener('touchmove',   onTouchMove,   { passive: true });
+    window.addEventListener('touchend',    onTouchEnd,    { passive: true });
+    window.addEventListener('touchcancel', onTouchEnd,    { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll',      onScroll);
+      window.removeEventListener('touchstart',  onTouchStart);
+      window.removeEventListener('touchmove',   onTouchMove);
+      window.removeEventListener('touchend',    onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchEnd);
+      clearTimeout(snapTimer);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const budgetPct    = shoppingBudget ? Math.min(1, totalCost / shoppingBudget) : 0;
   const budgetColor  = budgetPct >= 1 ? '#ef4444' : budgetPct >= 0.8 ? '#f59e0b' : '#10b981';
 
@@ -4650,7 +4740,7 @@ export default function App() {
         }} initMode={authInitMode} />
       <NameModal isOpen={nameModalOpen} value={nameModalValue} onChange={setNameModalValue} onConfirm={handleSaveConfirm} onCancel={() => setNameModalOpen(false)} />
       <ConfirmModal isOpen={confirmModal.open} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={() => setConfirmModal({ open:false, message:'', onConfirm:null })} />
-      <RecipeNotification show={notification.show} message={notification.message} onClose={() => setNotification({ show:false, message:'' })} />
+      <DynamicIsland show={notification.show} message={notification.message} onClose={() => setNotification({ show:false, message:'' })} />
 
       {/* Achievement toast */}
       {achievementToast && (
@@ -5105,6 +5195,14 @@ export default function App() {
                 </div>
               </div>
             )}
+            {/* ── Cart Ring Hero ── */}
+            <SavingsRing
+              items={items}
+              checkedItems={checkedItems}
+              totalCost={totalCost}
+              checkedCost={checkedCost}
+            />
+
             {items.length > 0 && (
               <div style={{
                 background:'var(--bg-surface)', padding:'15px', borderRadius:'14px',
@@ -6821,9 +6919,11 @@ export default function App() {
                 { icon: '📂', label: 'Λίστες μου',    tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowListsModal(true); setShowMoreMenu(false); } },
                 { icon: '👤', label: 'Προφίλ',        tab: null, action: () => { if (!user) { setShowAuthModal(true); setShowMoreMenu(false); } else { setShowMoreMenu(false); setShowProfileMenu(v => !v); } } },
               ].map(item => (
-                <button
+                <GlowCard
                   key={item.label}
-                  className={`more-grid-item${item.tab && activeTab === item.tab ? ' active' : ''}`}
+                  icon={item.icon}
+                  label={item.label}
+                  active={!!(item.tab && activeTab === item.tab)}
                   onClick={() => {
                     if (item.action) { item.action(); return; }
                     setActiveTab(item.tab);
@@ -6831,17 +6931,14 @@ export default function App() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     setShowMoreMenu(false);
                   }}
-                >
-                  <span className="more-grid-icon">{item.icon}</span>
-                  <span className="more-grid-label">{item.label}</span>
-                </button>
+                />
               ))}
             </div>
           </div>
         </div>
       )}
 
-      <nav className="bottom-nav">
+      <nav className="bottom-nav" ref={navRef}>
         {/* Sliding pill indicator — JS positions it via CSS custom props */}
         <div className="nav-pill-indicator" id="nav-pill" aria-hidden="true" />
         {/* Home */}

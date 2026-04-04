@@ -1,0 +1,76 @@
+.di-wrapper {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  /* framer-motion owns translateX via x prop — use margin trick instead */
+  transform: translateX(-50%);
+  z-index: 10000;
+  cursor: pointer;
+  will-change: transform, opacity;
+  /* Framer motion applies scale/y on top of translate; keep origin center */
+  transform-origin: center top;
+}
+
+.di-pill {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 20px 10px 16px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  box-shadow:
+    0 4px 28px rgba(0, 0, 0, 0.22),
+    0 1px 6px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  max-width: calc(100vw - 40px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Variant: success / info — dark glass */
+.di-pill--success,
+.di-pill--info {
+  background: rgba(12, 12, 16, 0.9);
+  color: #f0f0f0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Variant: error */
+.di-pill--error {
+  background: rgba(200, 30, 30, 0.9);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* Variant: warning */
+.di-pill--warning {
+  background: rgba(224, 140, 20, 0.92);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.di-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.88;
+}
+
+.di-message {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Light mode — keep dark pill for contrast */
+.light-mode .di-pill--success,
+.light-mode .di-pill--info {
+  background: rgba(14, 14, 18, 0.93);
+  color: #fff;
+}
