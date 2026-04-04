@@ -207,7 +207,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
   const macroMaxes = { calories: 800, protein: 60, carbs: 80, fat: 40 };
 
   return (
-    <div className="psm-modal" role="dialog" aria-modal="true" aria-label="Macro Scanner">
+    <div className="psm-modal" role="dialog" aria-modal="true" aria-label="Meal Scanner">
 
       {/* ── STEP: CAPTURE ─────────────────────────────── */}
       {step === 'capture' && (
@@ -215,27 +215,35 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
           {/* Header */}
           <div className="psm-header">
             <h2 className="psm-title">
-              <span className="psm-title-icon">📸</span> Macro Scanner
+              <span className="psm-title-icon">🍽️</span> Meal Scanner
             </h2>
             <button className="psm-close-btn" onClick={onClose} aria-label="Κλείσιμο">✕</button>
           </div>
 
           {/* Capture area */}
           <div className="psm-capture-body">
-            <div className={`psm-capture-circle ${preview ? 'psm-capture-circle--filled' : ''}`}>
-              {preview ? (
-                <img src={preview} alt="Προεπισκόπηση πιάτου" className="psm-preview-img" />
-              ) : (
-                <div className="psm-capture-placeholder">
-                  <span className="psm-plate-emoji" aria-hidden="true">🍽️</span>
-                  <p className="psm-capture-hint">Φωτογράφισε<br />το πιάτο σου</p>
-                </div>
-              )}
-            </div>
+            <div className="psm-capture-glass-card">
+              <div className={`psm-capture-viewfinder ${preview ? 'psm-capture-viewfinder--filled' : ''}`}>
+                {/* Corner tick marks for viewfinder effect */}
+                <span className="psm-vf-corner psm-vf-corner--tl" aria-hidden="true" />
+                <span className="psm-vf-corner psm-vf-corner--tr" aria-hidden="true" />
+                <span className="psm-vf-corner psm-vf-corner--bl" aria-hidden="true" />
+                <span className="psm-vf-corner psm-vf-corner--br" aria-hidden="true" />
 
-            <p className="psm-tip-text">
-              Τοποθέτησε ολόκληρο το πιάτο στο πλαίσιο για καλύτερα αποτελέσματα
-            </p>
+                {preview ? (
+                  <img src={preview} alt="Προεπισκόπηση πιάτου" className="psm-preview-img" />
+                ) : (
+                  <div className="psm-capture-placeholder">
+                    <span className="psm-plate-emoji" aria-hidden="true">🍽️</span>
+                    <p className="psm-capture-hint">Φωτογράφισε<br />το πιάτο σου</p>
+                  </div>
+                )}
+              </div>
+
+              <p className="psm-tip-text">
+                Τοποθέτησε ολόκληρο το πιάτο στο πλαίσιο για καλύτερα αποτελέσματα
+              </p>
+            </div>
 
             {/* Hidden file input */}
             <input
@@ -253,7 +261,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
             <div className="psm-capture-actions">
               {!preview ? (
                 <button
-                  className="psm-btn psm-btn--primary psm-btn--pill"
+                  className="psm-btn psm-btn--gradient psm-btn--pill"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   📷 Φωτογραφία / Γκαλερί
@@ -261,7 +269,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
               ) : (
                 <>
                   <button
-                    className="psm-btn psm-btn--primary psm-btn--pill"
+                    className="psm-btn psm-btn--gradient psm-btn--pill"
                     onClick={handleScan}
                   >
                     Ανάλυσε →
@@ -456,7 +464,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
         <div className="psm-screen psm-error-screen">
           <div className="psm-header">
             <h2 className="psm-title">
-              <span className="psm-title-icon">📸</span> Macro Scanner
+              <span className="psm-title-icon">🍽️</span> Meal Scanner
             </h2>
             <button className="psm-close-btn" onClick={onClose} aria-label="Κλείσιμο">✕</button>
           </div>

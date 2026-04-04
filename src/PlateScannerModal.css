@@ -114,9 +114,72 @@
   justify-content: center;
   gap: 24px;
   padding: 32px 24px 40px;
+  /* Subtle radial ambient for the capture step */
+  background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(16,185,129,0.06) 0%, transparent 70%);
 }
 
-/* Dashed capture circle */
+/* Glassmorphism card wrapping the viewfinder + tip */
+.psm-capture-glass-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 28px;
+  padding: 28px 28px 22px;
+  box-shadow:
+    0 8px 32px rgba(16, 185, 129, 0.10),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255,255,255,0.80);
+  width: 100%;
+  max-width: 320px;
+}
+
+/* Professional camera viewfinder */
+.psm-capture-viewfinder {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  border-radius: 20px;
+  border: 2px solid rgba(16, 185, 129, 0.40);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  flex-shrink: 0;
+  background: rgba(16, 185, 129, 0.03);
+}
+
+.psm-capture-viewfinder--filled {
+  border-color: var(--psm-green);
+  box-shadow:
+    0 0 0 4px var(--psm-green-subtle),
+    0 12px 40px rgba(16,185,129,.22),
+    inset 0 0 0 1px rgba(16,185,129,0.15);
+}
+
+/* Viewfinder corner tick marks */
+.psm-vf-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--psm-green);
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.psm-vf-corner--tl { top: 10px;    left: 10px;   border-top-width: 3px; border-left-width: 3px;   border-top-left-radius: 4px; }
+.psm-vf-corner--tr { top: 10px;    right: 10px;  border-top-width: 3px; border-right-width: 3px;  border-top-right-radius: 4px; }
+.psm-vf-corner--bl { bottom: 10px; left: 10px;   border-bottom-width: 3px; border-left-width: 3px;  border-bottom-left-radius: 4px; }
+.psm-vf-corner--br { bottom: 10px; right: 10px;  border-bottom-width: 3px; border-right-width: 3px; border-bottom-right-radius: 4px; }
+
+/* Keep existing circle class as an alias for backwards compat */
 .psm-capture-circle {
   width: 240px;
   height: 240px;
@@ -227,6 +290,29 @@
 .psm-btn--primary:hover:not(:disabled) {
   background: #0da872;
   box-shadow: 0 6px 24px rgba(16,185,129,.38);
+}
+
+/* Gradient scan button */
+.psm-btn--gradient {
+  background: linear-gradient(135deg, #10b981 0%, #059669 50%, #0d9488 100%);
+  color: #fff;
+  box-shadow:
+    0 4px 18px rgba(16,185,129,.35),
+    0 1px 0 rgba(255,255,255,0.18) inset;
+  width: 100%;
+  letter-spacing: 0.01em;
+}
+
+.psm-btn--gradient:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0da872 0%, #047857 50%, #0f766e 100%);
+  box-shadow:
+    0 6px 26px rgba(16,185,129,.45),
+    0 1px 0 rgba(255,255,255,0.18) inset;
+  transform: translateY(-1px);
+}
+
+.psm-btn--gradient:active {
+  transform: scale(0.97) translateY(0);
 }
 
 .psm-btn--success {
@@ -727,6 +813,32 @@ body.dark-mode .psm-close-btn:hover {
 
 body.dark-mode .psm-capture-circle {
   border-color: var(--psm-green);
+}
+
+body.dark-mode .psm-capture-body {
+  background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(16,185,129,0.08) 0%, transparent 70%);
+}
+
+body.dark-mode .psm-capture-glass-card {
+  background: rgba(14, 21, 40, 0.72);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
+body.dark-mode .psm-capture-viewfinder {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+body.dark-mode .psm-capture-viewfinder--filled {
+  border-color: var(--psm-green);
+  box-shadow:
+    0 0 0 4px rgba(16,185,129,0.14),
+    0 12px 40px rgba(16,185,129,.18),
+    inset 0 0 0 1px rgba(16,185,129,0.12);
 }
 
 body.dark-mode .psm-results {

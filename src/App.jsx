@@ -7,7 +7,7 @@ import './EnhancedAnimations.css';
 import RecipeNotification from './RecipeNotification';
 import AuthModal from './AuthModal';
 import SavedListsModal from './SavedListsModal';
-import SmartRouteMap, { FloatingMapButton } from './SmartRouteMap';
+import SmartRouteMap from './SmartRouteMap';
 import './SmartRouteMap.css';
 import { io } from 'socket.io-client';
 import { initCapacitor, initBackButton } from './capacitorInit';
@@ -30,6 +30,7 @@ import {
   IconLock, IconFingerprint, IconRefresh, IconHistory,
   IconEdit, IconBell, IconHome, IconBookmark, IconTag,
   IconCoin, IconTrendingDown, IconAlertTriangle,
+  IconMap, IconDots,
 } from '@tabler/icons-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -928,7 +929,12 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
   const swipeDir  = offsetX > 0 ? 'right' : 'left';
 
   return (
-    <li className={`item-card-wrapper ${dismissed ? 'dismissed' : ''}`} style={{ '--reveal': revealPct }}>
+    <li
+      className={`item-card-wrapper ${dismissed ? 'dismissed' : ''}`}
+      style={{ '--reveal': revealPct }}
+      tabIndex={0}
+      onKeyPress={(e) => { if (e.key === 'Enter') onToggleCheck(item.id); }}
+    >
 
       {/* ── Red glow layer (behind the card, full width) ── */}
       {swiping && revealPct > 0.02 && (
@@ -973,7 +979,7 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
 
       {/* ── The actual card ── */}
       <div
-        className={`item-card ${swiping ? 'swiping' : ''} ${item.isChecked ? 'item-checked' : ''}`}
+        className={`item-card card-lift ${swiping ? 'swiping' : ''} ${item.isChecked ? 'item-checked' : ''}`}
         style={{
           transform: `translateX(${offsetX}px) rotate(${offsetX * 0.018}deg)`,
           transformOrigin: offsetX > 0 ? 'right center' : 'left center',
@@ -4587,6 +4593,44 @@ export default function App() {
     }
   }, [activeTab, mealPlanLocked]);
 
+  // ── Sliding nav pill indicator ──────────────────────────────
+  useEffect(() => {
+    const nav = document.querySelector('.bottom-nav');
+    const pill = document.getElementById('nav-pill');
+    const activeBtn = nav?.querySelector('.bottom-nav-btn.active');
+    if (!nav || !pill || !activeBtn) return;
+    const navRect = nav.getBoundingClientRect();
+    const btnRect = activeBtn.getBoundingClientRect();
+    pill.style.setProperty('--pill-left', `${btnRect.left - navRect.left}px`);
+    pill.style.setProperty('--pill-width', `${btnRect.width}px`);
+  }, [activeTab]);
+
+  // ── Scroll-collapse nav (iOS 26 pattern) ───────────────────
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let ticking = false;
+    const THRESHOLD = 60; // px scrolled before hiding
+    const nav = document.querySelector('.bottom-nav');
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentY = window.scrollY;
+          const diff = currentY - lastY;
+          if (diff > 8 && currentY > THRESHOLD) {
+            nav?.classList.add('nav-hidden');
+          } else if (diff < -4) {
+            nav?.classList.remove('nav-hidden');
+          }
+          lastY = currentY;
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="app-wrapper">
@@ -4804,7 +4848,7 @@ export default function App() {
             <div className="datetime-display" style={{ maxWidth: '240px', margin: '0 auto' }}>
               <div className="current-date">{timeGreeting} {timeIcon}</div>
               <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'long', day:'numeric', month:'long' })}</div>
-              <div className="current-clock">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit' })}</div>
+              <div className="current-clock hero-time">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit', hourCycle:'h23' })}</div>
             </div>
 
 
@@ -4812,21 +4856,36 @@ export default function App() {
 
           {/* Τίτλος */}
           <h1 style={{ textAlign: 'center', marginTop: '12px', letterSpacing:'-0.5px', fontSize: '24px', fontWeight: 900, display:'flex', alignItems:'center', justifyContent:'center', gap: 6, marginBottom: '8px', fontFamily:'var(--font-display)' }}>
-            <span style={{ fontSize: '22px' }}>Έξυπνο</span>
-            <span style={{ background:"linear-gradient(135deg, var(--brand-primary), #a855f7)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", backgroundClip:"text" }}>
-              Καλαθάκι
-            </span>
+            <span style={{ fontSize: '22px', color: '#e2e8f0' }}>Έξυπνο</span>
+            <span className="hero-title-gradient">Καλαθάκι</span>
           </h1>
 
 
-          {/* Streak badge */}
+          {/* Streak badge + Savings progress */}
           {streak > 0 && (
-            <div className="streak-bar">
-              <span className="streak-flame">🔥</span>
-              <span className="streak-count">{streak}</span>
-              <span className="streak-label">{streak === 1 ? 'μέρα' : 'μέρες'} streak</span>
-              {isNewStreakRecord && streak >= 3 && (
-                <span className="streak-record-badge">Νέο ρεκόρ! 🏆</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <div className="streak-bar">
+                <span className="streak-flame">🔥</span>
+                <span className="streak-count">{streak}</span>
+                <span className="streak-label">{streak === 1 ? 'μέρα' : 'μέρες'} streak</span>
+                {isNewStreakRecord && streak >= 3 && (
+                  <span className="streak-record-badge">Νέο ρεκόρ! 🏆</span>
+                )}
+              </div>
+              {/* Gamified savings bar */}
+              {streak >= 2 && (
+                <div style={{ width: '100%', maxWidth: 220, textAlign: 'center' }}>
+                  <div className="savings-progress-bar">
+                    <div
+                      className="savings-progress-fill"
+                      style={{ width: `${Math.min((streak / 7) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <div className="savings-label">
+                    <span>🎯</span>
+                    <span>{streak < 7 ? `${7 - streak} μέρες μέχρι το επόμενο επίπεδο` : 'Μέγιστο επίπεδο! 🏆'}</span>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -4888,12 +4947,12 @@ export default function App() {
                 </div>
               )}
 
-              {/* Plate Macro Scanner button */}
+              {/* Meal Scanner button */}
               {user && (
                 <div
                   className="action-btn-new scanner-btn-header psm-header-btn"
                   onClick={() => setShowPlateScanner(true)}
-                  title="Macro Scanner — Σκάναρε το πιάτο σου"
+                  title="Meal Scanner — Σκάναρε το πιάτο σου"
                   style={{ fontSize: 18 }}
                 >
                   🍽️
@@ -5034,7 +5093,7 @@ export default function App() {
 
         {/* ════ LIST TAB ════ */}
         {activeTab === 'list' && (
-          <div className="tab-content list-tab">
+          <div key="list" className="tab-content list-tab page-enter">
             {/* Smart trial expiry banner */}
             {user?.isOnTrial && (user.trialDaysLeft || 0) <= 3 && (
               <div
@@ -5244,7 +5303,7 @@ export default function App() {
                     {isListening ? '🔴' : '🎤'}
                   </button>
                 )}
-                <button className="add-btn" onClick={() => user ? triggerSearch(inputValue, selectedStore) : addPlainItem()} title={user ? 'Αναζήτηση' : 'Προσθήκη'}>+</button>
+                <button className="add-btn press-scale" onClick={() => user ? triggerSearch(inputValue, selectedStore) : addPlainItem()} title={user ? 'Αναζήτηση' : 'Προσθήκη'}>+</button>
               </div>
 
               {/* ── Recent searches — shown when focused with empty input ── */}
@@ -5354,9 +5413,24 @@ export default function App() {
                       return (
                         <div
                           key={sug._id || idx}
-                          className={`suggestion-item${isBest ? ' suggestion-item-best' : ''}`}
+                          className={`suggestion-item tilt-card${isBest ? ' suggestion-item-best' : ''}`}
                           onClick={() => addFromSuggestion(sug)}
                           style={{ animationDelay: `${idx * 25}ms` }}
+                          onMouseMove={e => {
+                            const card = e.currentTarget;
+                            const rect = card.getBoundingClientRect();
+                            const x = (e.clientX - rect.left) / rect.width  - 0.5;
+                            const y = (e.clientY - rect.top)  / rect.height - 0.5;
+                            card.style.setProperty('--tilt-x', `${-y * 6}deg`);
+                            card.style.setProperty('--tilt-y', `${ x * 6}deg`);
+                            card.style.setProperty('--glare-x', `${(x + 0.5) * 100}%`);
+                            card.style.setProperty('--glare-y', `${(y + 0.5) * 100}%`);
+                          }}
+                          onMouseLeave={e => {
+                            const card = e.currentTarget;
+                            card.style.setProperty('--tilt-x', '0deg');
+                            card.style.setProperty('--tilt-y', '0deg');
+                          }}
                         >
                           <div className="sug-avatar" style={{ background: gradient }}>
                             <span className="sug-avatar-emoji">{emoji}</span>
@@ -5373,6 +5447,30 @@ export default function App() {
                           </div>
                           <div className="sug-price-col">
                             <strong className={`sug-price${isBest ? ' sug-price-best' : ''}`}>{sug.price?.toFixed(2)}€</strong>
+                            {/* Price comparison badges */}
+                            {(() => {
+                              const name = (sug.name || '').toLowerCase().trim();
+                              const allPrices = suggestions
+                                .filter(s => (s.name || '').toLowerCase().trim() === name && s.price)
+                                .map(s => ({ store: s.supermarket || '', price: parseFloat(s.price) }))
+                                .filter((s, i, arr) => arr.findIndex(x => x.store === s.store) === i)
+                                .sort((a, b) => a.price - b.price);
+                              if (allPrices.length < 2) return null;
+                              const bestPrice = allPrices[0].price;
+                              return (
+                                <div className="price-compare-row">
+                                  {allPrices.slice(0, 3).map((p, i) => (
+                                    <span
+                                      key={p.store}
+                                      className={`price-compare-badge ${p.price === bestPrice ? 'best-price' : 'other-price'}`}
+                                      style={{ '--badge-i': i }}
+                                    >
+                                      {p.store.charAt(0).toUpperCase()}{p.store.slice(1, 4)} {p.price.toFixed(2)}€
+                                    </span>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                             <div className="sug-add-btn">+</div>
                           </div>
                         </div>
@@ -5414,10 +5512,10 @@ export default function App() {
             )}
 
             {items.length === 0 ? (
-              <div className="empty-cart-state">
-                <span className="empty-cart-icon">🛒</span>
-                <h2 className="empty-cart-heading">Η λίστα είναι άδεια</h2>
-                <p style={{ marginBottom: 18 }}>
+              <div className="empty-cart-state list-empty-v4">
+                <span className="empty-state-icon empty-cart-icon list-empty-illustration" style={{ fontSize: '4rem', display: 'block', marginBottom: 16 }}>🛒</span>
+                <h2 className="empty-cart-heading list-empty-title">Η λίστα είναι άδεια</h2>
+                <p className="list-empty-desc" style={{ marginBottom: 18 }}>
                   {user
                     ? 'Αναζήτησε προϊόντα παραπάνω ή χρησιμοποίησε 🎤 για φωνητική εισαγωγή'
                     : 'Γράψε ό,τι χρειάζεσαι και πάτα + για να το προσθέσεις'}
@@ -5456,11 +5554,11 @@ export default function App() {
                 {!user && <button className="locked-unlock-btn" style={{ marginTop:'8px' }} onClick={() => setShowAuthModal(true)}>Σύνδεση για τιμές, συνταγές & άλλα</button>}
               </div>
             ) : (
-              <div className="categories-container">
+              <div className="categories-container stagger-list">
                 {Object.keys(groupedItems).sort().map(cat => (
                   <div key={cat} className="category-group">
                     <h2 className="category-title">{cat}</h2>
-                    <ul className="grocery-list">
+                    <ul className="grocery-list stagger-list">
                       {groupedItems[cat].map(item => (
                         <SwipeableItem key={item.id} item={item} onDelete={deleteItem} onSend={handleSendToFriend} onToggleCheck={toggleItemCheck} onChangeQty={changeItemQty} user={user} />
                       ))}
@@ -5474,7 +5572,7 @@ export default function App() {
 
         {/* ════ RECIPES TAB ════ */}
         {activeTab === 'recipes' && (
-          <div className="tab-content recipes-tab">
+          <div key="recipes" className="tab-content recipes-tab page-enter">
             <>
                 {!isOnline && (
                   <div className="offline-banner">
@@ -5909,7 +6007,7 @@ export default function App() {
 
         {/* ════ AI MEAL PLANNER TAB ════ */}
         {activeTab === 'mealplan' && (
-          <div className="tab-content">
+          <div key="mealplan" className="tab-content page-enter">
 
 
             {/* ── Quiz Header ── */}
@@ -6625,11 +6723,6 @@ export default function App() {
           <span className="ftb-premium-badge">⭐</span>
         )}
         {user && (
-          <div className="ftb-btn" onClick={() => setShowPlateScanner(true)} title="Macro Scanner — Σκάναρε το πιάτο σου">
-            <span style={{ fontSize: 18 }}>🍽️</span>
-          </div>
-        )}
-        {user && (
           <div className="ftb-btn" onClick={async () => {
             const { granted } = await requestCamera();
             if (granted) setShowScanner(true);
@@ -6723,7 +6816,7 @@ export default function App() {
                 { icon: '🍽️', label: 'AI Πλάνο',    tab: 'mealplan' },
                 { icon: '📋', label: 'Συνταγές',     tab: 'recipes' },
                 { icon: '📰', label: 'Φυλλάδια',     tab: 'brochures' },
-                { icon: '📷', label: 'Plate Scanner', tab: null, action: () => { setShowPlateScanner(true); setShowMoreMenu(false); } },
+                { icon: '🍽️', label: 'Meal Scanner', tab: null, action: () => { setShowPlateScanner(true); setShowMoreMenu(false); } },
                 { icon: '🛒', label: 'Σαρωτής',      tab: null, action: async () => { const { granted } = await requestCamera(); if (granted) setShowScanner(true); setShowMoreMenu(false); } },
                 { icon: '👥', label: 'Φίλοι',         tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowFriendsPanel(true); setShowMoreMenu(false); } },
                 { icon: '💬', label: 'Chat',           tab: null, action: () => { setShowChatPanel(true); setShowMoreMenu(false); } },
@@ -6751,40 +6844,46 @@ export default function App() {
       )}
 
       <nav className="bottom-nav">
-        {[
-          { id: 'list', icon: '🏠', label: 'Αρχική' },
-          { id: 'search', icon: '🔍', label: 'Αναζήτηση' },
-          { id: 'map', icon: '🗺️', label: 'Χάρτης' },
-        ].map(item => (
-          <button
-            key={item.id}
-            className={`bottom-nav-btn${activeTab === item.id ? ' active' : ''}`}
-            onClick={() => {
-              setActiveTab(item.id);
-              haptic.light();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              setShowMoreMenu(false);
-            }}
-            aria-label={item.label}
-          >
-            <span className="bottom-nav-icon">{item.icon}</span>
-            <span className="bottom-nav-label">{item.label}</span>
-          </button>
-        ))}
-
-        {/* Center add FAB */}
+        {/* Sliding pill indicator — JS positions it via CSS custom props */}
+        <div className="nav-pill-indicator" id="nav-pill" aria-hidden="true" />
+        {/* Home */}
         <button
-          className="bottom-nav-btn nav-tab-fab"
+          className={`bottom-nav-btn${activeTab === 'list' ? ' active' : ''}`}
+          onClick={() => { setActiveTab('list'); haptic.light(); window.scrollTo({ top: 0, behavior: 'smooth' }); setShowMoreMenu(false); }}
+          aria-label="Αρχική"
+        >
+          <IconHome size={22} stroke={1.8} />
+          <span className="bottom-nav-label">Αρχική</span>
+        </button>
+
+        {/* Search — stays on list tab, focuses the search input */}
+        <button
+          className="bottom-nav-btn"
           onClick={() => {
             setActiveTab('list');
             haptic.light();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
             setShowMoreMenu(false);
+            requestAnimationFrame(() => {
+              const el = document.querySelector('.search-input');
+              if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+            });
           }}
-          aria-label="Προσθήκη"
+          aria-label="Αναζήτηση"
         >
-          <span className="nav-fab-inner">+</span>
+          <IconSearch size={22} stroke={1.8} />
+          <span className="bottom-nav-label">Αναζήτηση</span>
         </button>
+
+        {/* Map — opens SmartRoute modal */}
+        <button
+          className="bottom-nav-btn"
+          onClick={() => { setActiveTab('list'); haptic.light(); setShowSmartRoute(true); setShowMoreMenu(false); }}
+          aria-label="Χάρτης"
+        >
+          <IconMap size={22} stroke={1.8} />
+          <span className="bottom-nav-label">Χάρτης</span>
+        </button>
+
 
         {/* More */}
         <button
@@ -6792,7 +6891,7 @@ export default function App() {
           onClick={() => setShowMoreMenu(m => !m)}
           aria-label="Περισσότερα"
         >
-          <span className="bottom-nav-icon">⋯</span>
+          <IconDots size={22} stroke={1.8} />
           <span className="bottom-nav-label">Περισσότερα</span>
         </button>
       </nav>
@@ -6824,29 +6923,7 @@ export default function App() {
         </>
       )}
 
-      {/* ── Χάρτης — only for Premium & Trial users ── */}
-      {user && (user.isPremium || user.isOnTrial) && <FloatingMapButton
-        onClick={async () => {
-          // #region agent log
-          debugLog({
-            runId: 'pre-repro',
-            hypothesisId: 'H1',
-            location: 'App.jsx:floatingMapButton',
-            message: 'Open SmartRoute overlay',
-            data: {
-              showAuthModal,
-              showListsModal,
-              showFriendsPanel,
-              showChatPanel,
-            },
-          });
-          // #endregion
-          // Request location permission before opening map
-          const { granted } = await requestLocation();
-          if (granted) setShowSmartRoute(true);
-        }}
-        itemCount={uniqueStoresInList}
-      />}
+      {/* SmartRoute map modal — opened via nav Map button */}
       {user && (user.isPremium || user.isOnTrial) && <SmartRouteMap
         isOpen={showSmartRoute}
         onClose={() => setShowSmartRoute(false)}
