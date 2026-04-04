@@ -4501,6 +4501,11 @@ export default function App() {
     const nav = navRef.current;
     if (!nav) return;
 
+    // Clear the CSS entrance animation fill (fill-mode:backwards still freezes during
+    // animation; once it ends the fill releases, but clearing it here ensures the inline
+    // style transform has full control from the moment the user first scrolls).
+    const animClear = setTimeout(() => { nav.style.animation = 'none'; }, 600);
+
     let offset    = 0;          // 0 = visible, NAV_H = fully hidden
     let lastScY   = window.scrollY;
     let tStartY   = 0;
@@ -4573,6 +4578,7 @@ export default function App() {
     window.addEventListener('touchcancel', onTouchEnd,    { passive: true });
 
     return () => {
+      clearTimeout(animClear);
       window.removeEventListener('scroll',      onScroll);
       window.removeEventListener('touchstart',  onTouchStart);
       window.removeEventListener('touchmove',   onTouchMove);
@@ -4695,31 +4701,15 @@ export default function App() {
     pill.style.setProperty('--pill-width', `${btnRect.width}px`);
   }, [activeTab]);
 
-  // ── Scroll-collapse nav (iOS 26 pattern) ───────────────────
+  // ── Body scroll lock — prevent background scroll when any modal is open ─────
   useEffect(() => {
-    let lastY = window.scrollY;
-    let ticking = false;
-    const THRESHOLD = 60; // px scrolled before hiding
-    const nav = document.querySelector('.bottom-nav');
-    const onScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const currentY = window.scrollY;
-          const diff = currentY - lastY;
-          if (diff > 8 && currentY > THRESHOLD) {
-            nav?.classList.add('nav-hidden');
-          } else if (diff < -4) {
-            nav?.classList.remove('nav-hidden');
-          }
-          lastY = currentY;
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    const anyOpen = showAuthModal || showPremiumModal || showListsModal || showScanner
+      || showPlateScanner || showSmartRoute || showFriendsPanel || showChatPanel
+      || showMoreMenu || showPremiumWelcome;
+    document.body.style.overflow = anyOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [showAuthModal, showPremiumModal, showListsModal, showScanner, showPlateScanner,
+      showSmartRoute, showFriendsPanel, showChatPanel, showMoreMenu, showPremiumWelcome]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -4955,13 +4945,13 @@ export default function App() {
           {user && (
             <div
               className="hero-status-pill"
-              onClick={!user.isPremium ? () => setShowPremiumModal(true) : undefined}
-              style={!user.isPremium ? { cursor:'pointer' } : {}}
+              onClick={!user.isRealPremium ? () => setShowPremiumModal(true) : undefined}
+              style={!user.isRealPremium ? { cursor:'pointer' } : {}}
             >
-              {user.isPremium ? (
+              {user.isRealPremium ? (
                 <><span className="hero-status-dot hero-status-dot--premium" />Premium ✦</>
               ) : user.isOnTrial ? (
-                <><span className="hero-status-dot hero-status-dot--trial" />{user.trialDaysLeft} {user.trialDaysLeft === 1 ? 'μέρα' : 'μέρες'} Trial απομένουν →</>
+                <><span className="hero-status-dot hero-status-dot--trial" />Trial · {user.trialDaysLeft} {user.trialDaysLeft === 1 ? 'μέρα' : 'μέρες'} →</>
               ) : (
                 <><span className="hero-status-dot hero-status-dot--free" />Free Plan · Αναβάθμιση →</>
               )}
@@ -5366,7 +5356,10 @@ export default function App() {
                     className={`store-chip ${selectedStore === store ? 'active' : ''}`}
                     onClick={() => { setSelectedStore(store); triggerSearch(inputValue, store); }}
                   >
-                    {store}
+                    {SUPERMARKET_LOGOS[store] ? (
+                      <img src={SUPERMARKET_LOGOS[store]} alt={store} className="store-chip-logo" onError={e => { e.currentTarget.style.display='none'; }} />
+                    ) : null}
+                    <span className="store-chip-label">{store === 'Όλα' ? '🏪 Όλα' : store}</span>
                   </button>
                 ))}
               </div>
@@ -5410,7 +5403,7 @@ export default function App() {
                     <button className="sug-clear" onClick={() => {
                       setRecentSearches([]);
                       try { localStorage.removeItem('sg_recent_searches'); } catch {}
-                    }}>Εκκαθάριση</button>
+                    }}><IconTrash size={13} stroke={2} /></button>
                   </div>
                   {recentSearches.map((term, i) => (
                     <div key={i} className="sug-recent-item" onClick={() => {
@@ -5528,8 +5521,18 @@ export default function App() {
                             card.style.setProperty('--tilt-y', '0deg');
                           }}
                         >
-                          <div className="sug-avatar" style={{ background: gradient }}>
-                            <span className="sug-avatar-emoji">{emoji}</span>
+                          <div className="sug-avatar" style={{ background: sug.image ? 'transparent' : gradient }}>
+                            {sug.image ? (
+                              <img
+                                src={sug.image}
+                                alt={sug.name}
+                                className="sug-avatar-img"
+                                loading="lazy"
+                                onError={e => { e.currentTarget.style.display='none'; e.currentTarget.parentElement.style.background=gradient; e.currentTarget.insertAdjacentHTML('afterend', `<span class="sug-avatar-emoji">${emoji}</span>`); }}
+                              />
+                            ) : (
+                              <span className="sug-avatar-emoji">{emoji}</span>
+                            )}
                           </div>
                           <div className="sug-info">
                             <span className="sug-name">{sug.name}</span>
@@ -6901,6 +6904,26 @@ export default function App() {
 
       {/* ── Floating Bottom Nav — lives OUTSIDE .container to avoid backdrop-filter stacking context ── */}
 
+      {/* ── Floating quick buttons above nav (Brochures + My Lists) ── */}
+      <div className="nav-float-actions">
+        <button
+          className="nav-float-btn"
+          onClick={() => { setActiveTab('brochures'); haptic.light(); setShowMoreMenu(false); window.scrollTo({ top:0, behavior:'smooth' }); }}
+          aria-label="Φυλλάδια"
+        >
+          <IconTag size={18} stroke={1.8} />
+          <span>Φυλλάδια</span>
+        </button>
+        <button
+          className="nav-float-btn"
+          onClick={() => { if (!user) { setShowAuthModal(true); return; } setShowListsModal(true); setShowMoreMenu(false); }}
+          aria-label="Λίστες μου"
+        >
+          <IconNotes size={18} stroke={1.8} />
+          <span>Λίστες μου</span>
+        </button>
+      </div>
+
       {/* More menu overlay */}
       {showMoreMenu && (
         <div className="more-overlay" onClick={() => setShowMoreMenu(false)}>
@@ -6939,61 +6962,94 @@ export default function App() {
       )}
 
       <nav className="bottom-nav" ref={navRef}>
-        {/* Sliding pill indicator — JS positions it via CSS custom props */}
+        {/* Sliding pill indicator */}
         <div className="nav-pill-indicator" id="nav-pill" aria-hidden="true" />
-        {/* Home */}
-        <button
-          className={`bottom-nav-btn${activeTab === 'list' ? ' active' : ''}`}
-          onClick={() => { setActiveTab('list'); haptic.light(); window.scrollTo({ top: 0, behavior: 'smooth' }); setShowMoreMenu(false); }}
-          aria-label="Αρχική"
-        >
-          <IconHome size={22} stroke={1.8} />
-          <span className="bottom-nav-label">Αρχική</span>
-        </button>
 
-        {/* Search — stays on list tab, focuses the search input */}
+        {/* Far Left: Meal Scanner */}
         <button
           className="bottom-nav-btn"
-          onClick={() => {
-            setActiveTab('list');
-            haptic.light();
-            setShowMoreMenu(false);
-            requestAnimationFrame(() => {
-              const el = document.querySelector('.search-input');
-              if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
-            });
-          }}
-          aria-label="Αναζήτηση"
+          onClick={() => { setShowPlateScanner(true); haptic.light(); setShowMoreMenu(false); }}
+          aria-label="Meal Scanner"
         >
-          <IconSearch size={22} stroke={1.8} />
-          <span className="bottom-nav-label">Αναζήτηση</span>
+          <div className="bottom-nav-icon"><IconScan size={22} stroke={1.8} /></div>
+          <span className="bottom-nav-label">Scanner</span>
         </button>
 
-        {/* Map — opens SmartRoute modal */}
+        {/* Left: Barcode */}
+        <button
+          className="bottom-nav-btn"
+          onClick={async () => { const { granted } = await requestCamera(); if (granted) setShowScanner(true); haptic.light(); setShowMoreMenu(false); }}
+          aria-label="Σαρωτής Barcode"
+        >
+          <div className="bottom-nav-icon"><IconQrcode size={22} stroke={1.8} /></div>
+          <span className="bottom-nav-label">Barcode</span>
+        </button>
+
+        {/* Left-center: Recipes */}
+        <button
+          className={`bottom-nav-btn${activeTab === 'recipes' ? ' active' : ''}`}
+          onClick={() => { setActiveTab('recipes'); haptic.light(); window.scrollTo({ top:0, behavior:'smooth' }); setShowMoreMenu(false); }}
+          aria-label="Συνταγές"
+        >
+          <div className="bottom-nav-icon"><IconChefHat size={22} stroke={1.8} /></div>
+          <span className="bottom-nav-label">Συνταγές</span>
+        </button>
+
+        {/* CENTER: Home */}
+        <button
+          className={`bottom-nav-btn nav-tab-fab${activeTab === 'list' ? ' active' : ''}`}
+          onClick={() => { setActiveTab('list'); haptic.light(); window.scrollTo({ top:0, behavior:'smooth' }); setShowMoreMenu(false); }}
+          aria-label="Αρχική"
+        >
+          <div className="nav-fab-inner">
+            <IconHome size={24} stroke={1.8} />
+          </div>
+          <span className="bottom-nav-label" style={{ marginTop: 6 }}>Αρχική</span>
+        </button>
+
+        {/* Right: Map */}
         <button
           className="bottom-nav-btn"
           onClick={() => {
             if (!user) { setShowAuthModal(true); return; }
-            setActiveTab('list');
             haptic.light();
             setShowSmartRoute(true);
             setShowMoreMenu(false);
           }}
           aria-label="Χάρτης"
         >
-          <IconMap size={22} stroke={1.8} />
+          <div className="bottom-nav-icon"><IconMap size={22} stroke={1.8} /></div>
           <span className="bottom-nav-label">Χάρτης</span>
         </button>
 
-
-        {/* More */}
+        {/* Right: Friends + Chat */}
         <button
-          className={`bottom-nav-btn${showMoreMenu ? ' active' : ''}`}
-          onClick={() => setShowMoreMenu(m => !m)}
-          aria-label="Περισσότερα"
+          className="bottom-nav-btn"
+          onClick={() => {
+            haptic.light();
+            if (!user) { setShowAuthModal(true); return; }
+            setShowFriendsPanel(true);
+            setShowMoreMenu(false);
+          }}
+          aria-label="Φίλοι"
         >
-          <IconDots size={22} stroke={1.8} />
-          <span className="bottom-nav-label">Περισσότερα</span>
+          <div className="bottom-nav-icon"><IconUsers size={22} stroke={1.8} /></div>
+          <span className="bottom-nav-label">Φίλοι</span>
+        </button>
+
+        {/* Far Right: Profile */}
+        <button
+          className="bottom-nav-btn"
+          onClick={() => {
+            haptic.light();
+            if (!user) { setShowAuthModal(true); return; }
+            setShowMoreMenu(false);
+            setShowProfileMenu(v => !v);
+          }}
+          aria-label="Προφίλ"
+        >
+          <div className="bottom-nav-icon"><IconUser size={22} stroke={1.8} /></div>
+          <span className="bottom-nav-label">Προφίλ</span>
         </button>
       </nav>
 

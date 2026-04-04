@@ -16,6 +16,8 @@
   z-index: 10000;
   animation: overlayIn 0.28s ease both;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @media (min-width: 600px) {
@@ -40,8 +42,9 @@
     0 -40px 80px rgba(0,0,0,.08);
   animation: sheetIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
   overflow: hidden;
-  max-height: 96dvh;
+  max-height: 90vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
 

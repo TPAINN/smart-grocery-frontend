@@ -512,6 +512,25 @@ body.dark-mode .dropdown-item.logout:hover { background: rgba(239,68,68,.1); }
   animation: fadeUp 0.45s var(--smooth) both;
 }
 
+/* Tab slide transitions */
+.tab-content {
+  animation: tabSlideIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tabSlideIn {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.tab-content.slide-left {
+  animation: tabSlideInLeft 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tabSlideInLeft {
+  from { opacity: 0; transform: translateX(-18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
 /* ── BUDGET BANNER ─────────────────────────────────────── */
 .budget-banner {
   background: linear-gradient(135deg, #0c1526 0%, #162035 50%, #0c1526 100%);
@@ -1284,6 +1303,24 @@ body.dark-mode .item-avatar { border-color: rgba(255,255,255,.08); box-shadow: 0
 
 /* ── RECIPES TAB ───────────────────────────────────────── */
 .recipes-tab { animation: fadeUp 0.35s var(--smooth) forwards; }
+
+.recipes-tab {
+  overflow-y: visible !important;
+  min-height: 0;
+}
+
+/* Fix recipe images not loading — ensure proper display */
+.recipe-card img, .daily-recipe-img {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+  background: var(--bg-surface);
+}
+
+.daily-recipe-img {
+  height: 140px;
+  border-radius: 16px 16px 0 0;
+}
 
 .fridge-ai-box {
   display: flex;
@@ -3494,6 +3531,14 @@ body.dark-mode .welcome-box {
   z-index: 10000;
   animation: overlayIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   padding: 20px;
+}
+
+/* Modal overlay: scroll trapped inside modal, not background */
+.modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 .modal-content {
@@ -6660,7 +6705,7 @@ html, body {
     0 1px 4px rgba(0, 0, 0, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 
-  animation: bottomNavIn 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  animation: bottomNavIn 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
   will-change: transform;
 }
 
@@ -6758,24 +6803,38 @@ body.dark-mode .bottom-nav {
 }
 
 /* Light mode overrides */
+body:not(.dark-mode) .bottom-nav {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(0, 0, 0, 0.09);
+}
+
 body:not(.dark-mode) .bottom-nav-btn {
-  color: rgba(10, 10, 10, 0.35);
+  color: rgba(10, 10, 10, 0.5);
 }
 
 body:not(.dark-mode) .bottom-nav-btn.active {
-  color: #5C67F5;
+  color: #4f46e5;
 }
 
 body:not(.dark-mode) .bottom-nav-btn.active svg {
-  filter: drop-shadow(0 0 6px rgba(92, 103, 245, 0.5));
+  color: #4f46e5;
+  filter: drop-shadow(0 0 6px rgba(79,70,229,0.4));
 }
 
 body:not(.dark-mode) .bottom-nav-btn.active .bottom-nav-label {
   color: #5C67F5;
 }
 
+body:not(.dark-mode) .bottom-nav-btn svg {
+  color: rgba(10, 10, 10, 0.5);
+}
+
 body:not(.dark-mode) .bottom-nav-btn:not(.active):hover {
   color: rgba(10, 10, 10, 0.6);
+}
+
+body:not(.dark-mode) .bottom-nav-btn:not(.active):hover svg {
+  color: rgba(10, 10, 10, 0.75);
 }
 
 /* Item count badge on icon */
@@ -8907,6 +8966,7 @@ body.dark-mode .current-clock {
   justify-content: center;
   padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   animation: overlayIn 0.22s ease both;
+  overflow: hidden;
 }
 
 @keyframes overlayIn {
@@ -8921,7 +8981,10 @@ body.dark-mode .current-clock {
   width: calc(100% - 32px);
   max-width: 420px;
   box-shadow: var(--shadow-2xl);
-  overflow: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: 80vh;
+  overscroll-behavior: contain;
   animation: sheetIn 0.35s var(--smooth) both;
   padding-bottom: 8px;
 }
@@ -10908,20 +10971,11 @@ input:focus-visible,
   transition: box-shadow 0.25s ease, border-color 0.2s ease !important;
 }
 
-/* ── Scroll-collapse nav (iOS 26 contextual collapse) ────────
-   Nav hides on scroll-down, reappears on scroll-up.
-   Uses JS to add/remove .nav-hidden class on .bottom-nav.
-   ─────────────────────────────────────────────────────────── */
+/* ── Scroll-collapse nav: JS controls transform directly via inline style ── */
 .bottom-nav {
   transition:
     transform 0.38s cubic-bezier(0.2, 0, 0, 1),
-    opacity   0.3s ease !important;
-}
-
-.bottom-nav.nav-hidden {
-  transform: translateX(-50%) translateY(120%) !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
+    opacity   0.3s ease;
 }
 
 /* ── Fly-to-cart animation ───────────────────────────────────
@@ -11333,13 +11387,7 @@ body.dark-mode::before {
 
 /* ── Bottom nav scroll collapse ── */
 .bottom-nav {
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
-}
-
-.bottom-nav.nav-hidden {
-  transform: translateX(-50%) translateY(120%) !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
+  transition: transform 0.38s cubic-bezier(0.2, 0, 0, 1), opacity 0.3s ease;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -11701,3 +11749,96 @@ body:not(.dark-mode) .glow-card-v2 {
 /* ═══ END PHASE 1 OVERHAUL ═══ */
 
 /* ═══ END OVERHAUL V3 ═══ */
+
+/* ═══════════════════════════════════════════════════════════
+   NEW NAV FLOATING ACTIONS (Brochures + My Lists)
+   ═══════════════════════════════════════════════════════════ */
+.nav-float-actions {
+  position: fixed;
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(480px, calc(100vw - 32px));
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 899;
+}
+
+.nav-float-btn {
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px 6px 10px;
+  background: rgba(15, 15, 25, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  letter-spacing: 0.01em;
+}
+
+.nav-float-btn:hover {
+  background: rgba(99,102,241,0.18);
+  border-color: rgba(99,102,241,0.3);
+  color: rgba(255,255,255,0.95);
+  transform: translateY(-2px) scale(1.04);
+}
+
+.nav-float-btn:active {
+  transform: scale(0.94) !important;
+}
+
+body:not(.dark-mode) .nav-float-btn {
+  background: rgba(255,255,255,0.88);
+  border-color: rgba(0,0,0,0.1);
+  color: rgba(10,10,10,0.7);
+}
+
+body:not(.dark-mode) .nav-float-btn:hover {
+  background: rgba(99,102,241,0.1);
+  border-color: rgba(99,102,241,0.25);
+  color: #4f46e5;
+}
+
+/* ── Store chip with logo ── */
+.store-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.store-chip-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.store-chip-label {
+  white-space: nowrap;
+}
+
+/* ── Search suggestion product image ── */
+.sug-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* ── Clear recent searches icon button ── */
+.sug-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+}
