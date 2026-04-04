@@ -6909,15 +6909,15 @@ export default function App() {
             <div className="more-grid-title">Εργαλεία</div>
             <div className="more-grid-items">
               {[
-                { icon: '🍽️', label: 'AI Πλάνο',    tab: 'mealplan' },
-                { icon: '📋', label: 'Συνταγές',     tab: 'recipes' },
-                { icon: '📰', label: 'Φυλλάδια',     tab: 'brochures' },
-                { icon: '🍽️', label: 'Meal Scanner', tab: null, action: () => { setShowPlateScanner(true); setShowMoreMenu(false); } },
-                { icon: '🛒', label: 'Σαρωτής',      tab: null, action: async () => { const { granted } = await requestCamera(); if (granted) setShowScanner(true); setShowMoreMenu(false); } },
-                { icon: '👥', label: 'Φίλοι',         tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowFriendsPanel(true); setShowMoreMenu(false); } },
-                { icon: '💬', label: 'Chat',           tab: null, action: () => { setShowChatPanel(true); setShowMoreMenu(false); } },
-                { icon: '📂', label: 'Λίστες μου',    tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowListsModal(true); setShowMoreMenu(false); } },
-                { icon: '👤', label: 'Προφίλ',        tab: null, action: () => { if (!user) { setShowAuthModal(true); setShowMoreMenu(false); } else { setShowMoreMenu(false); setShowProfileMenu(v => !v); } } },
+                { icon: <IconBrain size={22} stroke={1.8} />,         label: 'AI Πλάνο',    tab: 'mealplan' },
+                { icon: <IconChefHat size={22} stroke={1.8} />,       label: 'Συνταγές',    tab: 'recipes' },
+                { icon: <IconTag size={22} stroke={1.8} />,           label: 'Φυλλάδια',   tab: 'brochures' },
+                { icon: <IconScan size={22} stroke={1.8} />,          label: 'Meal Scanner', tab: null, action: () => { setShowPlateScanner(true); setShowMoreMenu(false); } },
+                { icon: <IconQrcode size={22} stroke={1.8} />,        label: 'Σαρωτής',    tab: null, action: async () => { const { granted } = await requestCamera(); if (granted) setShowScanner(true); setShowMoreMenu(false); } },
+                { icon: <IconUsers size={22} stroke={1.8} />,         label: 'Φίλοι',       tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowFriendsPanel(true); setShowMoreMenu(false); } },
+                { icon: <IconMessage size={22} stroke={1.8} />,       label: 'Chat',         tab: null, action: () => { setShowChatPanel(true); setShowMoreMenu(false); } },
+                { icon: <IconNotes size={22} stroke={1.8} />,         label: 'Λίστες μου',  tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowListsModal(true); setShowMoreMenu(false); } },
+                { icon: <IconUser size={22} stroke={1.8} />,          label: 'Προφίλ',      tab: null, action: () => { if (!user) { setShowAuthModal(true); setShowMoreMenu(false); } else { setShowMoreMenu(false); setShowProfileMenu(v => !v); } } },
               ].map(item => (
                 <GlowCard
                   key={item.label}
@@ -6972,7 +6972,13 @@ export default function App() {
         {/* Map — opens SmartRoute modal */}
         <button
           className="bottom-nav-btn"
-          onClick={() => { setActiveTab('list'); haptic.light(); setShowSmartRoute(true); setShowMoreMenu(false); }}
+          onClick={() => {
+            if (!user) { setShowAuthModal(true); return; }
+            setActiveTab('list');
+            haptic.light();
+            setShowSmartRoute(true);
+            setShowMoreMenu(false);
+          }}
           aria-label="Χάρτης"
         >
           <IconMap size={22} stroke={1.8} />
@@ -7019,7 +7025,7 @@ export default function App() {
       )}
 
       {/* SmartRoute map modal — opened via nav Map button */}
-      {user && (user.isPremium || user.isOnTrial) && <SmartRouteMap
+      {user && <SmartRouteMap
         isOpen={showSmartRoute}
         onClose={() => setShowSmartRoute(false)}
         items={items}
