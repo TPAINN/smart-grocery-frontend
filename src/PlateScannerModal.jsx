@@ -172,7 +172,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || `Σφάλμα διακομιστή (${res.status})`);
+        throw new Error(data.error || data.message || `Σφάλμα διακομιστή (${res.status})`);
       }
 
       const data = await res.json();
