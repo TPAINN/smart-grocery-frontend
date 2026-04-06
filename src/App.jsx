@@ -1624,7 +1624,7 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
         </div>
         <div className="welcome-features">
           {[
-            { icon:'💰', title:'Σύγκριση Τιμών',       sub:'Βρες το φθηνότερο σε ΑΒ, Σκλαβενίτη, MyMarket', locked:false },
+            { icon:'💰', title:'Σύγκριση Τιμών',       sub:'Βρες το φθηνότερο σε ΑΒ, Σκλαβενίτη, MyMarket και άλλα!', locked:false },
             { icon:'🍽️', title:'Συνταγές & Μακροστοιχεία', sub:'Υλικά απευθείας στη λίστα, θερμίδες & πρωτεΐνη', locked:true },
             { icon:'🤝', title:'Κοινό Καλάθι',         sub:'Μοιράσου τη λίστα με φίλους σε πραγματικό χρόνο', locked:true },
             { icon:'🤖', title:'AI Πλάνο Διατροφής',   sub:'Εβδομαδιαίο πλάνο διατροφής με AI', locked:true },
@@ -4515,14 +4515,17 @@ export default function App() {
     let snapTimer = null;
     const NAV_H   = () => nav.offsetHeight || 72;
 
+    let rafId = null;
     const apply = (o, animated = false) => {
-      const h = NAV_H();
-      offset = Math.max(0, Math.min(h, o));
-      nav.style.transition = animated
-        ? 'transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1)'
-        : 'none';
-      // Preserve the CSS translateX(-50%) centering while animating Y
-      nav.style.transform = `translateX(-50%) translateY(${offset}px)`;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const h = NAV_H();
+        offset = Math.max(0, Math.min(h, o));
+        nav.style.transition = animated
+          ? 'transform 0.42s cubic-bezier(0.16, 1, 0.3, 1)'
+          : 'none';
+        nav.style.transform = `translateX(-50%) translateY(${offset}px)`;
+      });
     };
 
     const snapTo = (target) => {
@@ -4584,6 +4587,7 @@ export default function App() {
       window.removeEventListener('touchmove',   onTouchMove);
       window.removeEventListener('touchend',    onTouchEnd);
       window.removeEventListener('touchcancel', onTouchEnd);
+      cancelAnimationFrame(rafId);
       clearTimeout(snapTimer);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -6972,7 +6976,7 @@ export default function App() {
           aria-label="Meal Scanner"
         >
           <div className="bottom-nav-icon"><IconScan size={22} stroke={1.8} /></div>
-          <span className="bottom-nav-label">Scanner</span>
+          <span className="bottom-nav-label">Scan</span>
         </button>
 
         {/* Left: Barcode */}
@@ -6982,7 +6986,7 @@ export default function App() {
           aria-label="Σαρωτής Barcode"
         >
           <div className="bottom-nav-icon"><IconQrcode size={22} stroke={1.8} /></div>
-          <span className="bottom-nav-label">Barcode</span>
+          <span className="bottom-nav-label">QR</span>
         </button>
 
         {/* Left-center: Recipes */}
@@ -7049,7 +7053,7 @@ export default function App() {
           aria-label="Προφίλ"
         >
           <div className="bottom-nav-icon"><IconUser size={22} stroke={1.8} /></div>
-          <span className="bottom-nav-label">Προφίλ</span>
+          <span className="bottom-nav-label">Εγώ</span>
         </button>
       </nav>
 

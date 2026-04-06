@@ -507,28 +507,14 @@ body.dark-mode .dropdown-item.logout:hover { background: rgba(239,68,68,.1); }
   font-size: 11px;
 }
 
-/* Smooth tab content entrance for a more premium feel */
+/* Tab content: smooth fade+lift entrance */
 .tab-content {
-  animation: fadeUp 0.45s var(--smooth) both;
+  animation: tabEnter 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Tab slide transitions */
-.tab-content {
-  animation: tabSlideIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes tabSlideIn {
-  from { opacity: 0; transform: translateX(18px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-.tab-content.slide-left {
-  animation: tabSlideInLeft 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes tabSlideInLeft {
-  from { opacity: 0; transform: translateX(-18px); }
-  to   { opacity: 1; transform: translateX(0); }
+@keyframes tabEnter {
+  from { opacity: 0; transform: translateY(12px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
 /* ── BUDGET BANNER ─────────────────────────────────────── */
@@ -4438,11 +4424,11 @@ button[title="Κλείσιμο"], button[title="Κλείσε"], button[aria-labe
 
 /* ── Tab content entry ────────────────────────────────────────────────── */
 .tab-content {
-  animation: tabEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  animation: tabEnter 0.36s cubic-bezier(0.16, 1, 0.3, 1) both !important;
 }
 @keyframes tabEnter {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(12px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
 }
 
 /* ── Submit/action buttons ────────────────────────────────────────────── */
@@ -6681,41 +6667,32 @@ html, body {
 
 .bottom-nav {
   position: fixed;
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 32px);
-  max-width: 468px;
+  width: calc(100vw - 20px);
+  max-width: 540px;
   z-index: 900;
 
   display: flex;
   align-items: center;
-  gap: 4px;
   padding: 6px;
+  gap: 2px;
 
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(32px) saturate(220%);
-  -webkit-backdrop-filter: blur(32px) saturate(220%);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 28px;
+  background: rgba(10, 10, 18, 0.88);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 32px;
 
   box-shadow:
-    0 8px 40px rgba(79, 70, 229, 0.12),
-    0 4px 16px rgba(0, 0, 0, 0.08),
-    0 1px 4px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 20px 60px rgba(0, 0, 0, 0.35),
+    0 6px 20px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
 
   animation: bottomNavIn 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
   will-change: transform;
-}
-
-body.dark-mode .bottom-nav {
-  background: rgba(13, 14, 23, 0.92);
-  border-color: rgba(255, 255, 255, 0.07);
-  box-shadow:
-    0 8px 40px rgba(79, 70, 229, 0.25),
-    0 4px 16px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 @keyframes bottomNavIn {
@@ -6729,41 +6706,45 @@ body.dark-mode .bottom-nav {
   }
 }
 
-/* ── Individual nav button — clean minimal design ── */
+/* ── Individual nav button ── */
 .bottom-nav-btn {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 6px 10px;
+  gap: 3px;
+  padding: 10px 2px 8px;
   border: none;
   background: transparent;
-  border-radius: 0;
+  border-radius: 26px;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.32);
   font-family: var(--font);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.2px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   position: relative;
+  z-index: 1;
   transition:
-    color 0.18s ease,
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color 0.22s ease,
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Active state — icon + label only, no box */
 .bottom-nav-btn.active {
   color: #fff;
 }
 
 .bottom-nav-btn.active svg {
-  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.7));
-  transform: scale(1.08) translateY(-1px);
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
+  transform: scale(1.1) translateY(-1px);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .bottom-nav-btn.active .bottom-nav-label {
@@ -6771,15 +6752,14 @@ body.dark-mode .bottom-nav {
   font-weight: 700;
 }
 
-/* Inactive hover */
 .bottom-nav-btn:not(.active):hover {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.55);
+  transform: translateY(-1px);
 }
 
-/* Press feedback */
 .bottom-nav-btn:active {
-  transform: scale(0.88) !important;
-  transition-duration: 0.08s !important;
+  transform: scale(0.86) !important;
+  transition-duration: 0.06s !important;
 }
 
 /* Icon wrapper */
@@ -6791,25 +6771,34 @@ body.dark-mode .bottom-nav {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Label — always visible, small */
+/* Label */
 .bottom-nav-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  opacity: 1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color 0.18s ease;
+  transition: color 0.18s ease, opacity 0.18s ease;
+  letter-spacing: 0.1px;
 }
 
 /* Light mode overrides */
 body:not(.dark-mode) .bottom-nav {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(0, 0, 0, 0.09);
+  background: rgba(250, 250, 252, 0.92);
+  border-color: rgba(0, 0, 0, 0.07);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.10),
+    0 6px 20px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
 }
 
 body:not(.dark-mode) .bottom-nav-btn {
-  color: rgba(10, 10, 10, 0.5);
+  color: rgba(10, 10, 20, 0.38);
 }
 
 body:not(.dark-mode) .bottom-nav-btn.active {
@@ -6818,23 +6807,19 @@ body:not(.dark-mode) .bottom-nav-btn.active {
 
 body:not(.dark-mode) .bottom-nav-btn.active svg {
   color: #4f46e5;
-  filter: drop-shadow(0 0 6px rgba(79,70,229,0.4));
+  filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.35));
 }
 
 body:not(.dark-mode) .bottom-nav-btn.active .bottom-nav-label {
-  color: #5C67F5;
+  color: #4f46e5;
 }
 
 body:not(.dark-mode) .bottom-nav-btn svg {
-  color: rgba(10, 10, 10, 0.5);
+  color: rgba(10, 10, 20, 0.38);
 }
 
 body:not(.dark-mode) .bottom-nav-btn:not(.active):hover {
-  color: rgba(10, 10, 10, 0.6);
-}
-
-body:not(.dark-mode) .bottom-nav-btn:not(.active):hover svg {
-  color: rgba(10, 10, 10, 0.75);
+  color: rgba(10, 10, 20, 0.65);
 }
 
 /* Item count badge on icon */
@@ -9067,44 +9052,57 @@ body.dark-mode .more-grid {
   background: var(--bg-container);
 }
 
-/* ── Center FAB in bottom nav ────────────────────────── */
+/* ── Center FAB Button ── */
 .bottom-nav-btn.nav-tab-fab {
   flex-shrink: 0;
   flex: 0 0 auto;
+  padding: 0 4px 8px;
 }
 
 .nav-fab-inner {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-  color: #fff;
-  font-size: 28px;
-  font-weight: 300;
+  width: 46px;
+  height: 40px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   box-shadow:
-    0 4px 16px rgba(37,99,235,.45),
-    0 0 0 3px var(--bg-app),
-    var(--glow-accent);
+    0 4px 16px rgba(99, 102, 241, 0.5),
+    0 8px 32px rgba(99, 102, 241, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  color: #fff;
   transition:
-    transform var(--dur-normal) var(--spring),
-    box-shadow var(--dur-normal) var(--ease);
-  line-height: 1;
-  margin-top: -22px;
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.22s ease;
+  position: relative;
+  overflow: hidden;
 }
 
+.nav-fab-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 60%);
+  border-radius: inherit;
+}
+
+.bottom-nav-btn.nav-tab-fab.active .nav-fab-inner,
 .bottom-nav-btn.nav-tab-fab:hover .nav-fab-inner {
-  transform: scale(1.1);
+  transform: scale(1.06) translateY(-2px);
   box-shadow:
-    0 8px 28px rgba(37,99,235,.55),
-    0 0 0 3px var(--bg-app),
-    var(--glow-accent);
+    0 8px 28px rgba(99, 102, 241, 0.65),
+    0 12px 40px rgba(99, 102, 241, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .bottom-nav-btn.nav-tab-fab:active .nav-fab-inner {
   transform: scale(0.9) !important;
+  transition-duration: 0.07s !important;
+}
+
+body:not(.dark-mode) .nav-fab-inner {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
 }
 
 /* ════════════════════════════════════════════════════════
@@ -10342,12 +10340,6 @@ body.dark-mode .more-grid {
   0%, 100% { box-shadow: 0 6px 24px rgba(124,58,237,0.5), 0 0 0 0 rgba(124,58,237,0.3); }
   50%       { box-shadow: 0 8px 32px rgba(124,58,237,0.65), 0 0 0 6px rgba(124,58,237,0); }
 }
-.nav-fab-inner {
-  animation: fabPulse 2.5s ease-in-out infinite;
-}
-.bottom-nav-btn.nav-tab-fab:hover .nav-fab-inner {
-  animation: none !important;
-}
 
 /* ── 7. Grocery List Suggestion Chips ────────────────── */
 .list-suggestions .sug-chip,
@@ -10461,10 +10453,6 @@ body.dark-mode .app-wrapper::before {
   position: relative;
   z-index: 1;
 }
-.bottom-nav {
-  z-index: 900 !important;
-}
-
 /* ── 2. GAMIFIED STREAK & SAVINGS DASHBOARD ──────────────────
    Enhanced hero header with animated savings bar, streak ring,
    and level-up progress. Inspired by Duolingo + Revolut.
@@ -10730,17 +10718,12 @@ body.dark-mode .app-wrapper::before {
    The pill squishes and stretches as it moves (liquid feel).
    ─────────────────────────────────────────────────────────── */
 
-/* Bottom nav position context */
-.bottom-nav {
-  position: fixed !important;
-}
-
 /* The sliding indicator pill (sibling of buttons, positioned absolute) */
 .nav-pill-indicator {
   position: absolute;
   top: 6px;
   height: calc(100% - 12px);
-  background: linear-gradient(135deg, #4338ca, #6d28d9, #7c3aed);
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #a855f7 100%);
   background-size: 200% 200%;
   border-radius: 22px;
   pointer-events: none;
@@ -10754,8 +10737,8 @@ body.dark-mode .app-wrapper::before {
   left: var(--pill-left, 6px);
   width: var(--pill-width, 120px);
   transition:
-    left  0.45s cubic-bezier(0.34, 1.4, 0.64, 1),
-    width 0.4s  cubic-bezier(0.34, 1.4, 0.64, 1);
+    left  0.5s  cubic-bezier(0.34, 1.3, 0.64, 1),
+    width 0.45s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 @keyframes pillShimmer {
@@ -10971,12 +10954,6 @@ input:focus-visible,
   transition: box-shadow 0.25s ease, border-color 0.2s ease !important;
 }
 
-/* ── Scroll-collapse nav: JS controls transform directly via inline style ── */
-.bottom-nav {
-  transition:
-    transform 0.38s cubic-bezier(0.2, 0, 0, 1),
-    opacity   0.3s ease;
-}
 
 /* ── Fly-to-cart animation ───────────────────────────────────
    Item icon "flies" to cart when added. Uses a portal element.
@@ -11085,85 +11062,6 @@ body.dark-mode .more-grid-item.active {
   line-height: 1.2;
 }
 
-/* ── Bottom nav — remove + FAB dead space, 4-button layout ── */
-.bottom-nav {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-around !important;
-  padding: 8px 16px 10px !important;
-  gap: 0 !important;
-}
-
-/* Remove any nav-tab-fab remnants */
-.nav-tab-fab {
-  display: none !important;
-}
-.nav-fab-inner {
-  display: none !important;
-}
-
-/* ── Bottom nav buttons - icon-first, clean look ── */
-.bottom-nav-btn {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 3px !important;
-  padding: 8px 20px !important;
-  border-radius: 16px !important;
-  border: none !important;
-  background: transparent !important;
-  color: rgba(255,255,255,0.45) !important;
-  cursor: pointer !important;
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-  min-width: 64px !important;
-  position: relative !important;
-}
-
-.bottom-nav-btn svg {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
-}
-
-.bottom-nav-btn:active svg {
-  transform: scale(0.85) !important;
-}
-
-.bottom-nav-btn.active {
-  color: #fff !important;
-}
-
-.bottom-nav-btn.active svg {
-  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8));
-  transform: scale(1.12) translateY(-1px);
-}
-
-.bottom-nav-btn.active .bottom-nav-label {
-  color: #c4b5fd !important;
-  font-weight: 700 !important;
-}
-
-.bottom-nav-label {
-  font-size: 10px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.3px !important;
-  color: inherit !important;
-  transition: color 0.2s ease !important;
-}
-
-/* ── Nav pill indicator - refined ── */
-.nav-pill-indicator {
-  position: absolute !important;
-  bottom: 6px !important;
-  height: 3px !important;
-  border-radius: 2px !important;
-  background: linear-gradient(90deg, #8b5cf6, #ec4899) !important;
-  transition: left 0.45s cubic-bezier(0.34, 1.4, 0.64, 1), width 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) !important;
-  left: var(--pill-left, 0px) !important;
-  width: var(--pill-width, 0px) !important;
-  opacity: 0.9 !important;
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.6) !important;
-}
-
 /* ── Professional card entrance animations ── */
 @keyframes cardRiseIn {
   from { opacity: 0; transform: translateY(20px) scale(0.97); }
@@ -11178,10 +11076,6 @@ body.dark-mode .more-grid-item.active {
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.92); }
   to   { opacity: 1; transform: scale(1); }
-}
-
-.tab-content {
-  animation: cardRiseIn 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) both !important;
 }
 
 /* ── Hero card polish ── */
@@ -11385,10 +11279,6 @@ body.dark-mode::before {
   transform: translateY(-2px);
 }
 
-/* ── Bottom nav scroll collapse ── */
-.bottom-nav {
-  transition: transform 0.38s cubic-bezier(0.2, 0, 0, 1), opacity 0.3s ease;
-}
 
 /* ═══════════════════════════════════════════════════════════════
    PHASE 1 — PREMIUM OVERHAUL (Linear/Vercel Light + Dark)
@@ -11565,33 +11455,6 @@ body:not(.dark-mode) .hero-status-pill {
   transform: scale(0.92) !important;
 }
 
-/* ── Bottom Nav — light mode contrast fix ── */
-body:not(.dark-mode) .bottom-nav {
-  background: rgba(245,245,243,0.92) !important;
-  border: 1px solid rgba(0,0,0,0.06) !important;
-  box-shadow: 0 -1px 0 rgba(0,0,0,0.04), 0 -8px 24px rgba(0,0,0,0.06) !important;
-}
-
-body:not(.dark-mode) .bottom-nav-btn {
-  color: rgba(10,10,10,0.40) !important;
-}
-
-body:not(.dark-mode) .bottom-nav-btn.active {
-  color: #5C67F5 !important;
-}
-
-body:not(.dark-mode) .bottom-nav-btn.active svg {
-  filter: drop-shadow(0 0 6px rgba(92,103,245,0.5)) !important;
-}
-
-body:not(.dark-mode) .bottom-nav-btn.active .bottom-nav-label {
-  color: #5C67F5 !important;
-}
-
-body:not(.dark-mode) .nav-pill-indicator {
-  background: linear-gradient(90deg, #5C67F5, #a855f7) !important;
-  box-shadow: 0 0 8px rgba(92,103,245,0.5) !important;
-}
 
 /* ── Cards — light mode polish ── */
 body:not(.dark-mode) .hero-card {
@@ -11753,16 +11616,19 @@ body:not(.dark-mode) .glow-card-v2 {
 /* ═══════════════════════════════════════════════════════════
    NEW NAV FLOATING ACTIONS (Brochures + My Lists)
    ═══════════════════════════════════════════════════════════ */
+/* ── Floating quick-access pills above nav ── */
 .nav-float-actions {
   position: fixed;
-  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
-  width: min(480px, calc(100vw - 32px));
+  width: calc(100vw - 20px);
+  max-width: 540px;
   display: flex;
   justify-content: space-between;
   pointer-events: none;
   z-index: 899;
+  padding: 0 4px;
 }
 
 .nav-float-btn {
@@ -11770,40 +11636,44 @@ body:not(.dark-mode) .glow-card-v2 {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 12px 6px 10px;
-  background: rgba(15, 15, 25, 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.09);
-  border-radius: 20px;
+  padding: 7px 13px 7px 10px;
+  background: rgba(10, 10, 18, 0.75);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255, 255, 255, 0.65);
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1);
+  transition: all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
   letter-spacing: 0.01em;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
 }
 
 .nav-float-btn:hover {
-  background: rgba(99,102,241,0.18);
-  border-color: rgba(99,102,241,0.3);
-  color: rgba(255,255,255,0.95);
-  transform: translateY(-2px) scale(1.04);
+  background: rgba(79, 70, 229, 0.2);
+  border-color: rgba(99, 102, 241, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 8px 24px rgba(99,102,241,0.25);
 }
 
 .nav-float-btn:active {
-  transform: scale(0.94) !important;
+  transform: scale(0.93) !important;
+  transition-duration: 0.08s !important;
 }
 
-body:not(.dark-mode) .nav-float-btn {
-  background: rgba(255,255,255,0.88);
-  border-color: rgba(0,0,0,0.1);
-  color: rgba(10,10,10,0.7);
+body:not(.dark-mode) .nav-float-actions .nav-float-btn {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: rgba(10, 10, 20, 0.6);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
 
 body:not(.dark-mode) .nav-float-btn:hover {
-  background: rgba(99,102,241,0.1);
-  border-color: rgba(99,102,241,0.25);
+  background: rgba(79, 70, 229, 0.08);
+  border-color: rgba(79, 70, 229, 0.2);
   color: #4f46e5;
 }
 
@@ -11842,3 +11712,152 @@ body:not(.dark-mode) .nav-float-btn:hover {
   padding: 4px;
   border-radius: 6px;
 }
+
+/* ══════════════════════════════════════════════════════════
+   GLOBAL POLISH — Micro-animations & Premium Feel
+   ══════════════════════════════════════════════════════════ */
+
+/* Smooth focus ring on all interactive elements */
+*:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Hero section smooth hover on cards */
+.hero-shell,
+.recipe-card-v2,
+.grocery-item {
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.22s ease;
+}
+
+/* Container fade in */
+.container {
+  animation: containerFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes containerFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Smooth all buttons */
+button {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.18s ease,
+              box-shadow 0.18s ease,
+              color 0.15s ease !important;
+}
+
+/* Submit/action buttons */
+.submit-btn:not(:disabled):hover,
+.scanner-btn:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+/* List items entrance */
+.grocery-item {
+  animation: itemSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes itemSlideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Store chip active state sparkle */
+.store-chip.active {
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* Input focus glow */
+.search-input:focus,
+.auth-form input:focus,
+.recipe-search-input:focus {
+  box-shadow:
+    0 0 0 3px rgba(99, 102, 241, 0.15),
+    0 4px 16px rgba(99, 102, 241, 0.08) !important;
+  transform: none !important;
+}
+
+/* Suggestion dropdown entrance */
+.suggestions-dropdown {
+  animation: dropIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Dynamic island style toasts */
+.di-wrapper {
+  filter: drop-shadow(0 8px 32px rgba(0,0,0,0.25));
+}
+
+/* Recipe card image skeleton */
+.recipe-card-v2 img:not([src]) {
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-surface-hover) 50%, var(--bg-surface) 75%);
+  background-size: 400%;
+  animation: waveShimmer 1.6s ease infinite;
+}
+
+/* Smooth page background */
+body {
+  transition: background-color 0.4s ease !important;
+}
+
+/* Profile dropdown entrance */
+.profile-dropdown {
+  animation: dropIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* More overlay backdrop */
+.more-overlay {
+  animation: overlayFadeIn 0.2s ease both;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* More grid slide up */
+.more-grid {
+  animation: moreGridIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes moreGridIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* GlowCard hover */
+.gcard {
+  transition:
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.22s ease !important;
+}
+
+/* Smooth scroll for all scrollable areas */
+* {
+  scroll-behavior: smooth;
+}
+
+/* Action button row animations */
+.header-actions-row {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both 0.1s;
+}
+
+/* Hero title entrance */
+.hero-title {
+  animation: heroIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both 0.05s;
+}
+
+@keyframes heroIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── END GLOBAL POLISH ── */
