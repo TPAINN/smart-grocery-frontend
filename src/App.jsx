@@ -20,6 +20,7 @@ import ScrollReveal from './ScrollReveal';
 import PremiumWelcomeModal from './PremiumWelcomeModal';
 import PlateScannerModal from './PlateScannerModal';
 import LazyImage from './LazyImage';
+import SplitText from './SplitText';
 import { useHapticFeedback } from './useHapticFeedback';
 import { API_BASE, ENABLE_KEEPALIVE } from './config';
 import {
@@ -33,7 +34,7 @@ import {
   IconLock, IconFingerprint, IconRefresh, IconHistory,
   IconEdit, IconBell, IconHome, IconBookmark, IconTag,
   IconCoin, IconTrendingDown, IconAlertTriangle,
-  IconMap, IconDots, IconMicrophone,
+  IconMap, IconMicrophone,
 } from '@tabler/icons-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -116,6 +117,13 @@ const useKeepAlive = () => {
 // ── Text helpers ──────────────────────────────────────────────────────────────
 const normalizeText = (text) =>
   text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+const toAbsoluteMediaUrl = (src) => {
+  if (!src || typeof src !== 'string') return '';
+  if (/^(https?:|data:|blob:)/i.test(src)) return src;
+  const base = (API_BASE || '').replace(/\/+$/, '');
+  return src.startsWith('/') ? `${base}${src}` : `${base}/${src}`;
+};
 
 const greeklishToGreek = (text) => {
   let el = text.toLowerCase();
@@ -1010,14 +1018,16 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
           {item.isChecked && <span style={{ fontSize:11, lineHeight:1 }}>✓</span>}
         </button>
 
-        {/* ── Product avatar (image or category emoji) ── */}
+        {/* ── Product avatar (real image or clean initial fallback) ── */}
         <div className="item-avatar" style={{ opacity: item.isChecked ? 0.45 : 1, transition:'opacity 0.2s' }}>
           {item.imageUrl
-            ? <img src={item.imageUrl} alt="" className="item-avatar-img" loading="lazy"/>
-            : <div className="item-avatar-emoji" style={{ background: getCatGradient(item.category) }}>
-                <span style={{ filter:'drop-shadow(0 1px 2px rgba(0,0,0,.25))' }}>{getCatEmoji(item.category)}</span>
-              </div>
+            ? <img src={item.imageUrl} alt={item.text} className="item-avatar-img" loading="lazy" onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextSibling.style.display='flex'; }}/>
+            : null
           }
+          {/* Subtle initial fallback, shown if no image or image fails to load */}
+          <div className="item-avatar-fallback" style={{ display: item.imageUrl ? 'none' : 'flex' }}>
+            <span className="item-avatar-initial">{item.text.charAt(0).toUpperCase()}</span>
+          </div>
         </div>
 
         <div className="item-content" style={{ opacity: item.isChecked ? 0.45 : 1, transition:'opacity 0.2s' }}>
@@ -1304,103 +1314,62 @@ function AddFriendModal({ isOpen, onAdd, onClose }) {
 // ─── Friends Panel (slide-in από δεξιά) ──────────────────────────────────────
 function FriendsPanel({ friends, myShareKey, onCopyKey, onAddFriend, onRemoveFriend, onClose }) {
   return (
-    <div style={{
-      position:'fixed', top:0, right:0, bottom:0, zIndex:300,
-      width:'min(320px, 92vw)',
-      background:'var(--bg-card)',
-      borderLeft:'1px solid var(--border-light)',
-      boxShadow:'-12px 0 40px rgba(0,0,0,0.3)',
-      display:'flex', flexDirection:'column',
-      animation:'slideInRight 0.25s cubic-bezier(0.34,1.56,0.64,1)',
-    }}>
-      {/* Header */}
-      <div style={{ padding:'20px 20px 16px', borderBottom:'1px solid var(--border-light)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+    <div className="friends-popup-card">
+      <div className="friends-popup-header">
         <div>
-          <h3 style={{ margin:0, fontSize:16, fontWeight:800 }}>Κοινό Καλάθι</h3>
-          <p style={{ margin:'4px 0 0', fontSize:11, color:'var(--text-secondary)' }}>{friends.length} συνδεδεμένοι φίλοι</p>
+          <p className="friends-popup-kicker">Κοινό Καλάθι</p>
+          <h3 className="friends-popup-title">Φίλοι & shared carts</h3>
+          <p className="friends-popup-subtitle">{friends.length} συνδεδεμένοι φίλοι</p>
         </div>
-        <button onClick={onClose} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-light)', borderRadius:10, padding:'8px 10px', cursor:'pointer', fontSize:16, color:'var(--text-primary)' }}>✕</button>
+        <button className="friends-popup-close" onClick={onClose} aria-label="Κλείσιμο">✕</button>
       </div>
 
-      {/* My share key */}
-      <div style={{ padding:'14px 20px', borderBottom:'1px solid var(--border-light)', background:'var(--bg-surface)' }}>
-        <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Το Share Key μου</div>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <div style={{
-            flex:1, fontWeight:800, fontSize:16, letterSpacing:3,
-            color:'#a78bfa', background:'rgba(167,139,250,0.08)',
-            border:'1px solid rgba(167,139,250,0.2)',
-            borderRadius:10, padding:'10px 14px', fontFamily:'monospace',
-          }}>
-            {myShareKey || '—'}
-          </div>
-          <button
-            onClick={onCopyKey}
-            style={{ background:'var(--bg-subtle)', border:'1px solid var(--border-light)', borderRadius:10, padding:'10px 12px', cursor:'pointer', fontSize:15, transition:'transform 0.1s' }}
-            onMouseDown={e => e.currentTarget.style.transform = 'scale(0.9)'}
-            onMouseUp={e => e.currentTarget.style.transform = ''}
-          >📋</button>
+      <div className="friends-popup-share">
+        <div className="friends-popup-share-label">Το Share Key μου</div>
+        <div className="friends-popup-share-row">
+          <div className="friends-popup-share-code">{myShareKey || '—'}</div>
+          <button className="friends-popup-copy" onClick={onCopyKey}>📋</button>
         </div>
-        <div style={{ fontSize:11, color:'var(--text-secondary)', marginTop:6 }}>Δώσε αυτόν τον κωδικό στους φίλους σου</div>
+        <div className="friends-popup-share-note">Στείλε τον κωδικό σου και σύνδεσε τα καλάθια σας.</div>
       </div>
 
-      {/* Friends list */}
-      <div style={{ flex:1, overflowY:'auto', padding:'12px 20px' }}>
+      <div className="friends-popup-list">
         {friends.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'40px 20px', color:'var(--text-secondary)' }}>
-            <div style={{ fontSize:40, marginBottom:12 }}>👥</div>
-            <div style={{ fontWeight:600, marginBottom:6 }}>Δεν έχεις φίλους ακόμα</div>
-            <div style={{ fontSize:12 }}>Πάτα "Προσθήκη" παρακάτω και βάλε το Share Key τους</div>
+          <div className="friends-empty-state">
+            <div className="friends-empty-icon">👥</div>
+            <div className="friends-empty-title">Δεν έχεις φίλους ακόμα</div>
+            <div className="friends-empty-copy">Πρόσθεσε το πρώτο share key για να ξεκινήσει το κοινό καλάθι.</div>
           </div>
         ) : (
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {friends.map(friend => (
-              <div key={friend.shareKey} style={{
-                display:'flex', alignItems:'center', gap:12,
-                background:'var(--bg-surface)', border:'1px solid var(--border-light)',
-                borderRadius:14, padding:'12px 14px',
-              }}>
-                <div style={{
-                  width:44, height:44, borderRadius:'50%', flexShrink:0,
+          friends.map(friend => (
+            <div key={friend.shareKey} className="friends-popup-item">
+              <div
+                className="friends-popup-avatar"
+                style={{
                   background: getAvatarColor(friend.shareKey),
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  color:'#fff', fontWeight:800, fontSize:16,
-                  boxShadow:`0 4px 12px ${getAvatarColor(friend.shareKey)}44`,
-                }}>
-                  {getInitials(friend.username)}
-                </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontWeight:700, fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                    {friend.username}
-                  </div>
-                  <div style={{ fontSize:11, color:'var(--text-secondary)', letterSpacing:1, marginTop:2 }}>
-                    #{friend.shareKey}
-                  </div>
-                </div>
-                <button
-                  onClick={() => onRemoveFriend(friend.shareKey)}
-                  style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.15)', borderRadius:8, padding:'6px 8px', cursor:'pointer', fontSize:13, color:'#ef4444' }}
-                  title="Αφαίρεση"
-                >✕</button>
+                  boxShadow: `0 12px 24px ${getAvatarColor(friend.shareKey)}33`,
+                }}
+              >
+                {getInitials(friend.username)}
               </div>
-            ))}
-          </div>
+              <div className="friends-popup-meta">
+                <div className="friends-popup-name">{friend.username}</div>
+                <div className="friends-popup-key">#{friend.shareKey}</div>
+              </div>
+              <button
+                className="friends-popup-remove"
+                onClick={() => onRemoveFriend(friend.shareKey)}
+                title="Αφαίρεση"
+              >
+                ✕
+              </button>
+            </div>
+          ))
         )}
       </div>
 
-      {/* Add friend button */}
-      <div style={{ padding:'16px 20px', borderTop:'1px solid var(--border-light)' }}>
-        <button
-          onClick={onAddFriend}
-          style={{
-            width:'100%', padding:'14px', borderRadius:14,
-            border:'1.5px dashed rgba(124,58,237,0.4)',
-            background:'rgba(124,58,237,0.06)', color:'#a78bfa',
-            fontWeight:700, fontSize:14, cursor:'pointer', transition:'background 0.15s, border-color 0.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.12)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,0.6)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.06)'; e.currentTarget.style.borderColor = 'rgba(124,58,237,0.4)'; }}
-        >
+      <div className="friends-popup-footer">
+        <button className="friends-popup-add" onClick={onAddFriend}>
           ➕ Προσθήκη Φίλου
         </button>
       </div>
@@ -1809,6 +1778,8 @@ function IngredientDetailModal({ item, onClose }) {
     unknown: { bg:'rgba(148,163,184,0.08)',border:'rgba(148,163,184,0.3)',color:'#94a3b8', label:'Άγνωστο' },
   };
   const c = safetyColors[item.safety] || safetyColors.unknown;
+  const heroImage = toAbsoluteMediaUrl(recipe.image || recipe.thumbnail);
+
   return createPortal(
     <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && onClose()} style={{ zIndex:110000 }}>
       <div className="modal-content" style={{ maxWidth:340, animation:'popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both' }} onClick={e => e.stopPropagation()}>
@@ -2913,8 +2884,8 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
           {isFavorite ? '❤️' : '🤍'}
         </button>
 
-        {recipe.image ? (
-          <div className="recipe-popup-hero" style={{ backgroundImage: `url(${recipe.image})` }}>
+        {heroImage ? (
+          <div className="recipe-popup-hero" style={{ backgroundImage: `url(${heroImage})` }}>
             <div className="recipe-popup-hero-overlay">
               <div style={{ display:'flex', gap:6, marginBottom:8, flexWrap:'wrap' }}>
                 {recipe.cuisine && recipe.cuisine !== 'Διεθνής' && (
@@ -3331,6 +3302,111 @@ export default function App() {
     const token = localStorage.getItem('smart_grocery_token');
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
+
+  const closeOverlaySurfaces = useCallback((keep = '') => {
+    if (keep !== 'profile') setShowProfileMenu(false);
+    if (keep !== 'lists') setShowListsModal(false);
+    if (keep !== 'friends') setShowFriendsPanel(false);
+    if (keep !== 'add-friend') setShowAddFriendModal(false);
+    if (keep !== 'friend-picker') setFriendPicker({ open: false, item: null });
+    if (keep !== 'chat') setShowChatPanel(false);
+    if (keep !== 'scanner') setShowScanner(false);
+    if (keep !== 'plate-scanner') setShowPlateScanner(false);
+    if (keep !== 'map') setShowSmartRoute(false);
+    if (keep !== 'premium') setShowPremiumModal(false);
+    if (keep !== 'more') setShowMoreMenu(false);
+    if (keep !== 'feedback') setShowFeedbackModal(false);
+    if (keep !== 'recipe') setExpandedRecipe(null);
+    if (keep !== 'mealdb-recipe') setSelectedMealDbRecipe(null);
+  }, []);
+
+  const openAuthWall = useCallback((mode = 'login') => {
+    closeOverlaySurfaces();
+    setAuthInitMode(mode);
+    setShowAuthModal(true);
+  }, [closeOverlaySurfaces]);
+
+  const navigateToTab = useCallback((tab) => {
+    closeOverlaySurfaces();
+    setActiveTab(tab);
+    haptic.light();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [closeOverlaySurfaces, haptic]);
+
+  const toggleProfileMenu = useCallback(() => {
+    if (!user) {
+      openAuthWall('login');
+      return;
+    }
+    const next = !showProfileMenu;
+    closeOverlaySurfaces(next ? 'profile' : '');
+    setShowProfileMenu(next);
+    haptic.light();
+  }, [user, showProfileMenu, closeOverlaySurfaces, openAuthWall, haptic]);
+
+  const openFriendsPopup = useCallback(() => {
+    if (!user) {
+      openAuthWall('login');
+      return;
+    }
+    closeOverlaySurfaces('friends');
+    setShowFriendsPanel(true);
+    haptic.light();
+  }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
+
+  const openAddFriendPopup = useCallback(() => {
+    if (!user) {
+      openAuthWall('login');
+      return;
+    }
+    closeOverlaySurfaces('add-friend');
+    setShowAddFriendModal(true);
+    haptic.light();
+  }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
+
+  const openChatDrawer = useCallback(() => {
+    if (!user) {
+      openAuthWall('login');
+      return;
+    }
+    closeOverlaySurfaces('chat');
+    setShowChatPanel(true);
+    haptic.light();
+  }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
+
+  const openSavedLists = useCallback(() => {
+    if (!user) {
+      openAuthWall('login');
+      return;
+    }
+    closeOverlaySurfaces('lists');
+    setShowListsModal(true);
+    haptic.light();
+  }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
+
+  const openPlateScannerModal = useCallback(() => {
+    closeOverlaySurfaces('plate-scanner');
+    setShowPlateScanner(true);
+    haptic.light();
+  }, [closeOverlaySurfaces, haptic]);
+
+  const openSmartRouteModal = useCallback(() => {
+    if (!user) {
+      openAuthWall('login');
+      return;
+    }
+    closeOverlaySurfaces('map');
+    setShowSmartRoute(true);
+    haptic.light();
+  }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
+
+  const openBarcodeScanner = useCallback(async () => {
+    const { granted } = await requestCamera();
+    if (!granted) return;
+    closeOverlaySurfaces('scanner');
+    setShowScanner(true);
+    haptic.light();
+  }, [requestCamera, closeOverlaySurfaces, haptic]);
 
   // ── Persist friends ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -4083,7 +4159,7 @@ export default function App() {
   // ── Smart Send (0 φίλοι → panel, 1 → απευθείας, 2+ → picker) ─────────────
   const handleSendToFriend = (item) => {
     if (!friends.length) {
-      setShowFriendsPanel(true);
+      openFriendsPopup();
       setNotification({ show:true, message:'Πρόσθεσε πρώτα έναν φίλο 👥' });
       return;
     }
@@ -4693,27 +4769,22 @@ export default function App() {
     }
   }, [activeTab, mealPlanLocked]);
 
-  // ── Sliding nav pill indicator ──────────────────────────────
   useEffect(() => {
-    const nav = document.querySelector('.bottom-nav');
-    const pill = document.getElementById('nav-pill');
-    const activeBtn = nav?.querySelector('.bottom-nav-btn.active');
-    if (!nav || !pill || !activeBtn) return;
-    const navRect = nav.getBoundingClientRect();
-    const btnRect = activeBtn.getBoundingClientRect();
-    pill.style.setProperty('--pill-left', `${btnRect.left - navRect.left}px`);
-    pill.style.setProperty('--pill-width', `${btnRect.width}px`);
-  }, [activeTab]);
+    closeOverlaySurfaces();
+  }, [activeTab, closeOverlaySurfaces]);
 
   // ── Body scroll lock — prevent background scroll when any modal is open ─────
   useEffect(() => {
     const anyOpen = showAuthModal || showPremiumModal || showListsModal || showScanner
       || showPlateScanner || showSmartRoute || showFriendsPanel || showChatPanel
-      || showMoreMenu || showPremiumWelcome;
+      || showMoreMenu || showPremiumWelcome || showProfileMenu || showAddFriendModal
+      || friendPicker.open || !!expandedRecipe || !!selectedMealDbRecipe || showFeedbackModal;
     document.body.style.overflow = anyOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [showAuthModal, showPremiumModal, showListsModal, showScanner, showPlateScanner,
-      showSmartRoute, showFriendsPanel, showChatPanel, showMoreMenu, showPremiumWelcome]);
+      showSmartRoute, showFriendsPanel, showChatPanel, showMoreMenu, showPremiumWelcome,
+      showProfileMenu, showAddFriendModal, friendPicker.open, expandedRecipe, selectedMealDbRecipe,
+      showFeedbackModal]);
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -4770,14 +4841,19 @@ export default function App() {
             style={{ position:'fixed', inset:0, zIndex:299, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}
             onClick={() => setShowFriendsPanel(false)}
           />
-          <FriendsPanel
-            friends={friends}
-            myShareKey={user?.shareKey}
-            onCopyKey={handleCopyShareKey}
-            onAddFriend={() => { setShowFriendsPanel(false); setShowAddFriendModal(true); }}
-            onRemoveFriend={removeFriend}
-            onClose={() => setShowFriendsPanel(false)}
-          />
+          <div className="friends-popup-shell">
+            <FriendsPanel
+              friends={friends}
+              myShareKey={user?.shareKey}
+              onCopyKey={handleCopyShareKey}
+              onAddFriend={() => {
+                setShowFriendsPanel(false);
+                openAddFriendPopup();
+              }}
+              onRemoveFriend={removeFriend}
+              onClose={() => setShowFriendsPanel(false)}
+            />
+          </div>
         </>
       )}
       {/* ── Chat Panel ── */}
@@ -4921,7 +4997,10 @@ export default function App() {
 
       <div className="container" style={!isOnline ? { marginTop: 64 } : {}}>
         {isScraping && (
-          <div className="live-scraping-banner"><div className="pulsing-dot" /><span>LIVE ΕΝΗΜΕΡΩΣΗ ΤΙΜΩΝ...</span></div>
+          <div className="live-scraping-banner">
+            <div className="pulsing-dot" />
+            <span>Live ενημέρωση τιμών</span>
+          </div>
         )}
 
         {/* ── Header ── */}
@@ -4930,7 +5009,9 @@ export default function App() {
           {/* Πάνω: Ώρα, Ημερομηνία & Streak κεντραρισμένα */}
           <div className="header-clock-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
             <div className="datetime-display" style={{ maxWidth: '240px', margin: '0 auto' }}>
-              <div className="current-date">{timeGreeting} {timeIcon}</div>
+              <div className="current-date current-date-split">
+                <SplitText text={`${timeGreeting} ${timeIcon}`} delayStep={0.025} />
+              </div>
               <div className="current-time">{currentTime.toLocaleDateString('el-GR', { weekday:'long', day:'numeric', month:'long' })}</div>
               <div className="current-clock hero-time">{currentTime.toLocaleTimeString('el-GR', { timeZone:'Europe/Athens', hour:'2-digit', minute:'2-digit', hourCycle:'h23' })}</div>
             </div>
@@ -4939,9 +5020,9 @@ export default function App() {
           </div>
 
           {/* Τίτλος */}
-          <h1 style={{ textAlign: 'center', marginTop: '12px', letterSpacing:'-0.5px', fontSize: '24px', fontWeight: 900, display:'flex', alignItems:'center', justifyContent:'center', gap: 6, marginBottom: '8px', fontFamily:'var(--font-display)' }}>
-            <span style={{ fontSize: '22px', color: '#e2e8f0' }}>Έξυπνο</span>
-            <span className="hero-title-gradient">Καλαθάκι</span>
+          <h1 className="hero-brand">
+            <span className="hero-title-prefix">Έξυπνο</span>
+            <span className="hero-title-gradient hero-title-gradient--revamp">Καλαθάκι</span>
           </h1>
 
 
@@ -5023,7 +5104,7 @@ export default function App() {
               {user && (
                 <div
                   className="action-btn-new scanner-btn-header psm-header-btn"
-                  onClick={() => setShowPlateScanner(true)}
+                  onClick={openPlateScannerModal}
                   title="Meal Scanner — Σκάναρε το πιάτο σου"
                   style={{ fontSize: 18 }}
                 >
@@ -5033,10 +5114,7 @@ export default function App() {
 
               {/* Barcode scanner button — asks camera permission first */}
               {user && (
-                <div className="action-btn-new scanner-btn-header" onClick={async () => {
-                  const { granted } = await requestCamera();
-                  if (granted) setShowScanner(true);
-                }} title="Σάρωση Barcode">
+                <div className="action-btn-new scanner-btn-header" onClick={openBarcodeScanner} title="Σάρωση Barcode">
                   <IconQrcode size={20} stroke={1.8} />
                 </div>
               )}
@@ -5045,7 +5123,7 @@ export default function App() {
               <div
                 className="action-btn-new"
                 style={{ position:'relative' }}
-                onClick={() => { if (!user) return setShowAuthModal(true); setShowFriendsPanel(true); }}
+                onClick={openFriendsPopup}
                 title="Κοινό Καλάθι"
               >
                 <IconUsers size={20} stroke={1.8} />
@@ -5061,7 +5139,7 @@ export default function App() {
 
               {/* Chat Button */}
               {user && friends.length > 0 && (
-                <div className="action-btn-new" style={{ position:'relative' }} onClick={() => setShowChatPanel(true)} title="Chat Καλαθιού">
+                <div className="action-btn-new" style={{ position:'relative' }} onClick={openChatDrawer} title="Chat Καλαθιού">
                   <IconMessage size={20} stroke={1.8} />
                   {unreadChat > 0 && (
                     <span style={{
@@ -5091,9 +5169,9 @@ export default function App() {
                       },
                     });
                     // #endregion
-                    return setShowAuthModal(true);
+                    return openAuthWall('login');
                   }
-                  setShowListsModal(true);
+                  openSavedLists();
                 }}
                 title="Λίστες μου"
                 style={{ position:'relative' }}
@@ -5104,34 +5182,9 @@ export default function App() {
 
               {user ? (
                 <div style={{ position:'relative' }}>
-                  <div className="action-btn-new" onClick={() => setShowProfileMenu(v => !v)} title={user.name}>
+                  <div className="action-btn-new" onClick={toggleProfileMenu} title={user.name}>
                     <IconUser size={20} stroke={1.8} />
                   </div>
-                  {showProfileMenu && (
-                    <>
-                      <div style={{ position:'fixed', inset:0, zIndex:99 }} onClick={() => setShowProfileMenu(false)} />
-                      <div className="profile-dropdown">
-                        <div className="dropdown-info" style={{ padding:'15px', borderBottom:'1px solid var(--border-light)' }}>
-                          <strong style={{ display:'block', fontSize:'14px' }}>{user.name}</strong>
-                          <div style={{ display:'flex', alignItems:'center', gap:'8px', marginTop:'8px' }}>
-                            <span style={{ color:'var(--text-secondary)', fontSize:'12px' }}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
-                            <button onClick={handleCopyShareKey} style={{ background:'var(--bg-surface-hover)', border:'1px solid var(--border-light)', cursor:'pointer', fontSize:'14px', padding:'4px 8px', borderRadius:'6px' }}>📋</button>
-                          </div>
-                        </div>
-                        <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display:'flex', alignItems:'center', gap:8 }}>{isDarkMode ? <><IconSun size={16}/> Φωτεινό θέμα</> : <><IconMoon size={16}/> Σκούρο θέμα</>}</div>
-                        {'PushManager' in window && (
-                          <div
-                            className="dropdown-item"
-                            onClick={() => { pushEnabled ? unsubscribeFromPush() : subscribeToPush(); setShowProfileMenu(false); }}
-                            style={{ display:'flex', alignItems:'center', gap:8 }}
-                          >
-                            <IconBell size={16}/> {pushEnabled ? 'Ειδοποιήσεις ON ✓' : 'Ειδοποιήσεις OFF'}
-                          </div>
-                        )}
-                        <div className="dropdown-item logout" onClick={handleLogout} style={{ display:'flex', alignItems:'center', gap:8 }}><IconLogout size={16}/> Αποσύνδεση</div>
-                      </div>
-                    </>
-                  )}
                 </div>
               ) : (
                 <div
@@ -5151,7 +5204,7 @@ export default function App() {
                       },
                     });
                     // #endregion
-                    setShowAuthModal(true);
+                    openAuthWall('login');
                   }}
                   title="Σύνδεση"
                 >
@@ -5525,18 +5578,19 @@ export default function App() {
                             card.style.setProperty('--tilt-y', '0deg');
                           }}
                         >
-                          <div className="sug-avatar" style={{ background: sug.image ? 'transparent' : gradient }}>
-                            {sug.image ? (
+                          <div className="sug-avatar">
+                            {sug.imageUrl ? (
                               <img
-                                src={sug.image}
+                                src={sug.imageUrl}
                                 alt={sug.name}
                                 className="sug-avatar-img"
                                 loading="lazy"
-                                onError={e => { e.currentTarget.style.display='none'; e.currentTarget.parentElement.style.background=gradient; e.currentTarget.insertAdjacentHTML('afterend', `<span class="sug-avatar-emoji">${emoji}</span>`); }}
+                                onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextSibling.style.display='flex'; }}
                               />
-                            ) : (
-                              <span className="sug-avatar-emoji">{emoji}</span>
-                            )}
+                            ) : null}
+                            <div className="sug-avatar-fallback" style={{ display: sug.imageUrl ? 'none' : 'flex' }}>
+                              <span>{sug.name.charAt(0).toUpperCase()}</span>
+                            </div>
                           </div>
                           <div className="sug-info">
                             <span className="sug-name">{sug.name}</span>
@@ -5641,7 +5695,7 @@ export default function App() {
                   })}
                 </div>
                 {/* Scanner Promo */}
-                <div className="scanner-promo-card" onClick={() => setShowScanner(true)}>
+                <div className="scanner-promo-card" onClick={openBarcodeScanner}>
                   <div className="scanner-promo-icon-wrap">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
@@ -5715,8 +5769,8 @@ export default function App() {
                       className="daily-recipe-card"
                       onClick={() => setExpandedRecipe(daily._id)}
                     >
-                      {daily.image && (
-                        <img src={daily.image} alt={daily.title} className="daily-recipe-img" loading="lazy" />
+                      {(daily.image || daily.thumbnail) && (
+                        <img src={toAbsoluteMediaUrl(daily.image || daily.thumbnail)} alt={daily.title} className="daily-recipe-img" loading="lazy" />
                       )}
                       <div className="daily-recipe-body">
                         <div className="daily-recipe-badge">⭐ Συνταγή της Ημέρας</div>
@@ -5871,11 +5925,11 @@ export default function App() {
                           >
                             <div className="recipe-card-img-wrap">
                               <LazyImage
-                                src={recipe.image || ''}
+                                src={toAbsoluteMediaUrl(recipe.image || recipe.thumbnail || '')}
                                 className="recipe-card-img"
-                                style={!recipe.image ? { height:135, background:'linear-gradient(135deg, var(--bg-subtle), var(--bg-card))', display:'flex', alignItems:'center', justifyContent:'center' } : {}}
+                                style={!(recipe.image || recipe.thumbnail) ? { height:135, background:'linear-gradient(135deg, var(--bg-subtle), var(--bg-card))', display:'flex', alignItems:'center', justifyContent:'center' } : {}}
                               >
-                                {!recipe.image && <span style={{ fontSize:36, opacity:0.3 }}>🍽️</span>}
+                                {!(recipe.image || recipe.thumbnail) && <span style={{ fontSize:36, opacity:0.3 }}>🍽️</span>}
                               </LazyImage>
                               <div className="recipe-card-time-badge">⏱️ {recipe.time || 30}'</div>
                               <div style={{ position:'absolute', top:10, left:10, width:8, height:8, borderRadius:'50%', zIndex:2, background: recipe.difficulty === 'Εύκολη' ? '#10b981' : recipe.difficulty === 'Δύσκολη' ? '#ef4444' : '#f59e0b' }} />
@@ -6111,6 +6165,50 @@ export default function App() {
         {/* ════ AI MEAL PLANNER TAB ════ */}
         {activeTab === 'mealplan' && (
           <div key="mealplan" className="tab-content page-enter">
+
+            {(() => {
+              const activePlannerStage = mealPlanStep === 3 ? 2 : quizSlide >= 6 ? 1 : 0;
+              const plannerSteps = [
+                {
+                  label: 'Στόχος',
+                  detail: 'Σώμα και προτιμήσεις',
+                  state: activePlannerStage > 0 ? 'complete' : activePlannerStage === 0 ? 'active' : 'idle',
+                },
+                {
+                  label: 'Ρυθμίσεις',
+                  detail: 'Άτομα, budget, μέρες',
+                  state: activePlannerStage > 1 ? 'complete' : activePlannerStage === 1 ? 'active' : 'idle',
+                },
+                {
+                  label: 'Πλάνο',
+                  detail: mealPlanStep === 3 ? 'Έτοιμο για χρήση' : mealPlanLoading ? 'Δημιουργείται τώρα' : 'Weekly output',
+                  state: activePlannerStage === 2 ? 'active' : 'idle',
+                },
+              ];
+
+              return (
+                <div className="mealplanner-stepper" aria-label="Πρόοδος AI πλάνου">
+                  <div className="mealplanner-stepper-intro">
+                    <div className="mealplanner-stepper-kicker">AI Meal Planner</div>
+                    <div className="mealplanner-stepper-title">Στήσε το πλάνο σου χωρίς χαοτικό wizard</div>
+                  </div>
+                  <div className="mealplanner-stepper-track">
+                    {plannerSteps.map((step, index) => (
+                      <div
+                        key={step.label}
+                        className={`mealplanner-step ${step.state === 'active' ? 'is-active' : ''}${step.state === 'complete' ? ' is-complete' : ''}`}
+                      >
+                        <div className="mealplanner-step-badge">{index + 1}</div>
+                        <div className="mealplanner-step-copy">
+                          <strong>{step.label}</strong>
+                          <span>{step.detail}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
 
             {/* ── Quiz Header ── */}
@@ -6801,7 +6899,7 @@ export default function App() {
       </div>
 
       {/* ── Floating Tools Bar — action buttons moved from header ── */}
-      <div className="floating-toolbar">
+      <div className="floating-toolbar quick-actions-dock">
         {!isOnline && (
           <div className="ftb-offline-chip">📡 Offline</div>
         )}
@@ -6826,17 +6924,14 @@ export default function App() {
           <span className="ftb-premium-badge">⭐</span>
         )}
         {user && (
-          <div className="ftb-btn" onClick={async () => {
-            const { granted } = await requestCamera();
-            if (granted) setShowScanner(true);
-          }} title="Σάρωση Barcode">
+          <div className="ftb-btn" onClick={openBarcodeScanner} title="Σάρωση Barcode">
             <IconQrcode size={20} stroke={1.8} />
           </div>
         )}
         <div
           className="ftb-btn"
           style={{ position: 'relative' }}
-          onClick={() => { if (!user) return setShowAuthModal(true); setShowFriendsPanel(true); }}
+          onClick={openFriendsPopup}
           title="Κοινό Καλάθι"
         >
           <IconUsers size={20} stroke={1.8} />
@@ -6845,7 +6940,7 @@ export default function App() {
           )}
         </div>
         {user && friends.length > 0 && (
-          <div className="ftb-btn" style={{ position: 'relative' }} onClick={() => setShowChatPanel(true)} title="Chat Καλαθιού">
+          <div className="ftb-btn" style={{ position: 'relative' }} onClick={openChatDrawer} title="Chat Καλαθιού">
             <IconMessage size={20} stroke={1.8} />
             {unreadChat > 0 && (
               <span className="ftb-badge ftb-badge-red">{unreadChat}</span>
@@ -6855,8 +6950,8 @@ export default function App() {
         <div
           className="ftb-btn"
           onClick={() => {
-            if (!user) { setShowAuthModal(true); return; }
-            setShowListsModal(true);
+            if (!user) { openAuthWall('login'); return; }
+            openSavedLists();
           }}
           title="Λίστες μου"
           style={{ position: 'relative' }}
@@ -6866,39 +6961,14 @@ export default function App() {
         </div>
         {user ? (
           <div style={{ position: 'relative' }}>
-            <div className="ftb-btn" onClick={() => setShowProfileMenu(v => !v)} title={user.name}>
+            <div className="ftb-btn" onClick={toggleProfileMenu} title={user.name}>
               <IconUser size={20} stroke={1.8} />
             </div>
-            {showProfileMenu && (
-              <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowProfileMenu(false)} />
-                <div className="profile-dropdown ftb-dropdown">
-                  <div className="dropdown-info" style={{ padding: '15px', borderBottom: '1px solid var(--border-light)' }}>
-                    <strong style={{ display: 'block', fontSize: '14px' }}>{user.name}</strong>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
-                      <button onClick={handleCopyShareKey} style={{ background: 'var(--bg-surface-hover)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', padding: '4px 8px', borderRadius: '6px' }}>📋</button>
-                    </div>
-                  </div>
-                  <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{isDarkMode ? <><IconSun size={16} /> Φωτεινό θέμα</> : <><IconMoon size={16} /> Σκούρο θέμα</>}</div>
-                  {'PushManager' in window && (
-                    <div
-                      className="dropdown-item"
-                      onClick={() => { pushEnabled ? unsubscribeFromPush() : subscribeToPush(); setShowProfileMenu(false); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-                    >
-                      <IconBell size={16} /> {pushEnabled ? 'Ειδοποιήσεις ON ✓' : 'Ειδοποιήσεις OFF'}
-                    </div>
-                  )}
-                  <div className="dropdown-item logout" onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconLogout size={16} /> Αποσύνδεση</div>
-                </div>
-              </>
-            )}
           </div>
         ) : (
           <div
             className="ftb-btn"
-            onClick={() => setShowAuthModal(true)}
+            onClick={() => openAuthWall('login')}
             title="Σύνδεση"
           >
             <IconLock size={20} stroke={1.8} />
@@ -6908,11 +6978,19 @@ export default function App() {
 
       {/* ── Floating Bottom Nav — lives OUTSIDE .container to avoid backdrop-filter stacking context ── */}
 
-      {/* ── Floating quick buttons above nav (Brochures + My Lists) ── */}
-      <div className="nav-float-actions">
+      {/* ── Floating quick buttons above nav ── */}
+      <div className="nav-float-actions quick-surface-strip">
         <button
           className="nav-float-btn"
-          onClick={() => { setActiveTab('brochures'); haptic.light(); setShowMoreMenu(false); window.scrollTo({ top:0, behavior:'smooth' }); }}
+          onClick={() => navigateToTab('mealplan')}
+          aria-label="AI Πλάνο"
+        >
+          <IconBrain size={18} stroke={1.8} />
+          <span>AI Πλάνο</span>
+        </button>
+        <button
+          className="nav-float-btn"
+          onClick={() => navigateToTab('brochures')}
           aria-label="Φυλλάδια"
         >
           <IconTag size={18} stroke={1.8} />
@@ -6920,7 +6998,7 @@ export default function App() {
         </button>
         <button
           className="nav-float-btn"
-          onClick={() => { if (!user) { setShowAuthModal(true); return; } setShowListsModal(true); setShowMoreMenu(false); }}
+          onClick={openSavedLists}
           aria-label="Λίστες μου"
         >
           <IconNotes size={18} stroke={1.8} />
@@ -6928,128 +7006,63 @@ export default function App() {
         </button>
       </div>
 
-      {/* More menu overlay */}
-      {showMoreMenu && (
-        <div className="more-overlay" onClick={() => setShowMoreMenu(false)}>
-          <div className="more-grid" onClick={e => e.stopPropagation()}>
-            <div className="more-grid-handle" />
-            <div className="more-grid-title">Εργαλεία</div>
-            <div className="more-grid-items">
-              {[
-                { icon: <IconBrain size={22} stroke={1.8} />,         label: 'AI Πλάνο',    tab: 'mealplan' },
-                { icon: <IconChefHat size={22} stroke={1.8} />,       label: 'Συνταγές',    tab: 'recipes' },
-                { icon: <IconTag size={22} stroke={1.8} />,           label: 'Φυλλάδια',   tab: 'brochures' },
-                { icon: <IconScan size={22} stroke={1.8} />,          label: 'Meal Scanner', tab: null, action: () => { setShowPlateScanner(true); setShowMoreMenu(false); } },
-                { icon: <IconQrcode size={22} stroke={1.8} />,        label: 'Σαρωτής',    tab: null, action: async () => { const { granted } = await requestCamera(); if (granted) setShowScanner(true); setShowMoreMenu(false); } },
-                { icon: <IconUsers size={22} stroke={1.8} />,         label: 'Φίλοι',       tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowFriendsPanel(true); setShowMoreMenu(false); } },
-                { icon: <IconMessage size={22} stroke={1.8} />,       label: 'Chat',         tab: null, action: () => { setShowChatPanel(true); setShowMoreMenu(false); } },
-                { icon: <IconNotes size={22} stroke={1.8} />,         label: 'Λίστες μου',  tab: null, action: () => { if (!user) setShowAuthModal(true); else setShowListsModal(true); setShowMoreMenu(false); } },
-                { icon: <IconUser size={22} stroke={1.8} />,          label: 'Προφίλ',      tab: null, action: () => { if (!user) { setShowAuthModal(true); setShowMoreMenu(false); } else { setShowMoreMenu(false); setShowProfileMenu(v => !v); } } },
-              ].map(item => (
-                <GlowCard
-                  key={item.label}
-                  icon={item.icon}
-                  label={item.label}
-                  active={!!(item.tab && activeTab === item.tab)}
-                  onClick={() => {
-                    if (item.action) { item.action(); return; }
-                    setActiveTab(item.tab);
-                    haptic.light();
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                    setShowMoreMenu(false);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <nav className="bottom-nav" ref={navRef}>
-        {/* Sliding pill indicator */}
-        <div className="nav-pill-indicator" id="nav-pill" aria-hidden="true" />
-
-        {/* Far Left: Meal Scanner */}
+      <nav ref={navRef} className="bottom-nav bottom-nav-revamp" aria-label="Κύρια πλοήγηση">
         <button
-          className="bottom-nav-btn"
-          onClick={() => { setShowPlateScanner(true); haptic.light(); setShowMoreMenu(false); }}
+          className={`bottom-nav-btn${showPlateScanner ? ' active' : ''}`}
+          onClick={openPlateScannerModal}
           aria-label="Meal Scanner"
         >
           <div className="bottom-nav-icon"><IconScan size={22} stroke={1.8} /></div>
           <span className="bottom-nav-label">Scan</span>
         </button>
-
-        {/* Left: Barcode */}
         <button
-          className="bottom-nav-btn"
-          onClick={async () => { const { granted } = await requestCamera(); if (granted) setShowScanner(true); haptic.light(); setShowMoreMenu(false); }}
-          aria-label="Σαρωτής Barcode"
+          className={`bottom-nav-btn${showScanner ? ' active' : ''}`}
+          onClick={openBarcodeScanner}
+          aria-label="QR Scanner"
         >
           <div className="bottom-nav-icon"><IconQrcode size={22} stroke={1.8} /></div>
           <span className="bottom-nav-label">QR</span>
         </button>
-
-        {/* Left-center: Recipes */}
         <button
           className={`bottom-nav-btn${activeTab === 'recipes' ? ' active' : ''}`}
-          onClick={() => { setActiveTab('recipes'); haptic.light(); window.scrollTo({ top:0, behavior:'smooth' }); setShowMoreMenu(false); }}
+          onClick={() => navigateToTab('recipes')}
           aria-label="Συνταγές"
         >
           <div className="bottom-nav-icon"><IconChefHat size={22} stroke={1.8} /></div>
           <span className="bottom-nav-label">Συνταγές</span>
         </button>
-
-        {/* CENTER: Home */}
         <button
           className={`bottom-nav-btn nav-tab-fab${activeTab === 'list' ? ' active' : ''}`}
-          onClick={() => { setActiveTab('list'); haptic.light(); window.scrollTo({ top:0, behavior:'smooth' }); setShowMoreMenu(false); }}
+          onClick={() => navigateToTab('list')}
           aria-label="Αρχική"
         >
           <div className="nav-fab-inner">
             <IconHome size={24} stroke={1.8} />
           </div>
-          <span className="bottom-nav-label" style={{ marginTop: 6 }}>Αρχική</span>
+          <span className="bottom-nav-label">Αρχική</span>
         </button>
-
-        {/* Right: Map */}
         <button
-          className="bottom-nav-btn"
-          onClick={() => {
-            if (!user) { setShowAuthModal(true); return; }
-            haptic.light();
-            setShowSmartRoute(true);
-            setShowMoreMenu(false);
-          }}
+          className={`bottom-nav-btn${showSmartRoute ? ' active' : ''}`}
+          onClick={openSmartRouteModal}
           aria-label="Χάρτης"
         >
           <div className="bottom-nav-icon"><IconMap size={22} stroke={1.8} /></div>
           <span className="bottom-nav-label">Χάρτης</span>
         </button>
-
-        {/* Right: Friends + Chat */}
         <button
-          className="bottom-nav-btn"
-          onClick={() => {
-            haptic.light();
-            if (!user) { setShowAuthModal(true); return; }
-            setShowFriendsPanel(true);
-            setShowMoreMenu(false);
-          }}
+          className={`bottom-nav-btn${showFriendsPanel ? ' active' : ''}`}
+          onClick={openFriendsPopup}
           aria-label="Φίλοι"
         >
-          <div className="bottom-nav-icon"><IconUsers size={22} stroke={1.8} /></div>
+          <div className="bottom-nav-icon">
+            <IconUsers size={22} stroke={1.8} />
+            {friends.length > 0 && <span className="bottom-nav-badge">{friends.length}</span>}
+          </div>
           <span className="bottom-nav-label">Φίλοι</span>
         </button>
-
-        {/* Far Right: Profile */}
         <button
-          className="bottom-nav-btn"
-          onClick={() => {
-            haptic.light();
-            if (!user) { setShowAuthModal(true); return; }
-            setShowMoreMenu(false);
-            setShowProfileMenu(v => !v);
-          }}
+          className={`bottom-nav-btn${showProfileMenu ? ' active' : ''}`}
+          onClick={toggleProfileMenu}
           aria-label="Προφίλ"
         >
           <div className="bottom-nav-icon"><IconUser size={22} stroke={1.8} /></div>

@@ -25,6 +25,63 @@ async function compressImage(file, maxDim = 800, quality = 0.75) {
   });
 }
 
+const LEARNING_PROFILE_KEY = 'sg_plate_scanner_profile_v1';
+
+function readLearningProfile() {
+  try {
+    const raw = localStorage.getItem(LEARNING_PROFILE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return {
+      scanCount: parsed?.scanCount || 0,
+      frequentFoods: Array.isArray(parsed?.frequentFoods) ? parsed.frequentFoods.slice(0, 8) : [],
+      recentFoods: Array.isArray(parsed?.recentFoods) ? parsed.recentFoods.slice(0, 12) : [],
+      lastConfidence: parsed?.lastConfidence || null,
+    };
+  } catch {
+    return { scanCount: 0, frequentFoods: [], recentFoods: [], lastConfidence: null };
+  }
+}
+
+function persistLearningProfile(profile) {
+  try {
+    localStorage.setItem(LEARNING_PROFILE_KEY, JSON.stringify(profile));
+  } catch {
+    // Ignore storage write failures.
+  }
+}
+
+function buildLearningContext(profile) {
+  return {
+    scanCount: profile.scanCount || 0,
+    frequentFoods: profile.frequentFoods || [],
+    recentFoods: profile.recentFoods || [],
+    lastConfidence: profile.lastConfidence || null,
+  };
+}
+
+function updateLearningProfile(profile, result) {
+  const nextCount = (profile.scanCount || 0) + 1;
+  const recentFoods = [
+    ...(result.foods || []).map((food) => food.name).filter(Boolean),
+    ...(profile.recentFoods || []),
+  ].slice(0, 12);
+
+  const frequencyMap = new Map();
+  [...recentFoods, ...(profile.frequentFoods || [])].forEach((food) => {
+    frequencyMap.set(food, (frequencyMap.get(food) || 0) + 1);
+  });
+
+  return {
+    scanCount: nextCount,
+    recentFoods,
+    frequentFoods: [...frequencyMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([food]) => food),
+    lastConfidence: result.confidence || null,
+  };
+}
+
 /* ─────────────────────────────────────────────
    MacroRing — animated SVG donut
    Props: value (number), max (number), color (css var string),
@@ -123,6 +180,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
   const [results, setResults]   = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [addedMsg, setAddedMsg] = useState(false);
+  const [learningProfile, setLearningProfile] = useState(() => readLearningProfile());
 
   const fileInputRef = useRef(null);
   const addedTimerRef = useRef(null);
@@ -167,7 +225,11 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
       const res = await fetch(`${base}/api/plate-scanner/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageData.base64, mediaType: imageData.mediaType }),
+        body: JSON.stringify({
+          image: imageData.base64,
+          mediaType: imageData.mediaType,
+          learningContext: buildLearningContext(learningProfile),
+        }),
       });
 
       if (!res.ok) {
@@ -177,12 +239,17 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
 
       const data = await res.json();
       setResults(data);
+      setLearningProfile((prev) => {
+        const next = updateLearningProfile(prev, data);
+        persistLearningProfile(next);
+        return next;
+      });
       setStep('results');
     } catch (err) {
       setErrorMsg(err.message || 'Κάτι πήγε στραβά. Δοκίμασε ξανά.');
       setStep('error');
     }
-  }, [imageData, apiBase]);
+  }, [imageData, apiBase, learningProfile]);
 
   const handleReset = useCallback(() => {
     setStep('capture');
@@ -243,6 +310,11 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
               <p className="psm-tip-text">
                 Τοποθέτησε ολόκληρο το πιάτο στο πλαίσιο για καλύτερα αποτελέσματα
               </p>
+              <div className="psm-learning-chip">
+                {learningProfile.scanCount > 0
+                  ? `Βελτιώνομαι από ${learningProfile.scanCount} προηγούμενα scans`
+                  : 'Μαθαίνω από κάθε νέο πιάτο που σκανάρεις'}
+              </div>
             </div>
 
             {/* Hidden file input */}
@@ -338,6 +410,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
                   <span className="psm-badge psm-badge--meal">{results.mealType}</span>
                 )}
                 <ConfidenceBadge confidence={results.confidence} />
+                <span className="psm-badge psm-badge--memory">AI μνήμη ενεργή</span>
               </div>
 
               {/* Photo thumbnail */}

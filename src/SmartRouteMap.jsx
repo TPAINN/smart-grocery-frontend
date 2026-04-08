@@ -115,14 +115,20 @@ const parseSteps = legs => {
 const openNav = (loc, stores, mode) => {
   const gm = {driving:'driving',walking:'walking',cycling:'bicycling'}[mode]||'driving';
   const label = s => encodeURIComponent(s.chainName || s.name || `${s.lat},${s.lng}`);
+  const openExternalUrl = (url) => {
+    const popup = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!popup) {
+      window.location.assign(url);
+    }
+  };
   if (stores.length === 1) {
     const s = stores[0];
-    window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${label(s)}&destination_place_id=&travelmode=${gm}`,'_blank');
+    openExternalUrl(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${label(s)}&destination_place_id=&travelmode=${gm}`);
   } else {
     const dest = stores[stores.length - 1];
     const wp = stores.slice(0, -1).map(s=>`${s.lat},${s.lng}`).join('|');
     const wpNames = stores.slice(0, -1).map(s=>label(s)).join('|');
-    window.open(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${label(dest)}&waypoints=${wp}&waypoint_place_ids=&travelmode=${gm}`,'_blank');
+    openExternalUrl(`https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${label(dest)}&waypoints=${wp}&waypoint_place_ids=&travelmode=${gm}`);
     // Side-effect: log the ordered stop names for the FAB subtitle
     console.info('[Χάρτης] Stops:', stores.map((s,i)=>`${i+1}. ${s.chainName||s.name}`).join(' → '));
   }
