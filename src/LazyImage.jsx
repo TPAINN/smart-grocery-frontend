@@ -16,15 +16,23 @@ import { useEffect, useRef, useState } from 'react';
 export default function LazyImage({ src, className = '', style = {}, children, rootMargin = '200px 0px' }) {
   const ref      = useRef(null);
   const [loaded, setLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [bgUrl,  setBgUrl]  = useState('');
 
   useEffect(() => {
-    if (!src) return;
+    // Reset error state when src changes
+    setHasError(false);
+    setBgUrl('');
+    setLoaded(false);
+
+    if (!src) { setHasError(true); setLoaded(true); return; }
 
     // If IntersectionObserver is unavailable (old browser), load immediately
     if (!('IntersectionObserver' in window)) {
-      setBgUrl(src);
-      setLoaded(true);
+      const img = new Image();
+      img.onload  = () => { setBgUrl(src); setLoaded(true); };
+      img.onerror = () => { setHasError(true); setLoaded(true); };
+      img.src = src;
       return;
     }
 
@@ -37,7 +45,7 @@ export default function LazyImage({ src, className = '', style = {}, children, r
           // Preload via Image() so we only show once decoded — avoids layout shift
           const img = new Image();
           img.onload  = () => { setBgUrl(src); setLoaded(true); };
-          img.onerror = () => { setBgUrl(src); setLoaded(true); }; // show anyway on error
+          img.onerror = () => { setHasError(true); setLoaded(true); };
           img.src = src;
           observer.disconnect();
         }
@@ -55,12 +63,19 @@ export default function LazyImage({ src, className = '', style = {}, children, r
       className={className}
       style={{
         ...style,
-        backgroundImage: bgUrl ? `url(${bgUrl})` : 'none',
+        backgroundImage: (!hasError && bgUrl) ? `url(${bgUrl})` : 'none',
+        background: hasError
+          ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+          : (bgUrl ? `url(${bgUrl}) center/cover no-repeat` : undefined),
         transition: loaded ? 'opacity 0.3s ease' : 'none',
         opacity: loaded ? 1 : 0.6,
+        display: hasError ? 'flex' : undefined,
+        alignItems: hasError ? 'center' : undefined,
+        justifyContent: hasError ? 'center' : undefined,
       }}
     >
-      {!loaded && children}
+      {hasError && <span style={{ fontSize: 36, opacity: 0.5 }}>🍽️</span>}
+      {!loaded && !hasError && children}
     </div>
   );
 }

@@ -3716,12 +3716,12 @@ export default function App() {
   }, []);
 
   // ── Recipes ────────────────────────────────────────────────────────────────
-  const fetchRecipes = useCallback(async (page = 1, append = false) => {
+  const fetchRecipes = useCallback(async (page = 1, append = false, retryCount = 0) => {
     if (!append) setRecipesLoading(true);
 
     const params = new URLSearchParams({
       page:  String(page),
-      limit: '24',     // enough cards to fill a screen + a bit
+      limit: '24',
       ...(recipeCategory && { category: recipeCategory }),
       ...(recipeCuisine  && { cuisine: recipeCuisine }),
       ...(recipeSearchDebounced && { search: recipeSearchDebounced }),
@@ -3744,13 +3744,23 @@ export default function App() {
       }
     }
 
+    // Detect slow server (Render free tier wake-up)
+    const wakeTimer = setTimeout(() => setIsServerWaking(true), 3000);
+
     try {
-      const r = await fetch(`${API_BASE}/api/recipes?${params}`);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20000);
+      const r = await fetch(`${API_BASE}/api/recipes?${params}`, { signal: controller.signal });
+      clearTimeout(timeout);
+      clearTimeout(wakeTimer);
+      setIsServerWaking(false);
+
       if (r.ok) {
         const d = await r.json();
         const actualRecipes = d.recipes || d;
         if (Array.isArray(actualRecipes)) {
-          if (page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
+          // Only cache non-empty results
+          if (actualRecipes.length > 0 && page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
             cacheSet('recipes', { recipes: actualRecipes, pages: d.pages || 1 });
           }
           if (append) {
@@ -3761,9 +3771,26 @@ export default function App() {
           setRecipeTotalPages(d.pages || 1);
           setRecipePage(d.page || page);
         }
+      } else if (retryCount < 3) {
+        // Server returned error — retry with backoff
+        clearTimeout(wakeTimer);
+        const delay = Math.min(2000 * Math.pow(2, retryCount), 8000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchRecipes(page, append, retryCount + 1);
       }
     } catch (err) {
+      clearTimeout(wakeTimer);
+      setIsServerWaking(false);
       console.error('❌ fetchRecipes:', err);
+
+      // Auto-retry on network errors
+      if (retryCount < 3) {
+        const delay = Math.min(2000 * Math.pow(2, retryCount), 8000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchRecipes(page, append, retryCount + 1);
+      }
+
+      // Final fallback: use any cached data (even stale)
       const ck = cacheGet('recipes');
       if (ck) {
         const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
@@ -5019,11 +5046,8 @@ export default function App() {
 
           </div>
 
-          {/* Τίτλος */}
-          <h1 className="hero-brand">
-            <span className="hero-title-prefix">Έξυπνο</span>
-            <span className="hero-title-gradient hero-title-gradient--revamp">Καλαθάκι</span>
-          </h1>
+          {/* Τίτλος — compact inline under clock */}
+          <div className="hero-brand-compact">Έξυπνο <strong>Καλαθάκι</strong> <span className="hero-version">v2.3.0</span></div>
 
 
           {/* Trial / Premium status pill — replaces streak */}
@@ -5042,6 +5066,35 @@ export default function App() {
               )}
             </div>
           )}
+
+          {/* ── Tools Top Bar — quick action tabs under clock ── */}
+          <div className="tools-topbar">
+            <button className={`tools-topbar-btn${activeTab === 'recipes' ? ' active' : ''}`} onClick={() => navigateToTab('recipes')}>
+              <IconChefHat size={16} stroke={1.8} />
+              <span>Συνταγές</span>
+            </button>
+            <button className="tools-topbar-btn tools-topbar-btn--featured" onClick={openPlateScannerModal}>
+              <IconScan size={18} stroke={2} />
+              <span>Meal Scan</span>
+            </button>
+            <button className="tools-topbar-btn tools-topbar-btn--featured" onClick={openBarcodeScanner}>
+              <IconQrcode size={18} stroke={2} />
+              <span>Barcode</span>
+            </button>
+            <button className={`tools-topbar-btn${activeTab === 'mealplan' ? ' active' : ''}`} onClick={() => navigateToTab('mealplan')}>
+              <IconBrain size={16} stroke={1.8} />
+              <span>AI Πλάνο</span>
+            </button>
+            <button className="tools-topbar-btn" onClick={openFriendsPopup}>
+              <IconUsers size={16} stroke={1.8} />
+              <span>Φίλοι</span>
+              {friends.length > 0 && <span className="tools-topbar-badge">{friends.length}</span>}
+            </button>
+            <button className={`tools-topbar-btn${activeTab === 'brochures' ? ' active' : ''}`} onClick={() => navigateToTab('brochures')}>
+              <IconTag size={16} stroke={1.8} />
+              <span>Φυλλάδια</span>
+            </button>
+          </div>
 
           {/* Κάτω: Κουμπιά κεντραρισμένα σε νέα σειρά */}
           <div className="header-actions-row">
@@ -5767,7 +5820,7 @@ export default function App() {
                   return (
                     <div
                       className="daily-recipe-card"
-                      onClick={() => setExpandedRecipe(daily._id)}
+                      onClick={() => setExpandedRecipe(daily)}
                     >
                       {(daily.image || daily.thumbnail) && (
                         <img src={toAbsoluteMediaUrl(daily.image || daily.thumbnail)} alt={daily.title} className="daily-recipe-img" loading="lazy" />
@@ -5920,7 +5973,7 @@ export default function App() {
                         >
                           <div
                             className="recipe-card-v2"
-                            onClick={() => recipe._id && setExpandedRecipe(recipe._id)}
+                            onClick={() => setExpandedRecipe(recipe)}
                             style={{ animationName: 'none' }} // disable old CSS-only animation now that ScrollReveal handles entrance
                           >
                             <div className="recipe-card-img-wrap">
@@ -6124,19 +6177,15 @@ export default function App() {
                 })()}
 
                 {/* ── Recipe Popup Modal ── */}
-                {expandedRecipe && (() => {
-                  const recipe = recipes.find(r => r._id === expandedRecipe) || favoriteRecipes.find(r => r._id === expandedRecipe);
-                  if (!recipe) return null;
-                  return (
+                {expandedRecipe && (
                     <RecipePopup
-                      recipe={recipe}
+                      recipe={expandedRecipe}
                       onClose={() => setExpandedRecipe(null)}
-                      onAddToList={() => addRecipeToList(recipe)}
-                      isFavorite={favoriteIds.includes(recipe._id)}
-                      onToggleFavorite={() => toggleFavorite(recipe._id)}
+                      onAddToList={() => addRecipeToList(expandedRecipe)}
+                      isFavorite={favoriteIds.includes(expandedRecipe._id)}
+                      onToggleFavorite={() => toggleFavorite(expandedRecipe._id)}
                     />
-                  );
-                })()}
+                )}
 
                 {selectedMealDbRecipe && (() => {
                   const meal = selectedMealDbRecipe;
@@ -6898,138 +6947,19 @@ export default function App() {
         )}
       </div>
 
-      {/* ── Floating Tools Bar — action buttons moved from header ── */}
-      <div className="floating-toolbar quick-actions-dock">
-        {!isOnline && (
-          <div className="ftb-offline-chip">📡 Offline</div>
-        )}
-        {user && !user.isPremium && !user.isOnTrial && (
-          <div className="ftb-btn" onClick={() => setShowPremiumModal(true)} title="Αναβάθμιση σε Premium">
-            <span style={{ fontSize: 15 }}>⭐</span>
-          </div>
-        )}
-        {user?.isOnTrial && (() => {
-          const urgent = (user.trialDaysLeft || 0) <= 3;
-          return (
-            <div
-              onClick={() => setShowPremiumModal(true)}
-              title="Δωρεάν Δοκιμή"
-              className={`ftb-trial-chip${urgent ? ' urgent' : ''}`}
-            >
-              {urgent ? '⚠️' : '🎁'} {user.trialDaysLeft}μ
-            </div>
-          );
-        })()}
-        {user?.isRealPremium && (
-          <span className="ftb-premium-badge">⭐</span>
-        )}
-        {user && (
-          <div className="ftb-btn" onClick={openBarcodeScanner} title="Σάρωση Barcode">
-            <IconQrcode size={20} stroke={1.8} />
-          </div>
-        )}
-        <div
-          className="ftb-btn"
-          style={{ position: 'relative' }}
-          onClick={openFriendsPopup}
-          title="Κοινό Καλάθι"
-        >
-          <IconUsers size={20} stroke={1.8} />
-          {friends.length > 0 && (
-            <span className="ftb-badge ftb-badge-purple">{friends.length}</span>
-          )}
-        </div>
-        {user && friends.length > 0 && (
-          <div className="ftb-btn" style={{ position: 'relative' }} onClick={openChatDrawer} title="Chat Καλαθιού">
-            <IconMessage size={20} stroke={1.8} />
-            {unreadChat > 0 && (
-              <span className="ftb-badge ftb-badge-red">{unreadChat}</span>
-            )}
-          </div>
-        )}
-        <div
-          className="ftb-btn"
-          onClick={() => {
-            if (!user) { openAuthWall('login'); return; }
-            openSavedLists();
-          }}
-          title="Λίστες μου"
-          style={{ position: 'relative' }}
-        >
-          <IconNotes size={20} stroke={1.8} />
-          {savedLists.length > 0 && <span className="ftb-badge ftb-badge-primary">{savedLists.length}</span>}
-        </div>
-        {user ? (
-          <div style={{ position: 'relative' }}>
-            <div className="ftb-btn" onClick={toggleProfileMenu} title={user.name}>
-              <IconUser size={20} stroke={1.8} />
-            </div>
-          </div>
-        ) : (
-          <div
-            className="ftb-btn"
-            onClick={() => openAuthWall('login')}
-            title="Σύνδεση"
-          >
-            <IconLock size={20} stroke={1.8} />
-          </div>
-        )}
-      </div>
+      {/* Floating toolbar removed — tools moved to tools-topbar under clock */}
 
       {/* ── Floating Bottom Nav — lives OUTSIDE .container to avoid backdrop-filter stacking context ── */}
 
-      {/* ── Floating quick buttons above nav ── */}
-      <div className="nav-float-actions quick-surface-strip">
-        <button
-          className="nav-float-btn"
-          onClick={() => navigateToTab('mealplan')}
-          aria-label="AI Πλάνο"
-        >
-          <IconBrain size={18} stroke={1.8} />
-          <span>AI Πλάνο</span>
-        </button>
-        <button
-          className="nav-float-btn"
-          onClick={() => navigateToTab('brochures')}
-          aria-label="Φυλλάδια"
-        >
-          <IconTag size={18} stroke={1.8} />
-          <span>Φυλλάδια</span>
-        </button>
-        <button
-          className="nav-float-btn"
-          onClick={openSavedLists}
-          aria-label="Λίστες μου"
-        >
-          <IconNotes size={18} stroke={1.8} />
-          <span>Λίστες μου</span>
-        </button>
-      </div>
 
-      <nav ref={navRef} className="bottom-nav bottom-nav-revamp" aria-label="Κύρια πλοήγηση">
+      <nav ref={navRef} className="bottom-nav bottom-nav-revamp bottom-nav-minimal" aria-label="Κύρια πλοήγηση">
         <button
-          className={`bottom-nav-btn${showPlateScanner ? ' active' : ''}`}
-          onClick={openPlateScannerModal}
-          aria-label="Meal Scanner"
+          className={`bottom-nav-btn${showSmartRoute ? ' active' : ''}`}
+          onClick={openSmartRouteModal}
+          aria-label="Χάρτης"
         >
-          <div className="bottom-nav-icon"><IconScan size={22} stroke={1.8} /></div>
-          <span className="bottom-nav-label">Scan</span>
-        </button>
-        <button
-          className={`bottom-nav-btn${showScanner ? ' active' : ''}`}
-          onClick={openBarcodeScanner}
-          aria-label="QR Scanner"
-        >
-          <div className="bottom-nav-icon"><IconQrcode size={22} stroke={1.8} /></div>
-          <span className="bottom-nav-label">QR</span>
-        </button>
-        <button
-          className={`bottom-nav-btn${activeTab === 'recipes' ? ' active' : ''}`}
-          onClick={() => navigateToTab('recipes')}
-          aria-label="Συνταγές"
-        >
-          <div className="bottom-nav-icon"><IconChefHat size={22} stroke={1.8} /></div>
-          <span className="bottom-nav-label">Συνταγές</span>
+          <div className="bottom-nav-icon"><IconMap size={24} stroke={1.8} /></div>
+          <span className="bottom-nav-label">Χάρτης</span>
         </button>
         <button
           className={`bottom-nav-btn nav-tab-fab${activeTab === 'list' ? ' active' : ''}`}
@@ -7037,64 +6967,70 @@ export default function App() {
           aria-label="Αρχική"
         >
           <div className="nav-fab-inner">
-            <IconHome size={24} stroke={1.8} />
+            <IconHome size={26} stroke={1.8} />
           </div>
           <span className="bottom-nav-label">Αρχική</span>
         </button>
         <button
-          className={`bottom-nav-btn${showSmartRoute ? ' active' : ''}`}
-          onClick={openSmartRouteModal}
-          aria-label="Χάρτης"
-        >
-          <div className="bottom-nav-icon"><IconMap size={22} stroke={1.8} /></div>
-          <span className="bottom-nav-label">Χάρτης</span>
-        </button>
-        <button
-          className={`bottom-nav-btn${showFriendsPanel ? ' active' : ''}`}
-          onClick={openFriendsPopup}
-          aria-label="Φίλοι"
-        >
-          <div className="bottom-nav-icon">
-            <IconUsers size={22} stroke={1.8} />
-            {friends.length > 0 && <span className="bottom-nav-badge">{friends.length}</span>}
-          </div>
-          <span className="bottom-nav-label">Φίλοι</span>
-        </button>
-        <button
           className={`bottom-nav-btn${showProfileMenu ? ' active' : ''}`}
-          onClick={toggleProfileMenu}
+          onClick={() => {
+            if (!user) { openAuthWall('login'); return; }
+            setShowProfileMenu(v => !v);
+          }}
           aria-label="Προφίλ"
         >
-          <div className="bottom-nav-icon"><IconUser size={22} stroke={1.8} /></div>
-          <span className="bottom-nav-label">Εγώ</span>
+          <div className="bottom-nav-icon"><IconUser size={24} stroke={1.8} /></div>
+          <span className="bottom-nav-label">Προφίλ</span>
         </button>
       </nav>
 
-      {/* ── Profile dropdown portal — fixed position, triggered from more-overlay ── */}
-      {user && showProfileMenu && (
-        <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 9800 }} onClick={() => setShowProfileMenu(false)} />
-          <div className="profile-dropdown profile-dropdown-fixed">
-            <div className="dropdown-info" style={{ padding: '15px 16px', borderBottom: '1px solid var(--border-light)' }}>
-              <strong style={{ display: 'block', fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>{user.name}</strong>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Κωδικός: <strong>{user.shareKey || 'N/A'}</strong></span>
-                <button onClick={handleCopyShareKey} style={{ background: 'var(--bg-surface-hover)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', padding: '4px 8px', borderRadius: '6px' }}>📋</button>
-              </div>
-            </div>
-            <div className="dropdown-item" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {isDarkMode ? <><IconSun size={16} /> Φωτεινό θέμα</> : <><IconMoon size={16} /> Σκούρο θέμα</>}
-            </div>
-            {'PushManager' in window && (
-              <div className="dropdown-item" onClick={() => { pushEnabled ? unsubscribeFromPush() : subscribeToPush(); setShowProfileMenu(false); }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <IconBell size={16} /> {pushEnabled ? 'Ειδοποιήσεις ON ✓' : 'Ειδοποιήσεις OFF'}
+      {/* ── Profile Popup Modal ── */}
+      {showProfileMenu && createPortal(
+        <div className="profile-popup-overlay" onMouseDown={(e) => e.target === e.currentTarget && setShowProfileMenu(false)}>
+          <div className="profile-popup-card">
+            <button className="profile-popup-close" onClick={() => setShowProfileMenu(false)}>✕</button>
+            {user ? (
+              <>
+                <div className="profile-popup-header">
+                  <div className="profile-popup-avatar">
+                    {user.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div className="profile-popup-name">{user.name}</div>
+                  <div className="profile-popup-email">{user.email || ''}</div>
+                  <div className="profile-popup-share">
+                    Κωδικός: <strong>{user.shareKey || 'N/A'}</strong>
+                    <button className="profile-popup-copy" onClick={handleCopyShareKey}>📋</button>
+                  </div>
+                  {user.isPremium && <div className="profile-popup-premium-badge">⭐ Premium</div>}
+                </div>
+                <div className="profile-popup-actions">
+                  <button className="profile-popup-action" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }}>
+                    {isDarkMode ? <><IconSun size={18} /> Φωτεινό θέμα</> : <><IconMoon size={18} /> Σκούρο θέμα</>}
+                  </button>
+                  {'PushManager' in window && (
+                    <button className="profile-popup-action" onClick={() => { pushEnabled ? unsubscribeFromPush() : subscribeToPush(); setShowProfileMenu(false); }}>
+                      <IconBell size={18} /> {pushEnabled ? 'Ειδοποιήσεις ON' : 'Ειδοποιήσεις OFF'}
+                    </button>
+                  )}
+                  <button className="profile-popup-action" onClick={openSavedLists}>
+                    <IconNotes size={18} /> Λίστες μου
+                  </button>
+                  <button className="profile-popup-action logout" onClick={handleLogout}>
+                    <IconLogout size={18} /> Αποσύνδεση
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign:'center', padding:'32px 20px' }}>
+                <div style={{ fontSize:48, marginBottom:16 }}>👤</div>
+                <h3 style={{ margin:'0 0 8px', fontWeight:800 }}>Σύνδεση</h3>
+                <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:20 }}>Συνδέσου για να αποθηκεύσεις λίστες, συνταγές και προτιμήσεις</p>
+                <button className="submit-btn" onClick={() => { setShowProfileMenu(false); openAuthWall('login'); }}>Σύνδεση / Εγγραφή</button>
               </div>
             )}
-            <div className="dropdown-item logout" onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <IconLogout size={16} /> Αποσύνδεση
-            </div>
           </div>
-        </>
+        </div>,
+        document.body
       )}
 
       {/* SmartRoute map modal — opened via nav Map button */}
@@ -7133,7 +7069,7 @@ const ONBOARDING_STEPS = [
   {
     emoji: '👋',
     title: 'Καλωσήρθες στο Καλαθάκι!',
-    body:  'Η έξυπνη λίστα ψώνων με σύγκριση τιμών από 8 σούπερ μάρκετ, συνταγές & AI πλάνο διατροφής.',
+    body:  'v2.3.0 — Η έξυπνη λίστα ψώνων με σύγκριση τιμών, Meal Scanner, Barcode Scanner, συνταγές & AI πλάνο διατροφής.',
     btn:   'Ας ξεκινήσουμε →',
   },
   {

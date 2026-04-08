@@ -27,14 +27,15 @@ const CHAINS = [
 
 // ─── Leaflet loader ──────────────────────────────────────────────────────────
 let _ll = false;
-const loadLeaflet = () => {
-  if (_ll && window.L) return Promise.resolve();
-  return new Promise((ok, fail) => {
-    if (!document.getElementById('lf-css')) {
-      const l = document.createElement('link'); l.id='lf-css'; l.rel='stylesheet';
-      l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; l.crossOrigin=''; document.head.appendChild(l);
-    }
-    if (window.L) { _ll=true; ok(); return; }
+const loadLeaflet = async () => {
+  if (_ll && window.L) return;
+  if (!document.getElementById('lf-css')) {
+    const l = document.createElement('link'); l.id='lf-css'; l.rel='stylesheet';
+    l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; l.crossOrigin=''; document.head.appendChild(l);
+    await new Promise(r => { l.onload = r; setTimeout(r, 2000); });
+  }
+  if (window.L) { _ll = true; return; }
+  await new Promise((ok, fail) => {
     const s = document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
     s.crossOrigin=''; s.onload=()=>{_ll=true;ok()}; s.onerror=()=>fail(new Error('Leaflet failed'));
     document.head.appendChild(s);
@@ -265,6 +266,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const routeLayerRef = useRef(null);
+  const resizeObRef = useRef(null);
 
   const countItems = useCallback(chain => {
     if (!chain) return 0;
@@ -365,7 +367,12 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
           L.control.zoom({position:'topright'}).addTo(map);
           L.marker([pos.lat,pos.lng],{icon:mkUser(L),zIndexOffset:1000}).addTo(map).bindPopup('<b>📍 Εδώ είσαι</b>');
           mapRef.current = map;
-          setTimeout(() => map.invalidateSize(), 150);
+          // Multiple invalidateSize calls to handle portal render timing
+          [100, 300, 600].forEach(ms => setTimeout(() => { if (mapRef.current) mapRef.current.invalidateSize(); }, ms));
+          // ResizeObserver for dynamic container sizing
+          const ro = new ResizeObserver(() => { if (mapRef.current) mapRef.current.invalidateSize(); });
+          ro.observe(containerRef.current);
+          resizeObRef.current = ro;
 
           // Auto-search when user pans/zooms the map (debounced 800ms)
           let idleTimer = null;
@@ -385,7 +392,7 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         setStatus('error');
       }
     })();
-    return () => { dead=true; if(mapRef.current){mapRef.current.remove();mapRef.current=null} markersRef.current=[]; routeLayerRef.current=null; setStores([]); setSelected([]); setRoute(null); };
+    return () => { dead=true; if(resizeObRef.current){resizeObRef.current.disconnect();resizeObRef.current=null} if(mapRef.current){mapRef.current.remove();mapRef.current=null} markersRef.current=[]; routeLayerRef.current=null; setStores([]); setSelected([]); setRoute(null); };
   }, [isOpen, doSearch]);
 
   const calcRoute = useCallback(async () => {

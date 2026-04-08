@@ -242,7 +242,7 @@ export default function AppSplash({ onDone }) {
         opacity:        past('tagline') ? 1 : 0,
         transition:    'opacity 0.6s ease 0.4s',
       }}>
-        v1.1.0
+        v2.3.0
       </p>
 
       {/* ── Keyframes ────────────────────────────────────────────────────── */}
