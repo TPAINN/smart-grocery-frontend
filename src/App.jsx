@@ -4790,14 +4790,23 @@ export default function App() {
     items.filter(i => i.store && i.store !== 'Άγνωστο').map(i => i.store)
   )].length;
 
+  const mealplanJustBlocked = useRef(false);
+
   useEffect(() => {
     if (activeTab === 'mealplan' && mealPlanLocked) {
+      mealplanJustBlocked.current = true;
       setActiveTab('list');
+      setShowPremiumModal(true);
     }
   }, [activeTab, mealPlanLocked]);
 
   useEffect(() => {
-    closeOverlaySurfaces();
+    if (mealplanJustBlocked.current) {
+      mealplanJustBlocked.current = false;
+      closeOverlaySurfaces('premium');
+    } else {
+      closeOverlaySurfaces();
+    }
   }, [activeTab, closeOverlaySurfaces]);
 
   // ── Body scroll lock — prevent background scroll when any modal is open ─────
