@@ -222,9 +222,13 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
 
     try {
       const base = (apiBase || '').replace(/\/+$/, '');
+      const token = localStorage.getItem('smart_grocery_token');
       const res = await fetch(`${base}/api/plate-scanner/scan`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           image: imageData.base64,
           mediaType: imageData.mediaType,

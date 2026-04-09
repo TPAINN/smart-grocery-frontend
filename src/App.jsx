@@ -2416,7 +2416,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         // ── Edamam fallback — fires when OFF has no record for this barcode ──
         setLoading(true); // keep spinner going
         try {
-          const edamamRes = await fetch(`${API_BASE}/api/barcode/${barcode}`);
+          const edamamRes = await fetch(`${API_BASE}/api/barcode/${barcode}`, { headers: authHeader() });
           const edamamData = await edamamRes.json();
           if (edamamData.found && edamamData.product) {
             const ep = edamamData.product;
@@ -3387,10 +3387,12 @@ export default function App() {
   }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
 
   const openPlateScannerModal = useCallback(() => {
+    if (!user) { openAuthWall('login'); return; }
+    if (!user.isPremium && !user.isOnTrial) { setShowPremiumModal(true); return; }
     closeOverlaySurfaces('plate-scanner');
     setShowPlateScanner(true);
     haptic.light();
-  }, [closeOverlaySurfaces, haptic]);
+  }, [user, openAuthWall, closeOverlaySurfaces, haptic]);
 
   const openSmartRouteModal = useCallback(() => {
     if (!user) {
@@ -3403,12 +3405,14 @@ export default function App() {
   }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
 
   const openBarcodeScanner = useCallback(async () => {
+    if (!user) { openAuthWall('login'); return; }
+    if (!user.isPremium && !user.isOnTrial) { setShowPremiumModal(true); return; }
     const { granted } = await requestCamera();
     if (!granted) return;
     closeOverlaySurfaces('scanner');
     setShowScanner(true);
     haptic.light();
-  }, [requestCamera, closeOverlaySurfaces, haptic]);
+  }, [user, openAuthWall, requestCamera, closeOverlaySurfaces, haptic]);
 
   // ── Persist friends ────────────────────────────────────────────────────────
   useEffect(() => {
