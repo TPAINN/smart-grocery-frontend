@@ -83,6 +83,23 @@ class ErrorBoundary extends Component {
   }
 }
 
+// ── Auto-update: reload when a new service worker takes over ─────────────────
+// hadController = true means a SW was already running (this is an UPDATE, not first install).
+// We only reload for updates — first-time installs should not trigger a reload.
+if ('serviceWorker' in navigator) {
+  const hadController = Boolean(navigator.serviceWorker.controller);
+  let reloading = false;
+  const doReload = () => { if (hadController && !reloading) { reloading = true; window.location.reload(); } };
+
+  // SW posts SW_UPDATED after activate + claim
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data?.type === 'SW_UPDATED') doReload();
+  });
+
+  // Belt-and-suspenders: fires whenever the active controller changes
+  navigator.serviceWorker.addEventListener('controllerchange', doReload);
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>

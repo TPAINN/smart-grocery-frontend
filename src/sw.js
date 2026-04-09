@@ -1,13 +1,24 @@
 // sw.js — Custom Service Worker (Kalathaki)
 // Handles: Workbox precaching, API caching, Web Push notifications
-import { clientsClaim } from 'workbox-core';
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 
+// On install: take over immediately (don't wait for old SW to release)
 self.skipWaiting();
-clientsClaim();
+
+// On activate: claim all open tabs, then tell them to reload for the new version.
+// We only want to reload when REPLACING an existing controller, not on first install.
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    clients.claim().then(() => {
+      return self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    }).then((openClients) => {
+      openClients.forEach((client) => client.postMessage({ type: 'SW_UPDATED' }));
+    })
+  );
+});
 
 // Workbox injects the precache manifest here
 precacheAndRoute(self.__WB_MANIFEST);
