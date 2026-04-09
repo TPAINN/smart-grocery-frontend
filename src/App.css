@@ -12169,6 +12169,26 @@ body.dark-mode .hero-version {
   box-shadow: 0 12px 32px rgba(66, 99, 235, 0.12);
   text-transform: none;
   letter-spacing: 0.02em;
+  /* Fade in 1.5s → hold 5s → fade out 1.5s  (total 8s) */
+  animation: liveBannerLifecycle 8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes liveBannerLifecycle {
+  0%                   { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  /* fade-in over 1.5s */
+  18.75%               { opacity: 1; transform: translateY(0) scale(1); }
+  /* hold for 5s  (18.75% → 81.25%) */
+  81.25%               { opacity: 1; transform: translateY(0) scale(1); }
+  /* fade-out over 1.5s */
+  100%                 { opacity: 0; transform: translateY(-4px) scale(0.97); }
+}
+
+body.dark-mode .live-scraping-banner {
+  background: rgba(13, 17, 23, 0.85);
+  color: #818cf8;
+  border-color: rgba(129, 140, 248, 0.2);
+  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.15);
 }
 
 .pulsing-dot {
@@ -13120,38 +13140,23 @@ body.dark-mode .mealplanner-step {
    FEATURED SCANNER BUTTONS — Meal Scan & Barcode emphasis
    ═══════════════════════════════════════════════════════════════ */
 
+/* Featured scanner buttons — slightly elevated, NOT accent-colored by default */
 .tools-topbar-btn--featured {
-  background: linear-gradient(145deg, rgba(99, 102, 241, 0.14), rgba(139, 92, 246, 0.10)) !important;
-  border-color: rgba(99, 102, 241, 0.28) !important;
-  color: var(--accent) !important;
-  padding: 8px 16px !important;
+  padding: 9px 15px !important;
   font-weight: 800 !important;
   font-size: 11.5px !important;
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  position: relative;
-  overflow: hidden;
-}
-
-.tools-topbar-btn--featured::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.08) 50%, transparent 60%);
-  background-size: 250% 100%;
-  animation: scannerShimmer 3s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes scannerShimmer {
-  0%, 100% { background-position: 250% 0; }
-  50% { background-position: -250% 0; }
+  background: var(--bg-card) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .tools-topbar-btn--featured:hover {
-  background: linear-gradient(145deg, rgba(99, 102, 241, 0.22), rgba(139, 92, 246, 0.16)) !important;
-  border-color: rgba(99, 102, 241, 0.4) !important;
-  transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--bg-chip-hover) !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+  color: var(--accent) !important;
+  transform: translateY(-1px) scale(1.02) !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
 }
 
 .tools-topbar-btn--featured:active {
@@ -13160,15 +13165,17 @@ body.dark-mode .mealplanner-step {
 }
 
 body.dark-mode .tools-topbar-btn--featured {
-  background: linear-gradient(145deg, rgba(99, 102, 241, 0.18), rgba(139, 92, 246, 0.12)) !important;
-  border-color: rgba(139, 92, 246, 0.32) !important;
-  color: #a78bfa !important;
-  box-shadow: 0 2px 16px rgba(139, 92, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 body.dark-mode .tools-topbar-btn--featured:hover {
-  background: linear-gradient(145deg, rgba(99, 102, 241, 0.26), rgba(139, 92, 246, 0.20)) !important;
-  box-shadow: 0 6px 24px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+  color: #c4b5fd !important;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.15) !important;
 }
 
 

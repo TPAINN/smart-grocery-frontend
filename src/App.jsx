@@ -1778,7 +1778,6 @@ function IngredientDetailModal({ item, onClose }) {
     unknown: { bg:'rgba(148,163,184,0.08)',border:'rgba(148,163,184,0.3)',color:'#94a3b8', label:'Άγνωστο' },
   };
   const c = safetyColors[item.safety] || safetyColors.unknown;
-  const heroImage = toAbsoluteMediaUrl(recipe.image || recipe.thumbnail);
 
   return createPortal(
     <div className="modal-overlay" onMouseDown={e => e.target === e.currentTarget && onClose()} style={{ zIndex:110000 }}>
@@ -2871,6 +2870,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
   ];
 
   const diffColor = recipe.difficulty === 'Εύκολη' ? '#10b981' : recipe.difficulty === 'Δύσκολη' ? '#ef4444' : '#f59e0b';
+  const heroImage = toAbsoluteMediaUrl(recipe.image || recipe.thumbnail);
 
   return createPortal(
     <div className={`recipe-popup-overlay ${isClosing ? 'closing' : ''}`} onMouseDown={(e) => e.target === e.currentTarget && handleClose()}>
@@ -3828,20 +3828,70 @@ export default function App() {
 
 
   // ── TheMealDB: fetch Greek or Mediterranean recipes ──────────────────────
+  const MEALDB_BASE = 'https://www.themealdb.com/api/json/v1/1';
   const fetchMealDb = useCallback(async (section = 'greek') => {
     setMealDbLoading(true);
     setMealDbRecipes([]);
     setSelectedMealDbRecipe(null);
     setMealDbPage(1);
     setMealDbPanelKey(k => k + 1);
+    // 1) Try our backend proxy (has Greek translations + extra data)
     try {
       const endpoint = section === 'mediterranean' ? 'mediterranean' : 'greek';
-      const r = await fetch(`${API_BASE}/api/meals/${endpoint}`);
+      const r = await fetch(`${API_BASE}/api/meals/${endpoint}`, { signal: AbortSignal.timeout(8000) });
       if (r.ok) {
         const data = await r.json();
-        setMealDbRecipes(data.meals || []);
+        const meals = data.meals || [];
+        if (meals.length > 0) {
+          setMealDbRecipes(meals);
+          setMealDbLoading(false);
+          return;
+        }
       }
-    } catch { /* silent fail — section just stays empty */ }
+    } catch { /* backend sleeping or offline — fall through to direct API */ }
+    // 2) Fallback: call TheMealDB directly
+    try {
+      const area = section === 'mediterranean' ? 'Italian' : 'Greek';
+      const listR = await fetch(`${MEALDB_BASE}/filter.php?a=${area}`);
+      if (listR.ok) {
+        const listData = await listR.json();
+        const items = (listData.meals || []).slice(0, 24);
+        // Fetch full details for each meal in parallel (batched to avoid rate limits)
+        const details = await Promise.allSettled(
+          items.map(m => fetch(`${MEALDB_BASE}/lookup.php?i=${m.idMeal}`).then(r2 => r2.json()))
+        );
+        const meals = details
+          .filter(d => d.status === 'fulfilled' && d.value?.meals?.[0])
+          .map(d => {
+            const m = d.value.meals[0];
+            // Build ingredient list
+            const ingredients = [];
+            for (let i = 1; i <= 20; i++) {
+              const ing = m[`strIngredient${i}`];
+              const meas = m[`strMeasure${i}`];
+              if (ing && ing.trim()) ingredients.push(`${meas ? meas.trim() + ' ' : ''}${ing.trim()}`);
+            }
+            return {
+              _id: m.idMeal,
+              sourceId: m.idMeal,
+              title: m.strMeal,
+              image: m.strMealThumb,
+              area: m.strArea || (section === 'mediterranean' ? 'Mediterranean' : 'Greek'),
+              category: m.strCategory || '',
+              cuisine: section === 'mediterranean' ? 'Μεσογειακή' : 'Ελληνική',
+              sourceApi: 'themealdb',
+              instructions: m.strInstructions || '',
+              ingredients,
+              youtubeUrl: m.strYoutube || null,
+              calories: null,
+              protein: null,
+              carbs: null,
+              fat: null,
+            };
+          });
+        setMealDbRecipes(meals);
+      }
+    } catch { /* fully offline — section stays empty */ }
     setMealDbLoading(false);
   }, []);
 
