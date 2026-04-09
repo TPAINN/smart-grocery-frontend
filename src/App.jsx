@@ -5143,7 +5143,7 @@ export default function App() {
             </button>
             <button className="tools-topbar-btn tools-topbar-btn--featured" onClick={openPlateScannerModal}>
               <IconScan size={18} stroke={2} />
-              <span>Meal Scan</span>
+              <span>Meal Macros</span>
             </button>
             <button className="tools-topbar-btn tools-topbar-btn--featured" onClick={openBarcodeScanner}>
               <IconQrcode size={18} stroke={2} />
@@ -5226,7 +5226,7 @@ export default function App() {
                 <div
                   className="action-btn-new scanner-btn-header psm-header-btn"
                   onClick={openPlateScannerModal}
-                  title="Meal Scanner — Σκάναρε το πιάτο σου"
+                  title="Meal Macros — Σκάναρε το πιάτο σου"
                   style={{ fontSize: 18 }}
                 >
                   🍽️

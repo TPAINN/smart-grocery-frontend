@@ -983,3 +983,58 @@ body.dark-mode .psm-badge--memory {
   background: rgba(124, 77, 255, 0.2);
   color: #ddd6fe;
 }
+
+/* ── Camera / Gallery source picker ──────────────────────────────── */
+.psm-source-btns {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.psm-source-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px 12px;
+  border-radius: 22px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.psm-source-btn--camera {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.32);
+}
+
+.psm-source-btn--gallery {
+  background: var(--bg-surface, #f8fafc);
+  color: var(--text-primary, #1e293b);
+  border-color: var(--border, rgba(0,0,0,0.08));
+}
+
+body.dark-mode .psm-source-btn--gallery {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.psm-source-btn:hover  { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0,0,0,0.15); }
+.psm-source-btn:active { transform: scale(0.94); transition-duration: 0.08s; }
+
+.psm-source-icon  { font-size: 28px; line-height: 1; }
+.psm-source-label { font-size: 14px; font-weight: 800; }
+.psm-source-sub   { font-size: 11px; opacity: 0.65; }
+
+/* Re-select row (after photo chosen) */
+.psm-reselect-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}

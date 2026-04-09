@@ -182,8 +182,9 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
   const [addedMsg, setAddedMsg] = useState(false);
   const [learningProfile, setLearningProfile] = useState(() => readLearningProfile());
 
-  const fileInputRef = useRef(null);
-  const addedTimerRef = useRef(null);
+  const fileInputRef    = useRef(null); // gallery pick
+  const cameraInputRef  = useRef(null); // direct camera
+  const addedTimerRef   = useRef(null);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -286,7 +287,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
           {/* Header */}
           <div className="psm-header">
             <h2 className="psm-title">
-              <span className="psm-title-icon">🍽️</span> Meal Scanner
+              <span className="psm-title-icon">📊</span> Meal Macros
             </h2>
             <button className="psm-close-btn" onClick={onClose} aria-label="Κλείσιμο">✕</button>
           </div>
@@ -321,12 +322,22 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
               </div>
             </div>
 
-            {/* Hidden file input */}
+            {/* Camera input (direct capture) */}
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileChange}
+              className="psm-file-input"
+              aria-hidden="true"
+              tabIndex={-1}
+            />
+            {/* Gallery input (no capture — opens photo picker) */}
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handleFileChange}
               className="psm-file-input"
               aria-hidden="true"
@@ -336,12 +347,24 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
             {/* Buttons */}
             <div className="psm-capture-actions">
               {!preview ? (
-                <button
-                  className="psm-btn psm-btn--gradient psm-btn--pill"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  📷 Φωτογραφία / Γκαλερί
-                </button>
+                <div className="psm-source-btns">
+                  <button
+                    className="psm-source-btn psm-source-btn--camera"
+                    onClick={() => cameraInputRef.current?.click()}
+                  >
+                    <span className="psm-source-icon">📷</span>
+                    <span className="psm-source-label">Κάμερα</span>
+                    <span className="psm-source-sub">Τώρα</span>
+                  </button>
+                  <button
+                    className="psm-source-btn psm-source-btn--gallery"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <span className="psm-source-icon">🖼️</span>
+                    <span className="psm-source-label">Γκαλερί</span>
+                    <span className="psm-source-sub">Από αρχεία</span>
+                  </button>
+                </div>
               ) : (
                 <>
                   <button
@@ -350,12 +373,20 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
                   >
                     Ανάλυσε →
                   </button>
-                  <button
-                    className="psm-btn psm-btn--ghost psm-btn--sm"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Αλλαγή φωτογραφίας
-                  </button>
+                  <div className="psm-reselect-row">
+                    <button
+                      className="psm-btn psm-btn--ghost psm-btn--sm"
+                      onClick={() => cameraInputRef.current?.click()}
+                    >
+                      📷 Νέα φωτό
+                    </button>
+                    <button
+                      className="psm-btn psm-btn--ghost psm-btn--sm"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      🖼️ Από γκαλερί
+                    </button>
+                  </div>
                 </>
               )}
             </div>
@@ -541,7 +572,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
         <div className="psm-screen psm-error-screen">
           <div className="psm-header">
             <h2 className="psm-title">
-              <span className="psm-title-icon">🍽️</span> Meal Scanner
+              <span className="psm-title-icon">📊</span> Meal Macros
             </h2>
             <button className="psm-close-btn" onClick={onClose} aria-label="Κλείσιμο">✕</button>
           </div>

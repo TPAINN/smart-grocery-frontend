@@ -14137,7 +14137,7 @@ textarea:focus-visible {
 .soc-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 399;
+  z-index: 1000;
   background: rgba(0, 0, 0, 0.46);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
@@ -14150,7 +14150,7 @@ textarea:focus-visible {
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 400;
+  z-index: 1001;
   width: min(380px, 96vw);
   background: var(--bg-card);
   border-left: 1px solid var(--border);
@@ -14713,25 +14713,26 @@ body.dark-mode .soc-bubble--other { background: rgba(255,255,255,0.05); border-c
 }
 
 /* 3 ── Upgrade / hero-status pill: shimmer sweep on hover ─────────── */
-@keyframes pillShimmer {
+@keyframes pillSweep {
   0%   { transform: translateX(-120%) skewX(-18deg); }
   100% { transform: translateX(220%)  skewX(-18deg); }
 }
 .hero-status-pill {
   overflow: hidden;
 }
-.hero-status-pill::after {
+.hero-status-pill::before {
   content: '';
   position: absolute;
   top: 0; left: 0;
   width: 40%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
   transform: translateX(-120%) skewX(-18deg);
   pointer-events: none;
+  z-index: 1;
 }
-.hero-status-pill:hover::after {
-  animation: pillShimmer 0.65s ease forwards;
+.hero-status-pill:hover::before {
+  animation: pillSweep 0.55s ease forwards;
 }
 
 /* 4 ── Bottom nav: active tab spring pop on mount ─────────────────── */
