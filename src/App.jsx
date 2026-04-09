@@ -3161,6 +3161,8 @@ export default function App() {
   const [searchSort, setSearchSort] = useState('relevance'); // 'relevance' | 'price'
   const [selectedStore, setSelectedStore] = useState('Όλα');
   const [isScraping, setIsScraping]       = useState(false);
+  const [showLiveBanner, setShowLiveBanner] = useState(false);
+  const liveBannerTimerRef = useRef(null);
   const [isServerWaking, setIsServerWaking] = useState(false);
   const [isListening, setIsListening]     = useState(false);
   const [recipes, setRecipes]               = useState([]);
@@ -4108,6 +4110,11 @@ export default function App() {
         if (r.ok) {
           const j = await r.json();
           setIsScraping(j.isScraping || false);
+          if (j.isScraping) {
+            setShowLiveBanner(true);
+            clearTimeout(liveBannerTimerRef.current);
+            liveBannerTimerRef.current = setTimeout(() => setShowLiveBanner(false), 8000);
+          }
           setIsServerWaking(elapsed > 3000);
           if (elapsed > 3000) setTimeout(() => setIsServerWaking(false), 15000);
         }
@@ -5082,7 +5089,7 @@ export default function App() {
       )}
 
       <div className="container" style={!isOnline ? { marginTop: 64 } : {}}>
-        {isScraping && (
+        {showLiveBanner && (
           <div className="live-scraping-banner">
             <div className="pulsing-dot" />
             <span>Live ενημέρωση τιμών</span>
