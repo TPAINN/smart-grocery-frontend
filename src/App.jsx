@@ -1311,69 +1311,228 @@ function AddFriendModal({ isOpen, onAdd, onClose }) {
   );
 }
 
-// ─── Friends Panel (slide-in από δεξιά) ──────────────────────────────────────
-function FriendsPanel({ friends, myShareKey, onCopyKey, onAddFriend, onRemoveFriend, onClose }) {
+// ─── Social Panel (unified Messaging + Friends + Invite) ─────────────────────
+function SocialPanel({ user, friends, chatMessages, chatInput, setChatInput, dmTarget, setDmTarget,
+  chatEndRef, onSendMessage, onLoadChat, onAddFriend, onRemoveFriend, onCopyKey, onClose,
+  initialTab = 'messages', unreadChat }) {
+
+  const [tab, setTab] = useState(initialTab);
+
   return (
-    <div className="friends-popup-card">
-      <div className="friends-popup-header">
-        <div>
-          <p className="friends-popup-kicker">Κοινό Καλάθι</p>
-          <h3 className="friends-popup-title">Φίλοι & shared carts</h3>
-          <p className="friends-popup-subtitle">{friends.length} συνδεδεμένοι φίλοι</p>
-        </div>
-        <button className="friends-popup-close" onClick={onClose} aria-label="Κλείσιμο">✕</button>
-      </div>
+    <>
+      <div className="soc-backdrop" onClick={onClose} />
+      <div className="soc-panel">
 
-      <div className="friends-popup-share">
-        <div className="friends-popup-share-label">Το Share Key μου</div>
-        <div className="friends-popup-share-row">
-          <div className="friends-popup-share-code">{myShareKey || '—'}</div>
-          <button className="friends-popup-copy" onClick={onCopyKey}>📋</button>
-        </div>
-        <div className="friends-popup-share-note">Στείλε τον κωδικό σου και σύνδεσε τα καλάθια σας.</div>
-      </div>
-
-      <div className="friends-popup-list">
-        {friends.length === 0 ? (
-          <div className="friends-empty-state">
-            <div className="friends-empty-icon">👥</div>
-            <div className="friends-empty-title">Δεν έχεις φίλους ακόμα</div>
-            <div className="friends-empty-copy">Πρόσθεσε το πρώτο share key για να ξεκινήσει το κοινό καλάθι.</div>
-          </div>
-        ) : (
-          friends.map(friend => (
-            <div key={friend.shareKey} className="friends-popup-item">
-              <div
-                className="friends-popup-avatar"
-                style={{
-                  background: getAvatarColor(friend.shareKey),
-                  boxShadow: `0 12px 24px ${getAvatarColor(friend.shareKey)}33`,
-                }}
-              >
-                {getInitials(friend.username)}
-              </div>
-              <div className="friends-popup-meta">
-                <div className="friends-popup-name">{friend.username}</div>
-                <div className="friends-popup-key">#{friend.shareKey}</div>
-              </div>
-              <button
-                className="friends-popup-remove"
-                onClick={() => onRemoveFriend(friend.shareKey)}
-                title="Αφαίρεση"
-              >
-                ✕
-              </button>
+        {/* ── Header ── */}
+        <div className="soc-header">
+          <div className="soc-header-left">
+            <div className="soc-header-icon">
+              <IconUsers size={18} color="#fff" stroke={2} />
             </div>
-          ))
-        )}
-      </div>
+            <div>
+              <div className="soc-header-title">Κοινωνικό</div>
+              <div className="soc-header-sub">
+                {friends.length === 0 ? 'Δεν έχεις φίλους ακόμα' : `${friends.length} φίλοι · ${1 + friends.length} ομάδα`}
+              </div>
+            </div>
+          </div>
+          <div className="soc-header-actions">
+            {tab === 'messages' && (
+              <button className="soc-icon-btn" onClick={onLoadChat} title="Ανανέωση">
+                <IconRefresh size={14} />
+              </button>
+            )}
+            <button className="soc-icon-btn" onClick={onClose} aria-label="Κλείσιμο">
+              <IconX size={14} />
+            </button>
+          </div>
+        </div>
 
-      <div className="friends-popup-footer">
-        <button className="friends-popup-add" onClick={onAddFriend}>
-          ➕ Προσθήκη Φίλου
-        </button>
+        {/* ── Tab bar ── */}
+        <div className="soc-tabs">
+          <button className={`soc-tab${tab === 'messages' ? ' soc-tab--active' : ''}`} onClick={() => setTab('messages')}>
+            <IconMessage size={14} stroke={2} />
+            <span>Μηνύματα</span>
+            {unreadChat > 0 && tab !== 'messages' && <span className="soc-badge">{unreadChat}</span>}
+          </button>
+          <button className={`soc-tab${tab === 'friends' ? ' soc-tab--active' : ''}`} onClick={() => setTab('friends')}>
+            <IconUsers size={14} stroke={2} />
+            <span>Φίλοι</span>
+            {friends.length > 0 && <span className="soc-badge soc-badge--muted">{friends.length}</span>}
+          </button>
+          <button className={`soc-tab${tab === 'invite' ? ' soc-tab--active' : ''}`} onClick={() => setTab('invite')}>
+            <IconPlus size={14} stroke={2.5} />
+            <span>Πρόσκληση</span>
+          </button>
+        </div>
+
+        {/* ════════ MESSAGES TAB ════════ */}
+        {tab === 'messages' && (
+          <>
+            {/* Participant avatars */}
+            {friends.length > 0 && (
+              <div className="soc-participants">
+                <div className="soc-avatar soc-avatar--me" title={user?.name}>
+                  {getInitials(user?.name || '?')}
+                </div>
+                {friends.slice(0, 6).map(f => (
+                  <div key={f.shareKey} className="soc-avatar" style={{ background: getAvatarColor(f.shareKey) }} title={f.username}>
+                    {getInitials(f.username)}
+                  </div>
+                ))}
+                {friends.length > 6 && <div className="soc-avatar soc-avatar--more">+{friends.length - 6}</div>}
+                <span className="soc-participants-count">{1 + friends.length} συμμετέχουν</span>
+              </div>
+            )}
+
+            {/* Message list */}
+            <div className="soc-messages">
+              {chatMessages.length === 0 ? (
+                <div className="soc-empty">
+                  <div className="soc-empty-icon"><IconMessage size={30} stroke={1.5} /></div>
+                  <div className="soc-empty-title">Ξεκίνα τη συνομιλία!</div>
+                  <div className="soc-empty-copy">
+                    {friends.length === 0
+                      ? 'Πρόσθεσε φίλους πρώτα για να στείλεις μηνύματα.'
+                      : 'Τα μηνύματα φαίνονται σε πραγματικό χρόνο.'}
+                  </div>
+                </div>
+              ) : chatMessages.map((m, i) => {
+                const isMine = m.senderName === user?.name;
+                const prevMsg = chatMessages[i - 1];
+                const showName = !isMine && m.senderName !== prevMsg?.senderName;
+                const msgTime = m.createdAt
+                  ? new Date(m.createdAt).toLocaleTimeString('el-GR', { hour: '2-digit', minute: '2-digit' })
+                  : '';
+                const isDupe = m._id?.startsWith('local_') && chatMessages.slice(0, i).some(
+                  p => !p._id?.startsWith('local_') && p.text === m.text && p.senderName === m.senderName
+                );
+                if (isDupe) return null;
+                return (
+                  <div key={m._id || i} className={`soc-msg-row${isMine ? ' soc-msg-row--mine' : ''}`}>
+                    {showName && <div className="soc-msg-sender">{m.senderName}</div>}
+                    <div className={`soc-bubble${isMine ? ' soc-bubble--mine' : ' soc-bubble--other'}${m.targetShareKey ? ' soc-bubble--dm' : ''}`}>
+                      {m.targetShareKey && <div className="soc-dm-tag">🔒 Ιδιωτικό</div>}
+                      <div className="soc-bubble-text">{m.text}</div>
+                      <div className="soc-bubble-meta">
+                        <span>{msgTime}</span>
+                        {isMine && <span>{m._id?.startsWith('local_') ? '⏳' : '✓✓'}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Compose area */}
+            <div className="soc-compose">
+              {friends.length > 0 && (
+                <div className="soc-dm-picker">
+                  <span className="soc-dm-label">Προς:</span>
+                  <button
+                    className={`soc-dm-pill${dmTarget === null ? ' soc-dm-pill--active' : ''}`}
+                    onClick={() => setDmTarget(null)}
+                  >👥 Όλοι</button>
+                  {friends.map(f => (
+                    <button
+                      key={f.shareKey}
+                      className={`soc-dm-pill${dmTarget?.shareKey === f.shareKey ? ' soc-dm-pill--dm' : ''}`}
+                      onClick={() => setDmTarget(dmTarget?.shareKey === f.shareKey ? null : f)}
+                    >
+                      <span className="soc-dm-av" style={{ background: getAvatarColor(f.shareKey) }}>
+                        {getInitials(f.username)}
+                      </span>
+                      {f.username}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <form className="soc-send-form" onSubmit={onSendMessage}>
+                <input
+                  className={`soc-input${dmTarget ? ' soc-input--dm' : ''}`}
+                  type="text"
+                  placeholder={dmTarget ? `Ιδιωτικό σε ${dmTarget.username}…` : 'Μήνυμα σε όλους…'}
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className={`soc-send-btn${dmTarget ? ' soc-send-btn--dm' : ''}`}
+                >
+                  <IconArrowRight size={18} stroke={2.5} />
+                </button>
+              </form>
+            </div>
+          </>
+        )}
+
+        {/* ════════ FRIENDS TAB ════════ */}
+        {tab === 'friends' && (
+          <div className="soc-list-body">
+            {friends.length === 0 ? (
+              <div className="soc-empty">
+                <div className="soc-empty-icon" style={{ fontSize: 40 }}>👥</div>
+                <div className="soc-empty-title">Δεν έχεις φίλους ακόμα</div>
+                <div className="soc-empty-copy">Πήγαινε στην καρτέλα Πρόσκληση για να συνδέσεις καλάθια.</div>
+              </div>
+            ) : friends.map(friend => (
+              <div key={friend.shareKey} className="soc-friend-row">
+                <div
+                  className="soc-friend-av"
+                  style={{ background: getAvatarColor(friend.shareKey), boxShadow: `0 6px 16px ${getAvatarColor(friend.shareKey)}44` }}
+                >
+                  {getInitials(friend.username)}
+                </div>
+                <div className="soc-friend-meta">
+                  <div className="soc-friend-name">{friend.username}</div>
+                  <div className="soc-friend-key">#{friend.shareKey}</div>
+                </div>
+                <button
+                  className="soc-friend-dm"
+                  onClick={() => { setDmTarget(friend); setTab('messages'); }}
+                  title="Ιδιωτικό μήνυμα"
+                >
+                  <IconMessage size={13} stroke={2} />
+                </button>
+                <button
+                  className="soc-friend-rm"
+                  onClick={() => onRemoveFriend(friend.shareKey)}
+                  title="Αφαίρεση"
+                >
+                  <IconX size={11} stroke={2.5} />
+                </button>
+              </div>
+            ))}
+            <button className="soc-add-btn" onClick={onAddFriend}>
+              ➕ Προσθήκη Φίλου
+            </button>
+          </div>
+        )}
+
+        {/* ════════ INVITE TAB ════════ */}
+        {tab === 'invite' && (
+          <div className="soc-list-body">
+            <div className="soc-invite-card">
+              <div className="soc-invite-label">Το Share Key μου</div>
+              <div className="soc-key-row">
+                <div className="soc-key-code">{user?.shareKey || '—'}</div>
+                <button className="soc-key-copy" onClick={onCopyKey} title="Αντιγραφή">📋</button>
+              </div>
+              <div className="soc-invite-note">
+                Στείλε αυτόν τον κωδικό στους φίλους σου για να συνδέσετε τα καλάθια.
+              </div>
+            </div>
+            <div className="soc-divider"><span>ή</span></div>
+            <button className="soc-add-btn" onClick={onAddFriend}>
+              ➕ Προσθήκη με Share Key φίλου
+            </button>
+          </div>
+        )}
+
       </div>
-    </div>
+    </>
   );
 }
 
@@ -3099,9 +3258,10 @@ export default function App() {
   const [nameModalValue, setNameModalValue]   = useState('');
   const [confirmModal, setConfirmModal]       = useState({ open:false, message:'', onConfirm:null });
   const [recipeAddModal, setRecipeAddModal]   = useState({ open:false, recipeName:'', progress:0, total:0 });
-// ── Chat Messages ──────────────────────────────────────────────────────────
+// ── Chat / Social Panel ────────────────────────────────────────────────────
   const [chatMessages, setChatMessages] = useState([]);
-  const [showChatPanel, setShowChatPanel] = useState(false);
+  const [showSocialPanel, setShowSocialPanel] = useState(false);
+  const [socialTab, setSocialTab] = useState('messages');
   const[unreadChat, setUnreadChat] = useState(0);
   const [chatInput, setChatInput] = useState('');
   const [dmTarget, setDmTarget] = useState(null); // null = group, friend object = private DM
@@ -3119,11 +3279,10 @@ export default function App() {
 
   // ── Friends state ──────────────────────────────────────────────────────────
   const [friends, setFriends]                 = useState([]);  // loaded from DB on login
-  const [showFriendsPanel, setShowFriendsPanel] = useState(false);
   const [showAddFriendModal, setShowAddFriendModal] = useState(false);
   const [friendPicker, setFriendPicker]       = useState({ open:false, item:null });
   const friendsRef = useRef(friends);
-  const showChatPanelRef = useRef(showChatPanel);
+  const showSocialPanelRef = useRef(false);
   const loadGroupChatRef = useRef(() => {});
   const fetchRecipesRef = useRef(() => {});
 
@@ -3289,10 +3448,9 @@ export default function App() {
   const closeOverlaySurfaces = useCallback((keep = '') => {
     if (keep !== 'profile') setShowProfileMenu(false);
     if (keep !== 'lists') setShowListsModal(false);
-    if (keep !== 'friends') setShowFriendsPanel(false);
+    if (keep !== 'social') setShowSocialPanel(false);
     if (keep !== 'add-friend') setShowAddFriendModal(false);
     if (keep !== 'friend-picker') setFriendPicker({ open: false, item: null });
-    if (keep !== 'chat') setShowChatPanel(false);
     if (keep !== 'scanner') setShowScanner(false);
     if (keep !== 'plate-scanner') setShowPlateScanner(false);
     if (keep !== 'map') setShowSmartRoute(false);
@@ -3332,8 +3490,9 @@ export default function App() {
       openAuthWall('login');
       return;
     }
-    closeOverlaySurfaces('friends');
-    setShowFriendsPanel(true);
+    closeOverlaySurfaces('social');
+    setSocialTab('friends');
+    setShowSocialPanel(true);
     haptic.light();
   }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
 
@@ -3352,8 +3511,9 @@ export default function App() {
       openAuthWall('login');
       return;
     }
-    closeOverlaySurfaces('chat');
-    setShowChatPanel(true);
+    closeOverlaySurfaces('social');
+    setSocialTab('messages');
+    setShowSocialPanel(true);
     haptic.light();
   }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
 
@@ -3567,7 +3727,7 @@ export default function App() {
         if (msg._id && prev.some(m => m._id === msg._id)) return prev;
         return [...prev, msg];
       });
-      if (!showChatPanelRef.current) {
+      if (!showSocialPanelRef.current) {
         setUnreadChat(prev => prev + 1);
         if (navigator.vibrate) navigator.vibrate([50, 50]);
       }
@@ -3621,8 +3781,8 @@ export default function App() {
   }, [friends]);
 
   useEffect(() => {
-    showChatPanelRef.current = showChatPanel;
-  }, [showChatPanel]);
+    showSocialPanelRef.current = showSocialPanel;
+  }, [showSocialPanel]);
 
   useEffect(() => {
     loadGroupChatRef.current = loadGroupChat;
@@ -3688,11 +3848,11 @@ export default function App() {
 
   // Scroll to bottom στο chat
   useEffect(() => {
-    if (showChatPanel && chatEndRef.current) {
+    if (showSocialPanel && chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-      setUnreadChat(0); // Αν ανοίξεις το chat, μηδενίζουν τα unread
+      setUnreadChat(0);
     }
-  },[chatMessages, showChatPanel]);
+  },[chatMessages, showSocialPanel]);
 
   // ── Clock ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -4600,8 +4760,7 @@ export default function App() {
       data: {
         showSmartRoute,
         showListsModal,
-        showFriendsPanel,
-        showChatPanel,
+        showSocialPanel,
       },
     });
     // #endregion
@@ -4621,8 +4780,7 @@ export default function App() {
       data: {
         showSmartRoute,
         showListsModal,
-        showFriendsPanel,
-        showChatPanel,
+        showSocialPanel,
       },
     });
     // #endregion
@@ -4852,13 +5010,13 @@ export default function App() {
   // ── Body scroll lock — prevent background scroll when any modal is open ─────
   useEffect(() => {
     const anyOpen = showAuthModal || showPremiumModal || showListsModal || showScanner
-      || showPlateScanner || showSmartRoute || showFriendsPanel || showChatPanel
+      || showPlateScanner || showSmartRoute || showSocialPanel
       || showMoreMenu || showPremiumWelcome || showProfileMenu || showAddFriendModal
       || friendPicker.open || !!expandedRecipe || !!selectedMealDbRecipe || showFeedbackModal;
     document.body.style.overflow = anyOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [showAuthModal, showPremiumModal, showListsModal, showScanner, showPlateScanner,
-      showSmartRoute, showFriendsPanel, showChatPanel, showMoreMenu, showPremiumWelcome,
+      showSmartRoute, showSocialPanel, showMoreMenu, showPremiumWelcome,
       showProfileMenu, showAddFriendModal, friendPicker.open, expandedRecipe, selectedMealDbRecipe,
       showFeedbackModal]);
 
@@ -4911,164 +5069,25 @@ export default function App() {
       {/* Friend modals & panel */}
       <FriendPickerModal isOpen={friendPicker.open} friends={friends} item={friendPicker.item} onSend={handlePickerSend} onClose={() => setFriendPicker({ open:false, item:null })} />
       <AddFriendModal isOpen={showAddFriendModal} onAdd={addFriend} onClose={() => setShowAddFriendModal(false)} existingFriends={friends} />
-      {showFriendsPanel && (
-        <>
-          <div
-            style={{ position:'fixed', inset:0, zIndex:299, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }}
-            onClick={() => setShowFriendsPanel(false)}
-          />
-          <div className="friends-popup-shell">
-            <FriendsPanel
-              friends={friends}
-              myShareKey={user?.shareKey}
-              onCopyKey={handleCopyShareKey}
-              onAddFriend={() => {
-                setShowFriendsPanel(false);
-                openAddFriendPopup();
-              }}
-              onRemoveFriend={removeFriend}
-              onClose={() => setShowFriendsPanel(false)}
-            />
-          </div>
-        </>
-      )}
-      {/* ── Chat Panel ── */}
-      {showChatPanel && (
-        <>
-          <div style={{ position:'fixed', inset:0, zIndex:299, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)' }} onClick={() => setShowChatPanel(false)} />
-          <div style={{
-            position:'fixed', top:0, right:0, bottom:0, zIndex:300, width:'min(340px, 92vw)',
-            background:'var(--bg-card)', borderLeft:'1px solid var(--border)',
-            boxShadow:'-12px 0 48px rgba(0,0,0,0.2)', display:'flex', flexDirection:'column',
-            animation:'slideInRight 0.3s cubic-bezier(0.34,1.56,0.64,1)',
-            backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)',
-          }}>
-            <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border-light)', background:'var(--bg-surface)' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <div style={{ width:36, height:36, borderRadius:10, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <IconMessage size={18} color="#fff" stroke={2}/>
-                  </div>
-                  <div>
-                    <div style={{ fontWeight:800, fontSize:15 }}>Chat Καλαθιού</div>
-                    <div style={{ fontSize:10, color:'var(--text-secondary)' }}>Αυτόματη διαγραφή μετά 24 ώρες</div>
-                  </div>
-                </div>
-                <div style={{ display:'flex', gap:6 }}>
-                  <button onClick={() => loadGroupChat()} title="Ανανέωση μηνυμάτων" style={{ background:'var(--bg-surface)', border:'1px solid var(--border-light)', borderRadius:8, width:30, height:30, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
-                    <IconRefresh size={14}/>
-                  </button>
-                  <button onClick={() => setShowChatPanel(false)} style={{ background:'var(--bg-surface)', border:'1px solid var(--border-light)', borderRadius:8, width:30, height:30, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
-                    <IconX size={14}/>
-                  </button>
-                </div>
-              </div>
-              {/* Participant avatars */}
-              <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                {/* Me */}
-                <div title={user?.name} style={{ width:26, height:26, borderRadius:8, background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:10, fontWeight:800, flexShrink:0, border:'2px solid var(--bg-card)' }}>
-                  {getInitials(user?.name || '?')}
-                </div>
-                {friends.slice(0,5).map(f => (
-                  <div key={f.shareKey} title={f.username} style={{ width:26, height:26, borderRadius:8, background:getAvatarColor(f.shareKey), display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:10, fontWeight:800, flexShrink:0, border:'2px solid var(--bg-card)' }}>
-                    {getInitials(f.username)}
-                  </div>
-                ))}
-                <span style={{ fontSize:10, color:'var(--text-secondary)', marginLeft:2 }}>{1 + friends.length} συμμετέχοντες</span>
-              </div>
-            </div>
-            
-            <div style={{ flex:1, overflowY:'auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' }}>
-              {chatMessages.length === 0 ? (
-                <div style={{ textAlign:'center', marginTop:'40px', padding:'0 20px' }}>
-                  <div style={{ width:64, height:64, borderRadius:20, background:'linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.1))', border:'1.5px solid rgba(99,102,241,0.2)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
-                    <IconMessage size={28} stroke={1.5} style={{color:'#6366f1'}} />
-                  </div>
-                  <div style={{ fontWeight:700, fontSize:15, color:'var(--text-primary)', marginBottom:6 }}>Ξεκίνα τη συνομιλία!</div>
-                  <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5 }}>Τα μηνύματα φαίνονται σε όλους τους φίλους του καλαθιού σε πραγματικό χρόνο.</div>
-                </div>
-              ) : (
-                chatMessages.map((m, i) => {
-                  const isMine = m.senderName === user?.name;
-                  const prevMsg = chatMessages[i - 1];
-                  const showSenderName = !isMine && m.senderName !== prevMsg?.senderName;
-                  const msgTime = m.createdAt ? new Date(m.createdAt).toLocaleTimeString('el-GR', { hour:'2-digit', minute:'2-digit' }) : '';
-                  // Don't show duplicate local messages (optimistic vs server)
-                  const isDupe = m._id?.startsWith('local_') && chatMessages.slice(0, i).some(
-                    prev => !prev._id?.startsWith('local_') && prev.text === m.text && prev.senderName === m.senderName
-                  );
-                  if (isDupe) return null;
-                  return (
-                    <div key={m._id || i} style={{ display:'flex', flexDirection:'column', width:'100%', alignItems: isMine ? 'flex-end' : 'flex-start', marginBottom: 2 }}>
-                      {showSenderName && (
-                        <div style={{ fontSize:10, color:'var(--text-secondary)', fontWeight:600, marginLeft:12, marginBottom:3 }}>{m.senderName}</div>
-                      )}
-                      <div className={`chat-bubble ${isMine ? 'chat-mine' : 'chat-other'}`} style={{ maxWidth:'78%', wordBreak:'break-word', border: m.targetShareKey ? '1px solid rgba(16,185,129,0.35)' : 'none' }}>
-                        {m.targetShareKey && (
-                          <div style={{ fontSize:9, color:'#10b981', fontWeight:700, marginBottom:3, opacity:0.85 }}>🔒 Ιδιωτικό</div>
-                        )}
-                        <div style={{ fontSize:14 }}>{m.text}</div>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent: isMine ? 'flex-end' : 'flex-start', gap:4, marginTop:3 }}>
-                          <span style={{ fontSize:10, opacity:0.6 }}>{msgTime}</span>
-                          {isMine && <span style={{ fontSize:10, opacity:0.6 }}>{m._id?.startsWith('local_') ? '⏳' : '✓✓'}</span>}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            <div style={{ padding:'12px 16px 16px', borderTop:'1px solid var(--border-light)', background:'var(--bg-surface)' }}>
-              {/* DM Target Picker — who receives this message */}
-              {friends.length > 0 && (
-                <div style={{ display:'flex', gap:6, marginBottom:10, flexWrap:'wrap', alignItems:'center' }}>
-                  <span style={{ fontSize:10, color:'var(--text-secondary)', fontWeight:600, textTransform:'uppercase', letterSpacing:0.4 }}>Προς:</span>
-                  <button
-                    onClick={() => setDmTarget(null)}
-                    style={{
-                      padding:'4px 10px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border:'none',
-                      background: dmTarget === null ? 'linear-gradient(135deg,#6366f1,#8b5cf6)' : 'var(--bg-subtle)',
-                      color: dmTarget === null ? '#fff' : 'var(--text-secondary)',
-                      transition:'all 0.15s',
-                    }}
-                  >👥 Όλοι</button>
-                  {friends.map(f => (
-                    <button
-                      key={f.shareKey}
-                      onClick={() => setDmTarget(dmTarget?.shareKey === f.shareKey ? null : f)}
-                      style={{
-                        padding:'4px 10px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border:'none',
-                        background: dmTarget?.shareKey === f.shareKey ? 'linear-gradient(135deg,#10b981,#059669)' : 'var(--bg-subtle)',
-                        color: dmTarget?.shareKey === f.shareKey ? '#fff' : 'var(--text-secondary)',
-                        transition:'all 0.15s',
-                        display:'flex', alignItems:'center', gap:5,
-                      }}
-                    >
-                      <span style={{ width:16, height:16, borderRadius:'50%', background: getAvatarColor(f.shareKey), display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:8, color:'#fff', fontWeight:800 }}>
-                        {getInitials(f.username)}
-                      </span>
-                      {f.username}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <form onSubmit={handleSendMessage} style={{ display:'flex', gap:'8px' }}>
-                <input
-                  type="text"
-                  placeholder={dmTarget ? `Ιδιωτικό σε ${dmTarget.username}...` : 'Μήνυμα σε όλους...'}
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  style={{ flex:1, padding:'12px 16px', borderRadius:'14px', border:`1px solid ${dmTarget ? '#10b981' : 'var(--border)'}`, background:'var(--bg-input)', color:'var(--text-primary)', outline:'none', transition:'border-color 0.2s' }}
-                />
-                <button type="submit" disabled={!chatInput.trim()} style={{ background: dmTarget ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'white', border:'none', borderRadius:'14px', width:'46px', cursor: chatInput.trim() ? 'pointer' : 'not-allowed', opacity: chatInput.trim() ? 1 : 0.5, display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' }}>
-                  <IconArrowRight size={18} stroke={2.5}/>
-                </button>
-              </form>
-            </div>
-          </div>
-        </>
+      {showSocialPanel && (
+        <SocialPanel
+          user={user}
+          friends={friends}
+          chatMessages={chatMessages}
+          chatInput={chatInput}
+          setChatInput={setChatInput}
+          dmTarget={dmTarget}
+          setDmTarget={setDmTarget}
+          chatEndRef={chatEndRef}
+          onSendMessage={handleSendMessage}
+          onLoadChat={loadGroupChat}
+          onAddFriend={() => { setShowSocialPanel(false); openAddFriendPopup(); }}
+          onRemoveFriend={removeFriend}
+          onCopyKey={handleCopyShareKey}
+          onClose={() => setShowSocialPanel(false)}
+          initialTab={socialTab}
+          unreadChat={unreadChat}
+        />
       )}
 
       <div className="container" style={!isOnline ? { marginTop: 64 } : {}}>
@@ -5240,7 +5259,7 @@ export default function App() {
               </div>
 
               {/* Chat Button */}
-              {user && friends.length > 0 && (
+              {user && (
                 <div className="action-btn-new" style={{ position:'relative' }} onClick={openChatDrawer} title="Chat Καλαθιού">
                   <IconMessage size={20} stroke={1.8} />
                   {unreadChat > 0 && (
@@ -5266,8 +5285,7 @@ export default function App() {
                       data: {
                         showSmartRoute,
                         showListsModal,
-                        showFriendsPanel,
-                        showChatPanel,
+                        showSocialPanel,
                       },
                     });
                     // #endregion
@@ -5301,8 +5319,7 @@ export default function App() {
                       data: {
                         showSmartRoute,
                         showListsModal,
-                        showFriendsPanel,
-                        showChatPanel,
+                        showSocialPanel,
                       },
                     });
                     // #endregion
