@@ -1422,26 +1422,25 @@ function PremiumModal({ isOpen, onClose, user }) {
   const [selectedPlan, setSelectedPlan] = useState('yearly');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState('');
-  if (!isOpen) return null;
 
   const onTrial = user?.isOnTrial;
   const trialDays = user?.trialDaysLeft || 0;
 
   const plans = [
-    { id: 'monthly',  price: '0,99€',  period: '/μήνα',     badge: null,              saving: null },
-    { id: 'yearly',   price: '7,99€',  period: '/χρόνο',    badge: '🔥 Δημοφιλές',    saving: 'Εξοικονόμηση 4€' },
-    { id: 'lifetime', price: '14,99€', period: ' μία φορά', badge: '⭐ Early Bird',    saving: 'Για πάντα!' },
+    { id: 'monthly',  price: '0,99€', sub: '/μήνα',      badge: null,         saving: null,            accent: null },
+    { id: 'yearly',   price: '7,99€', sub: '/χρόνο',     badge: '🔥 Δημοφιλές', saving: '-33%',        accent: '#7c3aed' },
+    { id: 'lifetime', price: '14,99€',sub: 'μία φορά',   badge: '⭐ Best',    saving: 'Για πάντα',    accent: '#f59e0b' },
   ];
 
   const features = [
-    { icon:'📋', text:'Έως 10 αποθηκευμένες λίστες (αντί 2)' },
-    { icon:'🤖', text:'Εβδομαδιαίο AI Πλάνο Διατροφής' },
-    { icon:'🤝', text:'Κοινό καλάθι με απεριόριστους φίλους' },
-    { icon:'📊', text:'Ιστορικό αγορών & στατιστικά budget' },
-    { icon:'🗺️', text:'Χάρτης — Έξυπνη διαδρομή αγορών' },
-    { icon:'🔔', text:'Push notifications για φίλους & προσφορές' },
-    { icon:'📷', text:'Barcode scanner χωρίς διαφημίσεις' },
-    { icon:'⭐', text:'Προτεραιότητα στη νέα ύλη & features' },
+    { icon:'📋', text:'Έως 10 αποθηκευμένες λίστες' },
+    { icon:'🤖', text:'AI Πλάνο Διατροφής (εβδομαδιαίο)' },
+    { icon:'🤝', text:'Κοινό καλάθι, απεριόριστοι φίλοι' },
+    { icon:'📷', text:'Meal Scan & Barcode Scanner' },
+    { icon:'🗺️', text:'Χάρτης — Έξυπνη διαδρομή' },
+    { icon:'🔔', text:'Push notifications & προσφορές' },
+    { icon:'📊', text:'Ιστορικό & στατιστικά budget' },
+    { icon:'⚡', text:'Προτεραιότητα σε νέες λειτουργίες' },
   ];
 
   const handleCheckout = async () => {
@@ -1449,14 +1448,14 @@ function PremiumModal({ isOpen, onClose, user }) {
     setCheckoutError('');
     try {
       const token = localStorage.getItem('smart_grocery_token');
-      if (!token) { setCheckoutError('Πρέπει να συνδεθείς πρώτα.'); return; }
+      if (!token) { setCheckoutError('Πρέπει να συνδεθείς πρώτα.'); setCheckoutLoading(false); return; }
       const res = await fetch(`${API_BASE}/api/stripe/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ plan: selectedPlan }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Σφάλμα');
+      if (!res.ok) throw new Error(data.message || 'Σφάλμα κατά τη σύνδεση.');
       if (data.url) window.location.href = data.url;
     } catch (e) {
       setCheckoutError(e.message);
@@ -1465,115 +1464,97 @@ function PremiumModal({ isOpen, onClose, user }) {
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-content" style={{ maxWidth:440, padding:0, overflow:'hidden', maxHeight:'92vh', overflowY:'auto' }} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div style={{
-          background: onTrial
-            ? 'linear-gradient(135deg,#059669,#10b981,#6366f1)'
-            : 'linear-gradient(135deg,#7c3aed,#a855f7,#6366f1)',
-          padding:'24px 24px 20px', textAlign:'center', position:'relative',
-        }}>
-          <button onClick={onClose} style={{ position:'absolute', top:12, right:12, background:'rgba(255,255,255,0.15)', border:'none', borderRadius:8, width:28, height:28, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
-          <div style={{ fontSize:40, marginBottom:8 }}>{onTrial ? '🎁' : '⭐'}</div>
+    <div className="pm-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="pm-sheet" onClick={(e) => e.stopPropagation()}>
+
+        {/* ── Header ── */}
+        <div className={`pm-header ${onTrial ? 'pm-header--trial' : ''}`}>
+          {/* Animated orbs */}
+          <div className="pm-orb pm-orb--1" aria-hidden="true" />
+          <div className="pm-orb pm-orb--2" aria-hidden="true" />
+          <div className="pm-orb pm-orb--3" aria-hidden="true" />
+
+          <button className="pm-close" onClick={onClose} aria-label="Κλείσιμο">✕</button>
+
+          <div className="pm-header-icon">{onTrial ? '🎁' : '⭐'}</div>
+
           {onTrial ? (
             <>
-              <h2 style={{ margin:0, color:'#fff', fontSize:20, fontWeight:900 }}>Απολαμβάνεις Free Trial!</h2>
-              <p style={{ margin:'6px 0 0', color:'rgba(255,255,255,0.9)', fontSize:13 }}>
-                Απομένουν <strong>{trialDays} ημέρες</strong> — μετά χρειάζεσαι Premium για να συνεχίσεις
-              </p>
+              <div className="pm-eyebrow">Free Trial ενεργό</div>
+              <h2 className="pm-title">Απομένουν <span className="pm-title-accent">{trialDays} ημέρες</span></h2>
+              <p className="pm-subtitle">Αναβάθμισε τώρα για να μη χάσεις καμία λειτουργία.</p>
             </>
           ) : (
             <>
-              <h2 style={{ margin:0, color:'#fff', fontSize:22, fontWeight:900 }}>Καλαθάκι Premium</h2>
-              <p style={{ margin:'6px 0 0', color:'rgba(255,255,255,0.85)', fontSize:13 }}>Ξεκλείδωσε όλες τις δυνατότητες</p>
+              <div className="pm-eyebrow">Ξεκλείδωσε τα πάντα</div>
+              <h2 className="pm-title">Καλαθάκι <span className="pm-title-accent">Premium</span></h2>
+              <p className="pm-subtitle">Ψώνια έξυπνα, γρήγορα και χωρίς περιορισμούς.</p>
             </>
           )}
         </div>
 
-        <div style={{ padding:'20px 24px' }}>
-          {/* Plan selection — 3 cards */}
-          <div style={{ display:'flex', gap:8, marginBottom:20 }}>
+        {/* ── Body ── */}
+        <div className="pm-body">
+
+          {/* Plan pills */}
+          <div className="pm-plans">
             {plans.map(p => {
               const active = selectedPlan === p.id;
               return (
-                <div key={p.id} onClick={() => setSelectedPlan(p.id)}
-                  style={{
-                    flex:1, padding:'14px 8px', borderRadius:14, textAlign:'center', cursor:'pointer',
-                    border: `2px solid ${active ? '#7c3aed' : 'var(--border)'}`,
-                    background: active ? 'rgba(124,58,237,0.08)' : 'var(--bg-surface)',
-                    transition: 'all 0.2s', position:'relative',
-                  }}>
-                  {p.badge && (
-                    <div style={{ position:'absolute', top:-8, left:'50%', transform:'translateX(-50%)', background: p.id === 'yearly' ? 'linear-gradient(135deg,#7c3aed,#a855f7)' : '#10b981', color:'#fff', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:99, whiteSpace:'nowrap' }}>
-                      {p.badge}
-                    </div>
-                  )}
-                  <div style={{ fontSize:20, fontWeight:900, color: active ? '#7c3aed' : 'var(--text-primary)', marginTop: p.badge ? 4 : 0 }}>{p.price}</div>
-                  <div style={{ fontSize:11, color:'var(--text-secondary)', fontWeight:600 }}>{p.period}</div>
-                  {p.saving && <div style={{ fontSize:10, color:'#10b981', fontWeight:700, marginTop:4 }}>{p.saving}</div>}
-                </div>
+                <button
+                  key={p.id}
+                  className={`pm-plan${active ? ' pm-plan--active' : ''}${p.id === 'yearly' ? ' pm-plan--featured' : ''}`}
+                  onClick={() => setSelectedPlan(p.id)}
+                  style={active && p.accent ? { '--pm-plan-color': p.accent } : {}}
+                >
+                  {p.badge && <span className="pm-plan-badge">{p.badge}</span>}
+                  <span className="pm-plan-price">{p.price}</span>
+                  <span className="pm-plan-sub">{p.sub}</span>
+                  {p.saving && <span className="pm-plan-saving">{p.saving}</span>}
+                </button>
               );
             })}
           </div>
 
-          {/* Features */}
-          <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:20 }}>
-            {features.map(f => (
-              <div key={f.text} style={{ display:'flex', alignItems:'center', gap:10, fontSize:13 }}>
-                <span style={{ width:24, textAlign:'center', flexShrink:0 }}>{f.icon}</span>
-                <span style={{ color:'var(--text-primary)' }}>{f.text}</span>
-                <span style={{ marginLeft:'auto', color:'#10b981', fontWeight:800, flexShrink:0 }}>✓</span>
+          {/* Features grid */}
+          <div className="pm-features">
+            {features.map((f, i) => (
+              <div key={f.text} className="pm-feature" style={{ animationDelay: `${0.05 + i * 0.04}s` }}>
+                <span className="pm-feature-icon">{f.icon}</span>
+                <span className="pm-feature-text">{f.text}</span>
+                <span className="pm-feature-check">✓</span>
               </div>
             ))}
           </div>
 
           {/* Error */}
           {checkoutError && (
-            <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:10, padding:'10px 12px', marginBottom:12, fontSize:12, color:'#ef4444', fontWeight:600 }}>
-              {checkoutError}
-            </div>
+            <div className="pm-error">{checkoutError}</div>
           )}
 
-          {/* CTA — distinct premium box */}
-          <div style={{
-            background:'linear-gradient(135deg,rgba(124,58,237,0.08),rgba(168,85,247,0.05))',
-            border:'1.5px solid rgba(124,58,237,0.25)',
-            borderRadius:18, padding:'18px 20px 14px', marginTop:4,
-          }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginBottom:12 }}>
-              <div style={{ height:1, flex:1, background:'linear-gradient(90deg,transparent,rgba(124,58,237,0.25))' }}/>
-              <span style={{ fontSize:11, fontWeight:700, color:'rgba(167,139,250,0.7)', letterSpacing:1, textTransform:'uppercase' }}>Ξεκίνα τώρα</span>
-              <div style={{ height:1, flex:1, background:'linear-gradient(90deg,rgba(124,58,237,0.25),transparent)' }}/>
-            </div>
-            <button
-              onClick={handleCheckout}
-              disabled={checkoutLoading}
-              style={{
-                width:'100%', padding:'16px 0', borderRadius:14, border:'none', cursor: checkoutLoading ? 'wait' : 'pointer',
-                background: checkoutLoading ? 'var(--bg-surface)' : 'linear-gradient(135deg,#7c3aed 0%,#a855f7 60%,#6366f1 100%)',
-                color: checkoutLoading ? 'var(--text-secondary)' : '#fff', fontWeight:900, fontSize:17,
-                boxShadow: checkoutLoading ? 'none' : '0 6px 28px rgba(124,58,237,0.45), inset 0 1px 0 rgba(255,255,255,0.15)',
-                transition:'transform 0.18s, box-shadow 0.18s', display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-                letterSpacing:0.2,
-              }}
-              onMouseEnter={e => { if (!checkoutLoading) { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='0 10px 36px rgba(124,58,237,0.55), inset 0 1px 0 rgba(255,255,255,0.18)'; } }}
-              onMouseLeave={e => { e.currentTarget.style.transform=''; e.currentTarget.style.boxShadow= checkoutLoading ? 'none' : '0 6px 28px rgba(124,58,237,0.45), inset 0 1px 0 rgba(255,255,255,0.15)'; }}
-            >
-              {checkoutLoading ? (
-                <><div style={{ width:18, height:18, border:'2.5px solid rgba(124,58,237,0.3)', borderTopColor:'#7c3aed', borderRadius:'50%', animation:'spin 0.85s linear infinite' }}/> Μεταφορά στο Stripe...</>
-              ) : (
-                <>🚀 Ξεκίνα το Premium</>
-              )}
-            </button>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, marginTop:10 }}>
-              <span style={{ fontSize:10, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:3 }}>🔒 Stripe</span>
-              <span style={{ width:3, height:3, borderRadius:'50%', background:'var(--border-strong)' }}/>
-              <span style={{ fontSize:10, color:'var(--text-muted)' }}>Ακύρωση ανά πάσα στιγμή</span>
-              <span style={{ width:3, height:3, borderRadius:'50%', background:'var(--border-strong)' }}/>
-              <span style={{ fontSize:10, color:'var(--text-muted)' }}>256-bit SSL</span>
-            </div>
+          {/* CTA */}
+          <button
+            className={`pm-cta${checkoutLoading ? ' pm-cta--loading' : ''}`}
+            onClick={handleCheckout}
+            disabled={checkoutLoading}
+          >
+            {checkoutLoading ? (
+              <><span className="pm-spinner" />Μεταφορά στο Stripe...</>
+            ) : (
+              <>🚀 Ξεκίνα το Premium</>
+            )}
+          </button>
+
+          {/* Trust row */}
+          <div className="pm-trust">
+            <span>🔒 Stripe</span>
+            <span className="pm-trust-dot" />
+            <span>Ακύρωση ανά πάσα στιγμή</span>
+            <span className="pm-trust-dot" />
+            <span>256-bit SSL</span>
           </div>
         </div>
       </div>
@@ -3395,14 +3376,12 @@ export default function App() {
   }, [user, openAuthWall, closeOverlaySurfaces, haptic]);
 
   const openSmartRouteModal = useCallback(() => {
-    if (!user) {
-      openAuthWall('login');
-      return;
-    }
+    if (!user) { openAuthWall('login'); return; }
+    if (!user.isPremium && !user.isOnTrial) { setShowPremiumModal(true); return; }
     closeOverlaySurfaces('map');
     setShowSmartRoute(true);
     haptic.light();
-  }, [user, closeOverlaySurfaces, openAuthWall, haptic]);
+  }, [user, openAuthWall, closeOverlaySurfaces, haptic]);
 
   const openBarcodeScanner = useCallback(async () => {
     if (!user) { openAuthWall('login'); return; }
