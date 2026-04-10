@@ -2,6 +2,9 @@
    SMART GROCERY — APP.CSS  |  Premium UI
    ════════════════════════════════════════════════════════ */
 
+/* ── Outfit font for clock digits ──────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@700;800;900&display=swap');
+
 /* ── LAYOUT ────────────────────────────────────────────── */
 .app-wrapper {
   padding: 24px 16px calc(96px + env(safe-area-inset-bottom, 0px));
@@ -55,12 +58,37 @@ body.dark-mode .container {
 
 .datetime-display {
   background: var(--bg-subtle);
-  border: 1px solid var(--border);
-  padding: 10px 16px;
-  border-radius: var(--radius-sm);
-  text-align: left;
-  transition: background 0.4s var(--ease), border-color 0.4s var(--ease);
+  border: none;
+  padding: 16px 20px 24px;
+  border-radius: 20px;
+  text-align: center;
+  transition: background 0.4s var(--ease);
   flex: 1;
+  position: relative;
+  overflow: visible;
+}
+
+body.dark-mode .datetime-display {
+  background: rgba(15, 12, 35, 0.55);
+  border: none;
+  box-shadow: none;
+}
+
+/* Subtle dot-grid background on dark mode clock card */
+body.dark-mode .datetime-display::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(165,180,252,0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.datetime-display > * {
+  position: relative;
+  z-index: 1;
 }
 
 .current-date {
@@ -616,16 +644,30 @@ body.dark-mode .budget-banner {
   margin-bottom: 26px;
 }
 
-/* Store filter chips */
+/* Store filter chips — infinite marquee */
 .store-filter-container {
+  overflow: hidden;
+  padding: 3px 0 13px;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent 0px, black 48px, black calc(100% - 48px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0px, black 48px, black calc(100% - 48px), transparent 100%);
+}
+
+.store-marquee-track {
   display: flex;
   gap: 7px;
-  overflow-x: auto;
-  padding: 3px 2px 13px 2px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  width: max-content;
+  animation: storeMarquee 22s linear infinite;
 }
-.store-filter-container::-webkit-scrollbar { display: none; }
+
+.store-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes storeMarquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 
 .store-chip {
   background: var(--bg-chip);
@@ -7189,39 +7231,60 @@ body.dark-mode .app-header {
 
 .current-date {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 1.2px;
-  opacity: 0.7;
+  letter-spacing: 0.9px;
+  opacity: 0.65;
 }
 
 .current-time {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
-  margin-top: 4px;
-  font-weight: 600;
+  margin-top: 3px;
+  font-weight: 500;
+  opacity: 0.8;
+  letter-spacing: 0.1px;
+}
+
+@keyframes clockGradientFlow {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
 }
 
 .current-clock {
-  font-size: 32px;
-  font-weight: 800;
+  font-family: 'Outfit', var(--font), sans-serif;
+  font-size: clamp(56px, 14vw, 68px);
+  font-weight: 900;
   color: var(--text-primary);
-  margin-top: 4px;
+  margin-top: 6px;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -1px;
-  background: linear-gradient(135deg, var(--text-primary) 0%, rgba(99,102,241,0.9) 100%);
+  font-feature-settings: 'tnum';
+  letter-spacing: -3px;
+  background: linear-gradient(135deg, #4338ca, #7c3aed, #2563eb, #4338ca);
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: clockGradientFlow 6s ease infinite;
   line-height: 1;
 }
 
 body.dark-mode .current-clock {
-  background: linear-gradient(135deg, #e8eeff 0%, #a5b4fc 100%);
+  background: linear-gradient(135deg,
+    #ffffff,
+    #c7d2fe,
+    #818cf8,
+    #38bdf8,
+    #c7d2fe,
+    #ffffff
+  );
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: clockGradientFlow 5s ease infinite;
 }
 
 /* App title inside header */
@@ -9617,9 +9680,10 @@ body:not(.dark-mode) .nav-fab-inner {
 
 .hero-card .hero-time,
 .hero-card [class*="time"] {
-  font-size: clamp(44px, 11vw, 60px) !important;
+  font-family: 'Outfit', var(--font), sans-serif !important;
+  font-size: clamp(56px, 14vw, 68px) !important;
   font-weight: 900 !important;
-  letter-spacing: -2.5px !important;
+  letter-spacing: -3px !important;
   line-height: 1 !important;
   font-variant-numeric: tabular-nums !important;
 }
@@ -10628,9 +10692,10 @@ button, [role="button"] {
 
 /* ── Hero Time Display Upgrade ───────────────────────────────────── */
 .hero-time {
-  font-size: clamp(40px, 10vw, 56px);
+  font-family: 'Outfit', var(--font), sans-serif;
+  font-size: clamp(56px, 14vw, 68px);
   font-weight: 900;
-  letter-spacing: -2px;
+  letter-spacing: -3px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
@@ -10757,11 +10822,11 @@ body.dark-mode .sug-logo {
 
 /* ── 2. Premium Hero Header Glow ─────────────────────── */
 @keyframes headerGlowPulse {
-  0%, 100% { box-shadow: 0 4px 24px rgba(99,102,241,0.07), 0 1px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.9); }
-  50%       { box-shadow: 0 6px 32px rgba(99,102,241,0.13), 0 2px 8px rgba(139,92,246,0.06), inset 0 1px 0 rgba(255,255,255,0.9); }
+  0%, 100% { box-shadow: 0 4px 32px rgba(99,102,241,0.10), 0 1px 4px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.04); }
+  50%       { box-shadow: 0 8px 40px rgba(99,102,241,0.18), 0 2px 8px rgba(139,92,246,0.10), inset 0 1px 0 rgba(255,255,255,0.04); }
 }
 body.dark-mode .app-header {
-  animation: headerGlowPulse 4s ease-in-out infinite;
+  animation: headerGlowPulse 5s ease-in-out infinite;
 }
 
 /* ── 3. Clock Container Full Width ───────────────────── */
@@ -13189,30 +13254,25 @@ body.dark-mode .friends-popup-share-code {
    ═══════════════════════════════════════════════════════════════ */
 
 .tools-topbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 14px 4px 6px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  padding: 14px 0 6px;
   margin-top: 6px;
   border-top: 1px solid var(--border);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-  mask-image: linear-gradient(to right, transparent 0px, black 18px, black calc(100% - 52px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0px, black 18px, black calc(100% - 52px), transparent 100%);
 }
 
-.tools-topbar::-webkit-scrollbar {
-  display: none;
+.tools-topbar .tools-topbar-btn {
+  width: 100%;
+  justify-content: center;
 }
 
 .tools-topbar-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 14px;
-  border-radius: 12px;
+  padding: 9px 15px;
+  border-radius: 999px;
   border: 1px solid var(--border-light);
   background: var(--bg-surface);
   color: var(--text-secondary);
@@ -14854,4 +14914,313 @@ textarea::placeholder {
 input:focus::placeholder,
 textarea:focus::placeholder {
   opacity: 0.4;
+}
+
+/* ════════════════════════════════════════════════════════
+   SHAPE-MORPH POLISH PASS — Apple-inspired refinements
+   ════════════════════════════════════════════════════════ */
+
+/* ── Clock ambient glow pulse ─────────────────────────── */
+@keyframes clockAmbientGlow {
+  0%, 100% { filter: drop-shadow(0 0 16px rgba(165,180,252,0.25)); }
+  50%       { filter: drop-shadow(0 0 32px rgba(165,180,252,0.50)); }
+}
+
+body.dark-mode .current-clock.hero-time,
+body.dark-mode .current-clock {
+  animation: clockAmbientGlow 4s ease-in-out infinite;
+}
+
+/* ── Datetime card: hover lift ────────────────────────── */
+.datetime-display {
+  transition:
+    background 0.4s var(--ease),
+    border-color 0.4s var(--ease),
+    transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1),
+    box-shadow 0.3s ease;
+}
+
+.datetime-display:hover {
+  transform: translateY(-1px);
+}
+
+body.dark-mode .datetime-display:hover {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 24px 60px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(165,180,252,0.15);
+}
+
+/* ── Tools topbar featured shimmer — handled in CSS Magic Pass below ── */
+
+/* ── Bottom nav active tab: spring pop ───────────────── */
+@keyframes navTabSpring {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  65%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+.bottom-nav-btn.active .nav-icon,
+.bottom-nav-btn[aria-selected="true"] .nav-icon {
+  animation: navTabSpring 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ── Clock colon blink ────────────────────────────────── */
+@keyframes colonBlink {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0.35; }
+  100% { opacity: 1; }
+}
+
+/* ── Premium pill: gold shimmer treatment ─────────────── */
+.hero-status-pill {
+  background: linear-gradient(135deg,
+    rgba(251,191,36,0.12) 0%,
+    rgba(245,158,11,0.06) 50%,
+    rgba(251,191,36,0.10) 100%
+  ) !important;
+}
+
+body:not(.dark-mode) .hero-status-pill {
+  background: linear-gradient(135deg,
+    rgba(251,191,36,0.18) 0%,
+    rgba(245,158,11,0.10) 100%
+  ) !important;
+  border-color: rgba(245,158,11,0.28) !important;
+}
+
+/* ── Greeting kicker: weight refinement ──────────────── */
+.current-date-split,
+.hero-greeting,
+[class*="greeting-text"],
+.app-header .current-date {
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  opacity: 0.62;
+}
+
+/* ── Hero version chip: refined pill ─────────────────── */
+.hero-version {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: rgba(99,102,241,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(99,102,241,0.2);
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+body.dark-mode .hero-version {
+  background: rgba(165,180,252,0.1);
+  color: #a5b4fc;
+  border-color: rgba(165,180,252,0.2);
+}
+
+/* ── Locked premium tool button ─────────────────────────── */
+.tools-topbar-btn--locked {
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.tools-topbar-lock {
+  font-size: 9px;
+  color: #fbbf24;
+  margin-left: 2px;
+  line-height: 1;
+}
+
+/* ════════════════════════════════════════════════════════
+   CSS MAGIC PASS — Spinning Borders · Blobs · Frosted
+   ════════════════════════════════════════════════════════ */
+
+/* ── 1. Remove old ambient glow (superseded by clockGradientFlow) ── */
+body.dark-mode .current-clock.hero-time,
+body.dark-mode .current-clock {
+  animation: clockGradientFlow 5s ease infinite !important;
+  filter: none;
+}
+
+/* ── 2. Datetime card — clean minimal border ─────────────── */
+body.dark-mode .datetime-display {
+  border-color: rgba(139, 92, 246, 0.12) !important;
+  isolation: isolate;
+}
+
+/* ── 3. Liquid blob orbs behind the clock card ──────────── */
+@keyframes blobMorph {
+  0%, 100% { border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%; }
+  33%       { border-radius: 40% 60% 30% 70% / 60% 30% 70% 40%; }
+  66%       { border-radius: 70% 30% 50% 50% / 30% 70% 50% 60%; }
+}
+@keyframes blobSpin {
+  to { transform: rotate(360deg); }
+}
+@keyframes blobColorShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+.header-clock-center {
+  position: relative;
+}
+
+body.dark-mode .header-clock-center::before {
+  content: '';
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  top: -70px;
+  right: -50px;
+  background: linear-gradient(135deg,
+    rgba(124,58,237,0.4),
+    rgba(168,85,247,0.25),
+    rgba(56,189,248,0.2)
+  );
+  background-size: 200% 200%;
+  border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%;
+  animation:
+    blobMorph      8s  ease-in-out infinite,
+    blobSpin       16s linear     infinite,
+    blobColorShift 9s  ease-in-out infinite;
+  filter: blur(28px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+body.dark-mode .header-clock-center::after {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  bottom: -60px;
+  left: -40px;
+  background: linear-gradient(135deg,
+    rgba(56,189,248,0.3),
+    rgba(99,102,241,0.2),
+    rgba(236,72,153,0.18)
+  );
+  background-size: 200% 200%;
+  border-radius: 30% 70% 40% 60% / 60% 40% 70% 30%;
+  animation:
+    blobMorph      10s ease-in-out infinite reverse,
+    blobSpin       20s linear     infinite reverse,
+    blobColorShift 11s ease-in-out infinite;
+  animation-delay: -3s, -5s, -2s;
+  filter: blur(32px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── 4. Frosted glass — Social Panel ────────────────────── */
+.soc-backdrop {
+  background: rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+}
+
+.soc-panel {
+  background: rgba(12, 10, 28, 0.62) !important;
+  backdrop-filter: blur(40px) saturate(180%) brightness(0.95) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(0.95) !important;
+  border-left: 1px solid rgba(139,92,246,0.18) !important;
+  box-shadow:
+    -20px 0 60px rgba(0,0,0,0.45),
+    inset 1px 0 0 rgba(255,255,255,0.04) !important;
+}
+
+body:not(.dark-mode) .soc-panel {
+  background: rgba(248, 248, 255, 0.82) !important;
+  backdrop-filter: blur(40px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  border-left: 1px solid rgba(99,102,241,0.12) !important;
+}
+
+/* ── 5. Frosted glass — More grid overlay ───────────────── */
+.more-overlay {
+  background: rgba(0,0,0,0.55) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+}
+
+body.dark-mode .more-grid {
+  background: rgba(12,10,28,0.72) !important;
+  backdrop-filter: blur(32px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
+  border: 1px solid rgba(139,92,246,0.14) !important;
+}
+
+/* ── 6. Spinning gradient border — Premium pill ─────────── */
+@property --pill-spin {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes pillBorderSpin {
+  to { --pill-spin: 360deg; }
+}
+
+.hero-status-pill:has(.hero-status-dot--premium)::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 100px;
+  background: conic-gradient(
+    from var(--pill-spin),
+    #fbbf24 0deg,
+    transparent 80deg,
+    #f59e0b 180deg,
+    transparent 260deg,
+    #fde68a 330deg,
+    transparent 360deg
+  );
+  z-index: -1;
+  animation: pillBorderSpin 4s linear infinite;
+}
+
+/* ── 7. Animated gradient — CTA buttons ─────────────────── */
+@keyframes btnGradientFlow {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+.psm-btn--primary {
+  background: linear-gradient(135deg,
+    #7c3aed, #a855f7, #ec4899, #7c3aed
+  ) !important;
+  background-size: 250% 250% !important;
+  animation: btnGradientFlow 4s ease infinite !important;
+}
+
+.tools-topbar-btn--featured {
+  opacity: 1 !important;
+  background: linear-gradient(135deg,
+    rgba(99,102,241,0.22),
+    rgba(139,92,246,0.16),
+    rgba(56,189,248,0.18),
+    rgba(99,102,241,0.22)
+  ) !important;
+  background-size: 250% 250% !important;
+  border: 1px solid rgba(139,92,246,0.35) !important;
+  animation: btnGradientFlow 5s ease infinite, toolBtnIn 0s !important;
+  color: #c7d2fe !important;
+}
+
+body:not(.dark-mode) .tools-topbar-btn--featured {
+  opacity: 1 !important;
+  background: linear-gradient(135deg,
+    rgba(99,102,241,0.1),
+    rgba(139,92,246,0.07),
+    rgba(99,102,241,0.1)
+  ) !important;
+  background-size: 250% 250% !important;
+  border: 1px solid rgba(99,102,241,0.22) !important;
+  color: #5c67f5 !important;
 }

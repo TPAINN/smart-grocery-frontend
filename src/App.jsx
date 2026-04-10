@@ -3490,6 +3490,10 @@ export default function App() {
       openAuthWall('login');
       return;
     }
+    if (!user.isRealPremium && !user.isOnTrial) {
+      setShowPremiumModal(true);
+      return;
+    }
     closeOverlaySurfaces('social');
     setSocialTab('friends');
     setShowSocialPanel(true);
@@ -3509,6 +3513,10 @@ export default function App() {
   const openChatDrawer = useCallback(() => {
     if (!user) {
       openAuthWall('login');
+      return;
+    }
+    if (!user.isRealPremium && !user.isOnTrial) {
+      setShowPremiumModal(true);
       return;
     }
     closeOverlaySurfaces('social');
@@ -5153,10 +5161,13 @@ export default function App() {
               <IconBrain size={16} stroke={1.8} />
               <span>AI Πλάνο</span>
             </button>
-            <button className="tools-topbar-btn" onClick={openFriendsPopup}>
+            <button className={`tools-topbar-btn${user && !user.isRealPremium && !user.isOnTrial ? ' tools-topbar-btn--locked' : ''}`} onClick={openFriendsPopup}>
               <IconUsers size={16} stroke={1.8} />
               <span>Φίλοι</span>
-              {friends.length > 0 && <span className="tools-topbar-badge">{friends.length}</span>}
+              {user && !user.isRealPremium && !user.isOnTrial
+                ? <span className="tools-topbar-lock">✦</span>
+                : friends.length > 0 && <span className="tools-topbar-badge">{friends.length}</span>
+              }
             </button>
             <button className={`tools-topbar-btn${activeTab === 'brochures' ? ' active' : ''}`} onClick={() => navigateToTab('brochures')}>
               <IconTag size={16} stroke={1.8} />
@@ -5526,18 +5537,33 @@ export default function App() {
             <div className="smart-search-wrapper">
               {user && (
               <div className="store-filter-container">
-                {storeOptions.map(store => (
-                  <button
-                    key={store}
-                    className={`store-chip ${selectedStore === store ? 'active' : ''}`}
-                    onClick={() => { setSelectedStore(store); triggerSearch(inputValue, store); }}
-                  >
-                    {SUPERMARKET_LOGOS[store] ? (
-                      <img src={SUPERMARKET_LOGOS[store]} alt={store} className="store-chip-logo" onError={e => { e.currentTarget.style.display='none'; }} />
-                    ) : null}
-                    <span className="store-chip-label">{store === 'Όλα' ? '🏪 Όλα' : store}</span>
-                  </button>
-                ))}
+                <div className="store-marquee-track">
+                  {storeOptions.map(store => (
+                    <button
+                      key={store}
+                      className={`store-chip ${selectedStore === store ? 'active' : ''}`}
+                      onClick={() => { setSelectedStore(store); triggerSearch(inputValue, store); }}
+                    >
+                      {SUPERMARKET_LOGOS[store] ? (
+                        <img src={SUPERMARKET_LOGOS[store]} alt={store} className="store-chip-logo" onError={e => { e.currentTarget.style.display='none'; }} />
+                      ) : null}
+                      <span className="store-chip-label">{store === 'Όλα' ? '🏪 Όλα' : store}</span>
+                    </button>
+                  ))}
+                  {storeOptions.map(store => (
+                    <button
+                      key={`${store}-clone`}
+                      className={`store-chip ${selectedStore === store ? 'active' : ''}`}
+                      onClick={() => { setSelectedStore(store); triggerSearch(inputValue, store); }}
+                      aria-hidden="true"
+                    >
+                      {SUPERMARKET_LOGOS[store] ? (
+                        <img src={SUPERMARKET_LOGOS[store]} alt={store} className="store-chip-logo" onError={e => { e.currentTarget.style.display='none'; }} />
+                      ) : null}
+                      <span className="store-chip-label">{store === 'Όλα' ? '🏪 Όλα' : store}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
               )}
 
