@@ -723,9 +723,9 @@ body.dark-mode .budget-banner {
 .input-section input::placeholder { color: var(--text-muted); }
 
 .input-section input:focus {
-  border-color: var(--accent);
+  border-color: rgba(79,87,208,0.28);
   background: var(--bg-card);
-  box-shadow: var(--glow-accent);
+  box-shadow: 0 0 0 2px rgba(79,87,208,0.13);
 }
 
 .voice-btn {
@@ -4591,8 +4591,8 @@ button[title="Κλείσιμο"], button[title="Κλείσε"], button[aria-labe
 /* ── Focus ring — consistent across inputs ────────────────────────────── */
 input:focus, textarea:focus, select:focus {
   outline: none;
-  box-shadow: 0 0 0 2.5px rgba(99,102,241,0.22) !important;
-  border-color: rgba(99,102,241,0.45) !important;
+  box-shadow: 0 0 0 2px rgba(79,87,208,0.15) !important;
+  border-color: rgba(79,87,208,0.30) !important;
 }
 
 /* ── Empty state upgrade ──────────────────────────────────────────────── */
@@ -6707,32 +6707,38 @@ html, body {
 
 .bottom-nav {
   position: fixed;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100vw - 20px);
-  max-width: 540px;
+  width: calc(100vw - 28px);
+  max-width: 440px;
   z-index: 900;
 
   display: flex;
   align-items: center;
-  padding: 6px;
+  padding: 4px;
   gap: 2px;
 
   background: rgba(10, 10, 18, 0.88);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 32px;
+  border-radius: 28px;
 
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.35),
-    0 6px 20px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+    0 12px 40px rgba(0, 0, 0, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
   animation: bottomNavIn 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) backwards;
   will-change: transform;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+.bottom-nav--hidden {
+  transform: translateX(-50%) translateY(calc(100% + 20px));
+  opacity: 0;
+  pointer-events: none;
 }
 
 @keyframes bottomNavIn {
@@ -6754,15 +6760,15 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 10px 2px 8px;
+  gap: 2px;
+  padding: 8px 2px 6px;
   border: none;
   background: transparent;
-  border-radius: 26px;
+  border-radius: 24px;
   cursor: pointer;
   color: rgba(255, 255, 255, 0.32);
   font-family: var(--font);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 0.2px;
   white-space: nowrap;
@@ -6782,14 +6788,14 @@ html, body {
 }
 
 .bottom-nav-btn.active svg {
-  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
-  transform: scale(1.1) translateY(-1px);
+  filter: none;
+  transform: scale(1.08) translateY(-1px);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .bottom-nav-btn.active .bottom-nav-label {
-  color: rgba(196, 181, 253, 0.95);
-  font-weight: 700;
+  color: rgba(220, 220, 255, 0.9);
+  font-weight: 600;
 }
 
 .bottom-nav-btn:not(.active):hover {
@@ -11460,10 +11466,8 @@ input:focus-visible,
 /* Input focus glow */
 .search-input:focus,
 .grocery-input:focus {
-  box-shadow:
-    0 0 0 3px var(--accent-subtle-2),
-    0 4px 16px rgba(79,142,247,0.15) !important;
-  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(79,87,208,0.14) !important;
+  border-color: rgba(79,87,208,0.28) !important;
   transition: box-shadow 0.25s ease, border-color 0.2s ease !important;
 }
 
@@ -11685,8 +11689,8 @@ button, .btn, [role="button"] {
 }
 
 .search-input:focus {
-  transform: scale(1.01) !important;
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.4), 0 8px 24px rgba(0,0,0,0.3) !important;
+  transform: none !important;
+  box-shadow: 0 0 0 2px rgba(79,87,208,0.14) !important;
 }
 
 /* ── Streak badge spring animation ── */
@@ -12288,9 +12292,7 @@ button {
 .search-input:focus,
 .auth-form input:focus,
 .recipe-search-input:focus {
-  box-shadow:
-    0 0 0 3px rgba(99, 102, 241, 0.15),
-    0 4px 16px rgba(99, 102, 241, 0.08) !important;
+  box-shadow: 0 0 0 2px rgba(79,87,208,0.14) !important;
   transform: none !important;
 }
 
@@ -13902,8 +13904,8 @@ body.dark-mode .search-input {
 
 body.dark-mode .search-container input:focus,
 body.dark-mode .search-input:focus {
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: rgba(79, 142, 247, 0.25);
+  box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.12);
 }
 
 /* Dark mode item cards */

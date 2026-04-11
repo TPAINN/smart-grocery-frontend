@@ -107,7 +107,7 @@ async function loadItemsFromIDB() {
 const useKeepAlive = () => {
   useEffect(() => {
     if (!ENABLE_KEEPALIVE) return undefined;
-    const ping = () => fetch(`${API_BASE}/api/status`, { method: 'GET' }).catch(() => {});
+    const ping = () => { if (!document.hidden) fetch(`${API_BASE}/api/status`, { method: 'GET' }).catch(() => {}); };
     ping();
     const iv = setInterval(ping, 9 * 60 * 1000); // every 9 min
     return () => clearInterval(iv);
@@ -3862,10 +3862,15 @@ export default function App() {
     }
   },[chatMessages, showSocialPanel]);
 
-  // ── Clock ──────────────────────────────────────────────────────────────────
+  // ── Clock — pauses when tab is hidden ──────────────────────────────────────
   useEffect(() => {
-    const t = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(t);
+    let t = null;
+    const start = () => { if (!t) t = setInterval(() => setCurrentTime(new Date()), 1000); };
+    const stop  = () => { clearInterval(t); t = null; };
+    const onVis = () => (document.hidden ? stop() : start());
+    document.addEventListener('visibilitychange', onVis);
+    start();
+    return () => { stop(); document.removeEventListener('visibilitychange', onVis); };
   }, []);
 
   // ── Recipes ────────────────────────────────────────────────────────────────
@@ -4273,9 +4278,13 @@ export default function App() {
         setIsServerWaking(true);
       }
     };
-    checkStatus();
-    const iv = setInterval(checkStatus, 15000);
-    return () => clearInterval(iv);
+    let iv = null;
+    const startPoll = () => { checkStatus(); iv = setInterval(checkStatus, 15000); };
+    const stopPoll  = () => { clearInterval(iv); iv = null; };
+    const onVis     = () => (document.hidden ? stopPoll() : startPoll());
+    document.addEventListener('visibilitychange', onVis);
+    startPoll();
+    return () => { stopPoll(); document.removeEventListener('visibilitychange', onVis); };
   }, [isOnline]);
 
   // Load list from IndexedDB on first mount (supersedes localStorage initial value)
@@ -7029,7 +7038,7 @@ export default function App() {
       {/* ── Floating Bottom Nav — lives OUTSIDE .container to avoid backdrop-filter stacking context ── */}
 
 
-      <nav ref={navRef} className="bottom-nav bottom-nav-revamp bottom-nav-minimal" aria-label="Κύρια πλοήγηση">
+      <nav ref={navRef} className={`bottom-nav bottom-nav-revamp bottom-nav-minimal${searchInputFocused ? ' bottom-nav--hidden' : ''}`} aria-label="Κύρια πλοήγηση">
         <button
           className={`bottom-nav-btn${showSmartRoute ? ' active' : ''}`}
           onClick={openSmartRouteModal}
