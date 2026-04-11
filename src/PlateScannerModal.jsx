@@ -354,15 +354,13 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
                   >
                     <span className="psm-source-icon">📷</span>
                     <span className="psm-source-label">Κάμερα</span>
-                    <span className="psm-source-sub">Τώρα</span>
                   </button>
                   <button
                     className="psm-source-btn psm-source-btn--gallery"
                     onClick={() => fileInputRef.current?.click()}
                   >
                     <span className="psm-source-icon">🖼️</span>
-                    <span className="psm-source-label">Γκαλερί</span>
-                    <span className="psm-source-sub">Από αρχεία</span>
+                    <span className="psm-source-label">Gallery</span>
                   </button>
                 </div>
               ) : (
