@@ -13246,8 +13246,7 @@ body.dark-mode .friends-popup-share-code {
   justify-content: center;
   padding: 9px 8px;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
 }
 
 .tools-topbar .tools-topbar-btn span {
@@ -13329,13 +13328,13 @@ body.dark-mode .tools-topbar-btn.active {
 
 .tools-topbar-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -5px;
+  right: -6px;
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: #ef4444;
   color: #fff;
   font-size: 9px;
   font-weight: 800;
@@ -13343,7 +13342,10 @@ body.dark-mode .tools-topbar-btn.active {
   align-items: center;
   justify-content: center;
   line-height: 1;
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.4);
+  outline: 2px solid var(--bg-card, #131720);
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════
