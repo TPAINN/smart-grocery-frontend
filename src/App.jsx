@@ -7044,7 +7044,7 @@ export default function App() {
           onClick={openSmartRouteModal}
           aria-label="Χάρτης"
         >
-          <div className="bottom-nav-icon"><IconMap size={24} stroke={1.8} /></div>
+          <div className="bottom-nav-icon"><IconMap size={20} stroke={1.8} /></div>
           <span className="bottom-nav-label">Χάρτης</span>
         </button>
         <button
@@ -7053,7 +7053,7 @@ export default function App() {
           aria-label="Αρχική"
         >
           <div className="nav-fab-inner">
-            <IconHome size={26} stroke={1.8} />
+            <IconHome size={22} stroke={1.8} />
           </div>
           <span className="bottom-nav-label">Αρχική</span>
         </button>
@@ -7065,7 +7065,7 @@ export default function App() {
           }}
           aria-label="Προφίλ"
         >
-          <div className="bottom-nav-icon"><IconUser size={24} stroke={1.8} /></div>
+          <div className="bottom-nav-icon"><IconUser size={20} stroke={1.8} /></div>
           <span className="bottom-nav-label">Προφίλ</span>
         </button>
       </nav>

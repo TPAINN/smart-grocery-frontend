@@ -6761,14 +6761,14 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 8px 2px 6px;
+  padding: 6px 2px 5px;
   border: none;
   background: transparent;
-  border-radius: 24px;
+  border-radius: 20px;
   cursor: pointer;
   color: rgba(255, 255, 255, 0.32);
   font-family: var(--font);
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.2px;
   white-space: nowrap;
@@ -7247,37 +7247,23 @@ body.dark-mode .app-header {
 }
 
 .current-clock {
-  font-family: 'Outfit', var(--font), sans-serif;
-  font-size: clamp(44px, 11vw, 56px);
-  font-weight: 900;
+  font-family: var(--font), -apple-system, sans-serif;
+  font-size: clamp(36px, 9vw, 46px);
+  font-weight: 800;
   color: var(--text-primary);
   margin-top: 4px;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
-  letter-spacing: -2.5px;
-  background: linear-gradient(135deg, #4338ca, #7c3aed, #2563eb, #4338ca);
-  background-size: 300% 300%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: clockGradientFlow 6s ease infinite;
+  letter-spacing: -2px;
   line-height: 1;
+  background: none;
+  -webkit-text-fill-color: unset;
 }
 
 body.dark-mode .current-clock {
-  background: linear-gradient(135deg,
-    #ffffff,
-    #c7d2fe,
-    #818cf8,
-    #38bdf8,
-    #c7d2fe,
-    #ffffff
-  );
-  background-size: 300% 300%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: clockGradientFlow 5s ease infinite;
+  color: rgba(240, 244, 255, 0.92);
+  background: none;
+  -webkit-text-fill-color: unset;
 }
 
 /* App title inside header */
@@ -9122,13 +9108,13 @@ body.dark-mode .more-grid {
 .bottom-nav-btn.nav-tab-fab {
   flex-shrink: 0;
   flex: 0 0 auto;
-  padding: 0 4px 8px;
+  padding: 0 4px 6px;
 }
 
 .nav-fab-inner {
-  width: 46px;
-  height: 40px;
-  border-radius: 20px;
+  width: 38px;
+  height: 34px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9673,12 +9659,14 @@ body:not(.dark-mode) .nav-fab-inner {
 
 .hero-card .hero-time,
 .hero-card [class*="time"] {
-  font-family: 'Outfit', var(--font), sans-serif !important;
-  font-size: clamp(44px, 11vw, 56px) !important;
-  font-weight: 900 !important;
-  letter-spacing: -2.5px !important;
+  font-family: var(--font), -apple-system, sans-serif !important;
+  font-size: clamp(36px, 9vw, 46px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -2px !important;
   line-height: 1 !important;
   font-variant-numeric: tabular-nums !important;
+  background: none !important;
+  -webkit-text-fill-color: unset !important;
 }
 
 /* ── Store filter chips — no-scrollbar + snap ────────── */
@@ -15026,10 +15014,13 @@ body.dark-mode .hero-version {
    CSS MAGIC PASS — Spinning Borders · Blobs · Frosted
    ════════════════════════════════════════════════════════ */
 
-/* ── 1. Remove old ambient glow (superseded by clockGradientFlow) ── */
+/* ── 1. Clock — plain colour, no gradient animation ── */
 body.dark-mode .current-clock.hero-time,
 body.dark-mode .current-clock {
-  animation: clockGradientFlow 5s ease infinite !important;
+  animation: none !important;
+  background: none !important;
+  -webkit-text-fill-color: unset !important;
+  color: rgba(240, 244, 255, 0.92) !important;
   filter: none;
 }
 
