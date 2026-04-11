@@ -57,19 +57,18 @@ body.dark-mode .container {
 }
 
 .datetime-display {
-  background: var(--bg-subtle);
+  background: transparent;
   border: none;
-  padding: 16px 20px 24px;
+  padding: 12px 8px 16px;
   border-radius: 20px;
   text-align: center;
-  transition: background 0.4s var(--ease);
   flex: 1;
   position: relative;
   overflow: visible;
 }
 
 body.dark-mode .datetime-display {
-  background: rgba(15, 12, 35, 0.55);
+  background: transparent;
   border: none;
   box-shadow: none;
 }
@@ -644,30 +643,18 @@ body.dark-mode .budget-banner {
   margin-bottom: 26px;
 }
 
-/* Store filter chips — infinite marquee */
+/* Store filter chips — touch-scrollable */
 .store-filter-container {
-  overflow: hidden;
-  padding: 3px 0 13px;
-  position: relative;
-  mask-image: linear-gradient(to right, transparent 0px, black 48px, black calc(100% - 48px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0px, black 48px, black calc(100% - 48px), transparent 100%);
-}
-
-.store-marquee-track {
   display: flex;
   gap: 7px;
-  width: max-content;
-  animation: storeMarquee 22s linear infinite;
+  overflow-x: auto;
+  padding: 3px 2px 13px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
 }
-
-.store-marquee-track:hover {
-  animation-play-state: paused;
-}
-
-@keyframes storeMarquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
+.store-filter-container::-webkit-scrollbar { display: none; }
+.store-chip { scroll-snap-align: start; }
 
 .store-chip {
   background: var(--bg-chip);
@@ -7255,13 +7242,13 @@ body.dark-mode .app-header {
 
 .current-clock {
   font-family: 'Outfit', var(--font), sans-serif;
-  font-size: clamp(56px, 14vw, 68px);
+  font-size: clamp(44px, 11vw, 56px);
   font-weight: 900;
   color: var(--text-primary);
-  margin-top: 6px;
+  margin-top: 4px;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
-  letter-spacing: -3px;
+  letter-spacing: -2.5px;
   background: linear-gradient(135deg, #4338ca, #7c3aed, #2563eb, #4338ca);
   background-size: 300% 300%;
   -webkit-background-clip: text;
@@ -9681,9 +9668,9 @@ body:not(.dark-mode) .nav-fab-inner {
 .hero-card .hero-time,
 .hero-card [class*="time"] {
   font-family: 'Outfit', var(--font), sans-serif !important;
-  font-size: clamp(56px, 14vw, 68px) !important;
+  font-size: clamp(44px, 11vw, 56px) !important;
   font-weight: 900 !important;
-  letter-spacing: -3px !important;
+  letter-spacing: -2.5px !important;
   line-height: 1 !important;
   font-variant-numeric: tabular-nums !important;
 }
@@ -10693,9 +10680,9 @@ button, [role="button"] {
 /* ── Hero Time Display Upgrade ───────────────────────────────────── */
 .hero-time {
   font-family: 'Outfit', var(--font), sans-serif;
-  font-size: clamp(56px, 14vw, 68px);
+  font-size: clamp(44px, 11vw, 56px);
   font-weight: 900;
-  letter-spacing: -3px;
+  letter-spacing: -2.5px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
@@ -11815,12 +11802,12 @@ body.dark-mode::before {
 .hero-status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 14px;
+  gap: 5px;
+  padding: 4px 11px;
   border-radius: 99px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.12);
   color: rgba(255,255,255,0.85);
@@ -13256,15 +13243,28 @@ body.dark-mode .friends-popup-share-code {
 .tools-topbar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 7px;
+  gap: 6px;
   padding: 14px 0 6px;
   margin-top: 6px;
   border-top: 1px solid var(--border);
+  width: 100%;
 }
 
 .tools-topbar .tools-topbar-btn {
   width: 100%;
+  min-width: 0;
   justify-content: center;
+  padding: 9px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tools-topbar .tools-topbar-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .tools-topbar-btn {
@@ -14973,22 +14973,7 @@ body.dark-mode .datetime-display:hover {
   100% { opacity: 1; }
 }
 
-/* ── Premium pill: gold shimmer treatment ─────────────── */
-.hero-status-pill {
-  background: linear-gradient(135deg,
-    rgba(251,191,36,0.12) 0%,
-    rgba(245,158,11,0.06) 50%,
-    rgba(251,191,36,0.10) 100%
-  ) !important;
-}
-
-body:not(.dark-mode) .hero-status-pill {
-  background: linear-gradient(135deg,
-    rgba(251,191,36,0.18) 0%,
-    rgba(245,158,11,0.10) 100%
-  ) !important;
-  border-color: rgba(245,158,11,0.28) !important;
-}
+/* ── Premium pill: subtle gold dot only ─────────────── */
 
 /* ── Greeting kicker: weight refinement ──────────────── */
 .current-date-split,
@@ -15073,48 +15058,44 @@ body.dark-mode .datetime-display {
 body.dark-mode .header-clock-center::before {
   content: '';
   position: absolute;
-  width: 220px;
-  height: 220px;
-  top: -70px;
-  right: -50px;
+  width: 200px;
+  height: 200px;
+  top: -60px;
+  right: -40px;
   background: linear-gradient(135deg,
-    rgba(124,58,237,0.4),
-    rgba(168,85,247,0.25),
-    rgba(56,189,248,0.2)
+    rgba(124,58,237,0.35),
+    rgba(168,85,247,0.2),
+    rgba(56,189,248,0.18)
   );
-  background-size: 200% 200%;
   border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%;
-  animation:
-    blobMorph      8s  ease-in-out infinite,
-    blobSpin       16s linear     infinite,
-    blobColorShift 9s  ease-in-out infinite;
-  filter: blur(28px);
+  animation: blobMorph 8s ease-in-out infinite, blobSpin 16s linear infinite;
+  filter: blur(20px);
   z-index: 0;
   pointer-events: none;
+  will-change: transform, border-radius;
+  transform: translate3d(0,0,0);
 }
 
 body.dark-mode .header-clock-center::after {
   content: '';
   position: absolute;
-  width: 180px;
-  height: 180px;
-  bottom: -60px;
-  left: -40px;
+  width: 160px;
+  height: 160px;
+  bottom: -50px;
+  left: -30px;
   background: linear-gradient(135deg,
-    rgba(56,189,248,0.3),
-    rgba(99,102,241,0.2),
-    rgba(236,72,153,0.18)
+    rgba(56,189,248,0.25),
+    rgba(99,102,241,0.18),
+    rgba(236,72,153,0.15)
   );
-  background-size: 200% 200%;
   border-radius: 30% 70% 40% 60% / 60% 40% 70% 30%;
-  animation:
-    blobMorph      10s ease-in-out infinite reverse,
-    blobSpin       20s linear     infinite reverse,
-    blobColorShift 11s ease-in-out infinite;
-  animation-delay: -3s, -5s, -2s;
-  filter: blur(32px);
+  animation: blobMorph 10s ease-in-out infinite reverse, blobSpin 20s linear infinite reverse;
+  animation-delay: -3s, -5s;
+  filter: blur(24px);
   z-index: 0;
   pointer-events: none;
+  will-change: transform, border-radius;
+  transform: translate3d(0,0,0);
 }
 
 /* ── 4. Frosted glass — Social Panel ────────────────────── */
@@ -15223,4 +15204,94 @@ body:not(.dark-mode) .tools-topbar-btn--featured {
   background-size: 250% 250% !important;
   border: 1px solid rgba(99,102,241,0.22) !important;
   color: #5c67f5 !important;
+}
+
+/* ════════════════════════════════════════════════════════
+   60fps PERFORMANCE PASS — GPU layer promotion + blur cuts
+   ════════════════════════════════════════════════════════ */
+
+/* ── 1. Clock gradient — compositor-only paint ───────── */
+.current-clock {
+  will-change: transform;
+  /* background-clip:text animations stay off-thread with this hint */
+}
+
+/* ── 2. Clock center — paint containment isolates blobs ─ */
+.header-clock-center {
+  contain: layout paint;
+}
+
+/* ── 3. Main container — GPU layer for its backdrop blur ─ */
+.container {
+  transform: translateZ(0);
+}
+
+/* ── 4. Soc panel — cut backdrop blur from 40px → 16px ──
+        backdrop-filter blur is O(n²): halving radius = 6x cheaper  */
+.soc-panel {
+  backdrop-filter: blur(16px) saturate(160%) brightness(0.95) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) brightness(0.95) !important;
+  transform: translateZ(0);
+}
+body:not(.dark-mode) .soc-panel {
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+}
+
+/* ── 5. Soc backdrop — cut from 20px → 8px ─────────────── */
+.soc-backdrop {
+  backdrop-filter: blur(8px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(140%) !important;
+}
+
+/* ── 6. More overlay / grid — cut from 24/32px → 12/14px ─ */
+.more-overlay {
+  backdrop-filter: blur(12px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+}
+body.dark-mode .more-grid {
+  backdrop-filter: blur(14px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+}
+
+/* ── 7. Animated blob pseudo-elements — isolate compositor layer ─ */
+body.dark-mode .header-clock-center::before,
+body.dark-mode .header-clock-center::after {
+  isolation: isolate;
+  contain: strict;
+}
+
+/* ── 8. Pill border spin — GPU promotion ────────────────── */
+.hero-status-pill::after {
+  transform: translateZ(0);
+  will-change: --pill-spin;
+}
+
+/* ── 9. Bottom nav — already has will-change:transform, add GPU layer ─ */
+.bottom-nav {
+  transform: translateZ(0);
+}
+
+/* ── 10. prefers-reduced-motion — kill blobs + gradient flows ─ */
+@media (prefers-reduced-motion: reduce) {
+  body.dark-mode .header-clock-center::before,
+  body.dark-mode .header-clock-center::after {
+    animation: none !important;
+    display: none !important;
+  }
+  .current-clock {
+    animation: none !important;
+    background: var(--text-primary) !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+    -webkit-text-fill-color: unset !important;
+    color: var(--text-primary) !important;
+  }
+  .hero-status-pill::after {
+    animation: none !important;
+  }
+  .psm-btn--primary,
+  .tools-topbar-btn--featured {
+    animation: none !important;
+  }
 }

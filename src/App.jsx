@@ -5537,33 +5537,18 @@ export default function App() {
             <div className="smart-search-wrapper">
               {user && (
               <div className="store-filter-container">
-                <div className="store-marquee-track">
-                  {storeOptions.map(store => (
-                    <button
-                      key={store}
-                      className={`store-chip ${selectedStore === store ? 'active' : ''}`}
-                      onClick={() => { setSelectedStore(store); triggerSearch(inputValue, store); }}
-                    >
-                      {SUPERMARKET_LOGOS[store] ? (
-                        <img src={SUPERMARKET_LOGOS[store]} alt={store} className="store-chip-logo" onError={e => { e.currentTarget.style.display='none'; }} />
-                      ) : null}
-                      <span className="store-chip-label">{store === 'Όλα' ? '🏪 Όλα' : store}</span>
-                    </button>
-                  ))}
-                  {storeOptions.map(store => (
-                    <button
-                      key={`${store}-clone`}
-                      className={`store-chip ${selectedStore === store ? 'active' : ''}`}
-                      onClick={() => { setSelectedStore(store); triggerSearch(inputValue, store); }}
-                      aria-hidden="true"
-                    >
-                      {SUPERMARKET_LOGOS[store] ? (
-                        <img src={SUPERMARKET_LOGOS[store]} alt={store} className="store-chip-logo" onError={e => { e.currentTarget.style.display='none'; }} />
-                      ) : null}
-                      <span className="store-chip-label">{store === 'Όλα' ? '🏪 Όλα' : store}</span>
-                    </button>
-                  ))}
-                </div>
+                {storeOptions.map(store => (
+                  <button
+                    key={store}
+                    className={`store-chip ${selectedStore === store ? 'active' : ''}`}
+                    onClick={() => { setSelectedStore(store); triggerSearch(inputValue, store); }}
+                  >
+                    {SUPERMARKET_LOGOS[store] ? (
+                      <img src={SUPERMARKET_LOGOS[store]} alt={store} className="store-chip-logo" onError={e => { e.currentTarget.style.display='none'; }} />
+                    ) : null}
+                    <span className="store-chip-label">{store === 'Όλα' ? '🏪 Όλα' : store}</span>
+                  </button>
+                ))}
               </div>
               )}
 
