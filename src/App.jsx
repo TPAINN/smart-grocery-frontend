@@ -35,6 +35,16 @@ import {
   IconEdit, IconBell, IconHome, IconBookmark, IconTag,
   IconCoin, IconTrendingDown, IconAlertTriangle,
   IconMap, IconMicrophone,
+  // icon-consistency pass
+  IconHeart, IconHeartFilled,
+  IconGift, IconRocket, IconBulb,
+  IconCurrencyEuro, IconToolsKitchen2, IconHeartHandshake, IconRobot,
+  IconCamera, IconCircleCheck,
+  IconTarget, IconLeaf, IconFlame,
+  IconClock, IconWorld, IconBarbell, IconBolt, IconCircleOff,
+  IconMedal, IconBuildingFactory2, IconBroadcast,
+  IconApple, IconSalad, IconSoup, IconEgg, IconBowl,
+  IconDroplet, IconSend, IconMapPin, IconChartBar, IconCalendar,
 } from '@tabler/icons-react';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -764,7 +774,7 @@ function OfflineBanner({ isOnline, wasOffline }) {
       display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 600,
       boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
     }}>
-      <span style={{ fontSize: 20 }}>📡</span>
+      <IconBroadcast size={20} stroke={1.8} style={{ flexShrink:0 }}/>
       <div>
         <div style={{ fontWeight: 800, fontSize: 14 }}>Χωρίς σύνδεση</div>
         <div style={{ fontWeight: 400, fontSize: 11, opacity: 0.8, marginTop: 2 }}>
@@ -784,7 +794,7 @@ function OfflineBanner({ isOnline, wasOffline }) {
       color: '#fff', padding: '12px 20px',
       display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 600,
     }}>
-      <span style={{ fontSize: 20 }}>✅</span>
+      <IconCircleCheck size={20} stroke={2} style={{ flexShrink:0 }}/>
       <div>
         <div style={{ fontWeight: 800, fontSize: 14 }}>Σύνδεση αποκαταστάθηκε!</div>
         <div style={{ fontWeight: 400, fontSize: 11, opacity: 0.8 }}>Τιμές ενημερώνονται ξανά</div>
@@ -814,7 +824,7 @@ function CalorieSummary({ items }) {
       {/* Header row */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ fontSize:20 }}>🔥</span>
+          <IconFlame size={20} stroke={1.8}/>
           <div>
             <div style={{ fontSize:10, color:'var(--text-secondary)', textTransform:'uppercase', letterSpacing:0.5 }}>
               Θερμίδες Καλαθιού
@@ -827,7 +837,7 @@ function CalorieSummary({ items }) {
         </div>
         <div style={{ textAlign:'right', display:'flex', flexDirection:'column', gap:2 }}>
           <div style={{ fontSize:11, color:'var(--text-secondary)' }}>
-            🛒 {foodItems.length} τρόφιμα
+            <IconShoppingCart size={11} stroke={2} style={{ verticalAlign:'middle', marginRight:3 }}/>{foodItems.length} τρόφιμα
           </div>
           {nonFoodItems.length > 0 && (
             <div style={{ fontSize:11, color:'#64748b' }}>
@@ -985,7 +995,7 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
         zIndex: 0,
         filter: `drop-shadow(0 0 ${revealPct * 16}px rgba(239,68,68,1)) drop-shadow(0 0 ${revealPct * 6}px rgba(239,68,68,0.8))`,
       }}>
-        <span style={{ fontSize: 22 }}>🗑️</span>
+        <IconTrash size={22} stroke={1.8}/>
       </div>
 
       {/* ── The actual card ── */}
@@ -1015,7 +1025,7 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
           onClick={() => onToggleCheck(item.id)}
           title={item.isChecked ? 'Αγοράστηκε' : 'Σημείωσε ως αγορασμένο'}
         >
-          {item.isChecked && <span style={{ fontSize:11, lineHeight:1 }}>✓</span>}
+          {item.isChecked && <IconCheck size={11} stroke={2.5}/>}
         </button>
 
         {/* ── Product avatar (real image or clean initial fallback) ── */}
@@ -1043,12 +1053,13 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
           {user && (
           <div className="item-meta-row">
             <span className="item-price-tag">{item.price > 0 ? `${item.price.toFixed(2)}€` : '—'}</span>
-            {item.store && item.store !== '—' && <span className="item-store-tag">📍 {item.store}</span>}
+            {item.store && item.store !== '—' && <span className="item-store-tag"><IconMapPin size={10} stroke={2}/> {item.store}</span>}
             {foodInfo.isFood && foodInfo.totalCals > 0 && (
               <span style={{
                 fontSize:10, fontWeight:700, color:calColor(foodInfo.totalCals),
                 background:`${calColor(foodInfo.totalCals)}18`, borderRadius:99, padding:'2px 7px',
-              }}>🔥 {foodInfo.totalCals}</span>
+                display:'inline-flex', alignItems:'center', gap:2,
+              }}><IconFlame size={10} stroke={2}/> {foodInfo.totalCals}</span>
             )}
           </div>
           )}
@@ -1066,8 +1077,8 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
               style={{ width:20, height:20, border:'none', background:'transparent', cursor:'pointer', color:'var(--text-secondary)', fontSize:15, fontWeight:700, lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:6, padding:0 }}
             >+</button>
           </div>
-          {user && <button className="send-friend-btn" onClick={() => onSend(item)} title="Στείλε σε φίλο">📤</button>}
-          {item.price > 0 && <button className="substitute-btn" onClick={() => setShowSub(s => !s)} title="AI Εναλλακτικά">💡</button>}
+          {user && <button className="send-friend-btn" onClick={() => onSend(item)} title="Στείλε σε φίλο"><IconSend size={14} stroke={2}/></button>}
+          {item.price > 0 && <button className="substitute-btn" onClick={() => setShowSub(s => !s)} title="AI Εναλλακτικά"><IconBulb size={14} stroke={2}/></button>}
           <button className="delete-btn" onClick={() => onDelete(item.id)} title="Διαγραφή">✕</button>
         </div>
       </div>
@@ -1076,15 +1087,15 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
       {showSub && (
         <div className="sub-panel">
           {subLoading && <div className="sub-loading"><span className="sub-spinner"/>Αναζήτηση εναλλακτικών…</div>}
-          {subError  && <div className="sub-error">⚠️ {subError}</div>}
+          {subError  && <div className="sub-error"><IconAlertTriangle size={13} stroke={2}/> {subError}</div>}
           {subResult && (
             <>
-              <div className="sub-panel-title">💡 AI Εναλλακτικά για «{item.text}»</div>
+              <div className="sub-panel-title"><IconBulb size={13} stroke={2}/> AI Εναλλακτικά για «{item.text}»</div>
               {(subResult.aiTop3 || subResult.alternatives || []).map((alt, i) => (
                 <div key={i} className="sub-alt">
                   <div className="sub-alt-info">
                     <span className="sub-alt-name">{alt.name || alt.chainName}</span>
-                    <span className="sub-alt-store">📍 {alt.supermarket || alt.store}</span>
+                    <span className="sub-alt-store"><IconMapPin size={11} stroke={2}/> {alt.supermarket || alt.store}</span>
                     {alt.reason && <span className="sub-alt-reason">{alt.reason}</span>}
                   </div>
                   <span className="sub-alt-price">€{(alt.price||0).toFixed(2)}</span>
@@ -1412,7 +1423,7 @@ function SocialPanel({ user, friends, chatMessages, chatInput, setChatInput, dmT
                   <div key={m._id || i} className={`soc-msg-row${isMine ? ' soc-msg-row--mine' : ''}`}>
                     {showName && <div className="soc-msg-sender">{m.senderName}</div>}
                     <div className={`soc-bubble${isMine ? ' soc-bubble--mine' : ' soc-bubble--other'}${m.targetShareKey ? ' soc-bubble--dm' : ''}`}>
-                      {m.targetShareKey && <div className="soc-dm-tag">🔒 Ιδιωτικό</div>}
+                      {m.targetShareKey && <div className="soc-dm-tag"><IconLock size={10} stroke={2} style={{ verticalAlign:'middle', marginRight:3 }}/>Ιδιωτικό</div>}
                       <div className="soc-bubble-text">{m.text}</div>
                       <div className="soc-bubble-meta">
                         <span>{msgTime}</span>
@@ -1587,19 +1598,19 @@ function PremiumModal({ isOpen, onClose, user }) {
 
   const plans = [
     { id: 'monthly',  price: '0,99€', sub: '/μήνα',      badge: null,         saving: null,            accent: null },
-    { id: 'yearly',   price: '7,99€', sub: '/χρόνο',     badge: '🔥 Δημοφιλές', saving: '-33%',        accent: '#7c3aed' },
-    { id: 'lifetime', price: '14,99€',sub: 'μία φορά',   badge: '⭐ Best',    saving: 'Για πάντα',    accent: '#f59e0b' },
+    { id: 'yearly',   price: '7,99€', sub: '/χρόνο',     badge: <><IconFlame size={11} stroke={2}/> Δημοφιλές</>, saving: '-33%',     accent: '#7c3aed' },
+    { id: 'lifetime', price: '14,99€',sub: 'μία φορά',   badge: <><IconStar size={11} stroke={2}/> Best</>,      saving: 'Για πάντα', accent: '#f59e0b' },
   ];
 
   const features = [
-    { icon:'📋', text:'Έως 10 αποθηκευμένες λίστες' },
-    { icon:'🤖', text:'AI Πλάνο Διατροφής (εβδομαδιαίο)' },
-    { icon:'🤝', text:'Κοινό καλάθι, απεριόριστοι φίλοι' },
-    { icon:'📷', text:'Meal Scan & Barcode Scanner' },
-    { icon:'🗺️', text:'Χάρτης — Έξυπνη διαδρομή' },
-    { icon:'🔔', text:'Push notifications & προσφορές' },
-    { icon:'📊', text:'Ιστορικό & στατιστικά budget' },
-    { icon:'⚡', text:'Προτεραιότητα σε νέες λειτουργίες' },
+    { icon:<IconNotes size={14} stroke={2}/>, text:'Έως 10 αποθηκευμένες λίστες' },
+    { icon:<IconRobot size={14} stroke={2}/>, text:'AI Πλάνο Διατροφής (εβδομαδιαίο)' },
+    { icon:<IconHeartHandshake size={14} stroke={2}/>, text:'Κοινό καλάθι, απεριόριστοι φίλοι' },
+    { icon:<IconCamera size={14} stroke={2}/>, text:'Meal Scan & Barcode Scanner' },
+    { icon:<IconMap size={14} stroke={2}/>, text:'Χάρτης — Έξυπνη διαδρομή' },
+    { icon:<IconBell size={14} stroke={2}/>, text:'Push notifications & προσφορές' },
+    { icon:<IconChartBar size={14} stroke={2}/>, text:'Ιστορικό & στατιστικά budget' },
+    { icon:<IconBolt size={14} stroke={2}/>, text:'Προτεραιότητα σε νέες λειτουργίες' },
   ];
 
   const handleCheckout = async () => {
@@ -1638,7 +1649,7 @@ function PremiumModal({ isOpen, onClose, user }) {
 
           <button className="pm-close" onClick={onClose} aria-label="Κλείσιμο">✕</button>
 
-          <div className="pm-header-icon">{onTrial ? '🎁' : '⭐'}</div>
+          <div className="pm-header-icon">{onTrial ? <IconGift size={30} stroke={1.5}/> : <IconStar size={30} stroke={1.5}/>}</div>
 
           {onTrial ? (
             <>
@@ -1684,7 +1695,7 @@ function PremiumModal({ isOpen, onClose, user }) {
               <div key={f.text} className="pm-feature" style={{ animationDelay: `${0.05 + i * 0.04}s` }}>
                 <span className="pm-feature-icon">{f.icon}</span>
                 <span className="pm-feature-text">{f.text}</span>
-                <span className="pm-feature-check">✓</span>
+                <span className="pm-feature-check"><IconCheck size={12} stroke={2.5}/></span>
               </div>
             ))}
           </div>
@@ -1703,13 +1714,13 @@ function PremiumModal({ isOpen, onClose, user }) {
             {checkoutLoading ? (
               <><span className="pm-spinner" />Μεταφορά στο Stripe...</>
             ) : (
-              <>🚀 Ξεκίνα το Premium</>
+              <><IconRocket size={17} stroke={2}/> Ξεκίνα το Premium</>
             )}
           </button>
 
           {/* Trust row */}
           <div className="pm-trust">
-            <span>🔒 Stripe</span>
+            <span><IconLock size={11} stroke={2} style={{ verticalAlign:'middle', marginRight:2 }}/>Stripe</span>
             <span className="pm-trust-dot" />
             <span>Ακύρωση ανά πάσα στιγμή</span>
             <span className="pm-trust-dot" />
@@ -1725,24 +1736,28 @@ function WelcomeModal({ onLogin, onRegister, onSkip }) {
   return (
     <div className="welcome-overlay">
       <div className="welcome-box">
-        <div className="welcome-emoji-row"><span>🛒</span><span>🥦</span><span>💡</span></div>
+        <div className="welcome-emoji-row">
+          <IconShoppingCart size={22} stroke={1.8}/>
+          <IconLeaf size={22} stroke={1.8}/>
+          <IconBulb size={22} stroke={1.8}/>
+        </div>
         <h2 className="welcome-title">Καλώς ήρθες στο<br /><span>Έξυπνο Καλαθάκι</span></h2>
         <p className="welcome-subtitle">Ψώνια χωρίς άγχος — σύγκριση τιμών, συνταγές, κοινό καλάθι με φίλους.</p>
         <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08))', border:'1.5px solid rgba(16,185,129,0.3)', borderRadius:99, padding:'6px 14px', marginBottom:12, fontSize:12, fontWeight:700, color:'#10b981' }}>
-          🎁 14 ημέρες δωρεάν Premium για νέους χρήστες
+          <IconGift size={13} stroke={2} style={{ verticalAlign:'middle', marginRight:4 }}/> 14 ημέρες δωρεάν Premium για νέους χρήστες
         </div>
         <div className="welcome-features">
           {[
-            { icon:'💰', title:'Σύγκριση Τιμών',       sub:'Βρες το φθηνότερο σε ΑΒ, Σκλαβενίτη, MyMarket και άλλα!', locked:false },
-            { icon:'🍽️', title:'Συνταγές & Μακροστοιχεία', sub:'Υλικά απευθείας στη λίστα, θερμίδες & πρωτεΐνη', locked:true },
-            { icon:'🤝', title:'Κοινό Καλάθι',         sub:'Μοιράσου τη λίστα με φίλους σε πραγματικό χρόνο', locked:true },
-            { icon:'🤖', title:'AI Πλάνο Διατροφής',   sub:'Εβδομαδιαίο πλάνο διατροφής με AI', locked:true },
-            { icon:'📷', title:'Σαρωτής Barcodes',      sub:'Σάρωσε για τιμή, θερμίδες & αλλεργιογόνα', locked:true },
+            { icon:<IconCurrencyEuro size={18} stroke={1.8}/>, title:'Σύγκριση Τιμών',       sub:'Βρες το φθηνότερο σε ΑΒ, Σκλαβενίτη, MyMarket και άλλα!', locked:false },
+            { icon:<IconToolsKitchen2 size={18} stroke={1.8}/>, title:'Συνταγές & Μακροστοιχεία', sub:'Υλικά απευθείας στη λίστα, θερμίδες & πρωτεΐνη', locked:true },
+            { icon:<IconHeartHandshake size={18} stroke={1.8}/>, title:'Κοινό Καλάθι',         sub:'Μοιράσου τη λίστα με φίλους σε πραγματικό χρόνο', locked:true },
+            { icon:<IconRobot size={18} stroke={1.8}/>, title:'AI Πλάνο Διατροφής',   sub:'Εβδομαδιαίο πλάνο διατροφής με AI', locked:true },
+            { icon:<IconCamera size={18} stroke={1.8}/>, title:'Σαρωτής Barcodes',      sub:'Σάρωσε για τιμή, θερμίδες & αλλεργιογόνα', locked:true },
           ].map(({ icon, title, sub, locked }) => (
             <div key={title} className={`wf-row ${locked ? 'wf-locked' : ''}`}>
               <span className="wf-icon">{icon}</span>
               <div><strong>{title}</strong><span>{sub}</span></div>
-              <span className={locked ? 'wf-lock' : 'wf-free'}>{locked ? '🔒' : '✓'}</span>
+              <span className={locked ? 'wf-lock' : 'wf-free'}>{locked ? <IconLock size={13} stroke={2}/> : <IconCheck size={13} stroke={2.5}/>}</span>
             </div>
           ))}
         </div>
@@ -1760,7 +1775,7 @@ function LockedFeature({ label, onUnlock }) {
   return (
     <div className="locked-feature-overlay">
       <div className="locked-feature-box">
-        <span className="locked-icon">🔒</span>
+        <span className="locked-icon"><IconLock size={30} stroke={1.5}/></span>
         <h3>Απαιτείται Λογαριασμός</h3>
         <p>Το <strong>{label}</strong> είναι διαθέσιμο μόνο σε εγγεγραμμένους χρήστες.</p>
         <button className="locked-unlock-btn" onClick={onUnlock}>Σύνδεση / Εγγραφή</button>
@@ -1787,7 +1802,9 @@ function RecipeAddModal({ isOpen, recipeName, progress, total, onClose }) {
           display:'flex', alignItems:'center', justifyContent:'center', fontSize:32,
           animation: isDone ? 'none' : 'pulse 1.5s ease-in-out infinite',
         }}>
-          {isDone ? '✅' : '🛒'}
+          {isDone
+            ? <IconCircleCheck size={32} stroke={1.8} style={{ color:'#10b981' }}/>
+            : <IconShoppingCart size={32} stroke={1.8}/>}
         </div>
         <h3 style={{ margin:'0 0 4px', fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>
           {isDone ? 'Ολοκληρώθηκε!' : 'Αναζήτηση Τιμών'}
@@ -1954,14 +1971,14 @@ function ScannerOnboardingModal({ onComplete }) {
 
   const steps = [
     {
-      icon: '📷',
+      icon: <IconCamera size={15} stroke={2}/>,
       tag: 'Σάρωση',
       title: 'Σκάναρε οποιοδήποτε προϊόν',
       desc: 'Στόχευσε το barcode με την κάμερα και η αναγνώριση γίνεται αυτόματα — χωρίς να πατήσεις τίποτα.',
       features: [
-        { icon: '⚡', text: 'Αυτόματη αναγνώριση barcode' },
-        { icon: '🌍', text: 'Βάση δεδομένων 3M+ προϊόντων' },
-        { icon: '🇬🇷', text: 'Υποστήριξη ελληνικών προϊόντων' },
+        { icon: <IconBolt size={15} stroke={2}/>, text: 'Αυτόματη αναγνώριση barcode' },
+        { icon: <IconWorld size={15} stroke={2}/>, text: 'Βάση δεδομένων 3M+ προϊόντων' },
+        { icon: <IconCheck size={15} stroke={2}/>, text: 'Υποστήριξη ελληνικών προϊόντων' },
       ],
       svg: (
         <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:210, height:158 }}>
@@ -2000,14 +2017,14 @@ function ScannerOnboardingModal({ onComplete }) {
       ),
     },
     {
-      icon: '🎯',
+      icon: <IconTarget size={15} stroke={2}/>,
       tag: 'Διατροφή',
       title: 'Κεντράρισε στο πράσινο πλαίσιο',
       desc: 'Κράτησε το κινητό σταθερό και βάλε το barcode μέσα στο πράσινο πλαίσιο. Η αναγνώριση γίνεται αμέσως!',
       features: [
-        { icon: '📊', text: 'Θερμίδες & μακροθρεπτικά' },
-        { icon: '🔴', text: 'Προειδοποιήσεις ζάχαρης/αλατιού' },
-        { icon: '🌱', text: 'Vegan & vegetarian ένδειξη' },
+        { icon: <IconChartBar size={15} stroke={2}/>, text: 'Θερμίδες & μακροθρεπτικά' },
+        { icon: <IconAlertTriangle size={15} stroke={2}/>, text: 'Προειδοποιήσεις ζάχαρης/αλατιού' },
+        { icon: <IconLeaf size={15} stroke={2}/>, text: 'Vegan & vegetarian ένδειξη' },
       ],
       svg: (
         <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:210, height:158 }}>
@@ -2053,14 +2070,14 @@ function ScannerOnboardingModal({ onComplete }) {
       ),
     },
     {
-      icon: '🛡️',
+      icon: <IconShield size={15} stroke={2}/>,
       tag: 'Αλλεργίες & NOVA',
       title: 'Πλήρης ανάλυση προϊόντος',
       desc: 'Nutri-Score, βαθμολογία NOVA, αλλεργιογόνα, πρόσθετα E-codes και πλήρη λίστα συστατικών.',
       features: [
-        { icon: '🏅', text: 'Nutri-Score A έως E' },
-        { icon: '⚠️', text: 'Αλλεργιογόνα & E-codes' },
-        { icon: '🏭', text: 'Βαθμολογία NOVA επεξεργασίας' },
+        { icon: <IconMedal size={15} stroke={2}/>, text: 'Nutri-Score A έως E' },
+        { icon: <IconAlertTriangle size={15} stroke={2}/>, text: 'Αλλεργιογόνα & E-codes' },
+        { icon: <IconBuildingFactory2 size={15} stroke={2}/>, text: 'Βαθμολογία NOVA επεξεργασίας' },
       ],
       svg: (
         <svg viewBox="0 0 220 172" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width:'100%', maxWidth:226, height:158 }}>
@@ -2350,7 +2367,7 @@ function ScannerOnboardingModal({ onComplete }) {
               onTouchStart={e => { e.currentTarget.style.transform='scale(0.97)'; }}
               onTouchEnd={e => { e.currentTarget.style.transform=''; }}
             >
-              {step < steps.length - 1 ? 'Επόμενο →' : '🚀 Ξεκίνα!'}
+              {step < steps.length - 1 ? 'Επόμενο →' : <><IconRocket size={15} stroke={2}/> Ξεκίνα!</>}
             </button>
           </div>
         </div>
@@ -2683,9 +2700,9 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         {/* Tabs */}
         <div className="scanner-tabs">
           {[
-            { id:'scan',     label:'📷 Σάρωση' },
-            { id:'history',  label:`📜 Ιστορικό ${scanHistory.length > 0 ? `(${scanHistory.length})` : ''}` },
-            { id:'allergens', label:'⚠️ Αλλεργίες' },
+            { id:'scan',     label:<><IconCamera size={13} stroke={2}/> Σάρωση</> },
+            { id:'history',  label:<><IconHistory size={13} stroke={2}/> {`Ιστορικό${scanHistory.length > 0 ? ` (${scanHistory.length})` : ''}`}</> },
+            { id:'allergens', label:<><IconAlertTriangle size={13} stroke={2}/> Αλλεργίες</> },
           ].map(t => (
             <button key={t.id} className={`scanner-tab ${activeView === t.id ? 'active' : ''}`}
               onClick={() => {
@@ -2804,7 +2821,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             {getWarnings(product).length > 0 && (
               <div className="product-warnings">
                 {getWarnings(product).map((w,i) => (
-                  <div key={i} className={`warning-chip ${w.icon === '✅' || w.icon === '💪' || w.icon === '🥦' ? 'good' : 'bad'}`}
+                  <div key={i} className={`warning-chip ${w.type === 'good' ? 'good' : 'bad'}`}
                     style={{ cursor: w.clickable ? 'pointer' : 'default' }}
                     onClick={() => w.clickable && setIngredientDetail({ name: w.text, code: w.detail, desc: w.desc, safety: w.type === 'bad' ? 'bad' : 'ok' })}
                   >
@@ -2840,11 +2857,11 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                     color: product.novaGroup <= 2 ? '#22c55e' : product.novaGroup === 3 ? '#f59e0b' : '#ef4444',
                     borderRadius:10, padding:'5px 10px', fontSize:11, fontWeight:700
                   }}>
-                    NOVA {product.novaGroup} {product.novaGroup === 4 ? '⚠️' : product.novaGroup <= 2 ? '✅' : ''}
+                    NOVA {product.novaGroup} {product.novaGroup === 4 ? <IconAlertTriangle size={12} stroke={2}/> : product.novaGroup <= 2 ? <IconCircleCheck size={12} stroke={2}/> : ''}
                   </div>
                 )}
-                {product.isVegan && <span style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', color:'#22c55e', borderRadius:10, padding:'5px 10px', fontSize:11, fontWeight:700 }}>🌱 Vegan</span>}
-                {!product.isVegan && product.isVegetarian && <span style={{ background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.25)', color:'#22c55e', borderRadius:10, padding:'5px 10px', fontSize:11, fontWeight:700 }}>🥗 Vegetarian</span>}
+                {product.isVegan && <span style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', color:'#22c55e', borderRadius:10, padding:'5px 10px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><IconLeaf size={12} stroke={2}/> Vegan</span>}
+                {!product.isVegan && product.isVegetarian && <span style={{ background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.25)', color:'#22c55e', borderRadius:10, padding:'5px 10px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><IconSalad size={12} stroke={2}/> Vegetarian</span>}
               </div>
             )}
 
@@ -2890,7 +2907,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                 <p>{product.ingredients}</p>
               </details>
             )}
-            <button className="scanner-btn" onClick={handleScanAgain} style={{ marginTop:8 }}>📷 Σάρωσε ξανά</button>
+            <button className="scanner-btn" onClick={handleScanAgain} style={{ marginTop:8 }}><IconCamera size={15} stroke={2}/> Σάρωσε ξανά</button>
           </div>
         )}
 
@@ -2921,7 +2938,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                     </div>
                   </div>
                 ))}
-                <button className="scanner-btn-outline" onClick={() => { setScanHistory([]); }} style={{ marginTop:12 }}>🗑️ Καθαρισμός ιστορικού</button>
+                <button className="scanner-btn-outline" onClick={() => { setScanHistory([]); }} style={{ marginTop:12 }}><IconTrash size={14} stroke={2} style={{ verticalAlign:'middle', marginRight:4 }}/>Καθαρισμός ιστορικού</button>
               </div>
             )}
           </div>
@@ -3021,7 +3038,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
           onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(); }}
           aria-label={isFavorite ? 'Αφαίρεση από αγαπημένα' : 'Προσθήκη στα αγαπημένα'}
         >
-          {isFavorite ? '❤️' : '🤍'}
+          {isFavorite ? <IconHeartFilled size={20}/> : <IconHeart size={20} stroke={1.8}/>}
         </button>
 
         {heroImage ? (
@@ -3037,9 +3054,9 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
               </div>
               <h2 className="recipe-popup-title">{cleanRecipeTitle(recipe.title)}</h2>
               <div className="recipe-popup-meta-inline">
-                <span>⏱️ {recipe.time || 30} λεπτά</span>
+                <span style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconClock size={13} stroke={2}/> {recipe.time || 30} λεπτά</span>
                 <span>•</span>
-                <span>🍽️ {recipe.servings || 4} μερίδες</span>
+                <span style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconToolsKitchen2 size={13} stroke={2}/> {recipe.servings || 4} μερίδες</span>
                 <span>•</span>
                 <span style={{ color: diffColor }}>{recipe.difficulty || 'Μέτρια'}</span>
               </div>
@@ -3049,9 +3066,9 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
           <div className="recipe-popup-header-noimg">
             <h2 className="recipe-popup-title">{cleanRecipeTitle(recipe.title)}</h2>
             <div className="recipe-popup-meta-inline" style={{ color:'var(--text-muted)' }}>
-              <span>⏱️ {recipe.time || 30} λεπτά</span>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconClock size={13} stroke={2}/> {recipe.time || 30} λεπτά</span>
               <span>•</span>
-              <span>🍽️ {recipe.servings || 4} μερίδες</span>
+              <span style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconToolsKitchen2 size={13} stroke={2}/> {recipe.servings || 4} μερίδες</span>
             </div>
           </div>
         )}
@@ -3153,7 +3170,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
           >
             {isAdding
               ? <><span style={{ display:'inline-block', width:14, height:14, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', animation:'spin 0.7s linear infinite', marginRight:8, verticalAlign:'middle' }} />Ψάχνω τιμές...</>
-              : '🛒 Προσθήκη Υλικών στη Λίστα'}
+              : <><IconShoppingCart size={15} stroke={2}/> Προσθήκη Υλικών στη Λίστα</>}
           </button>
 
           <div className={`recipe-popup-details ${showDetails ? 'visible' : ''}`}>
@@ -3162,7 +3179,7 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
                 onClick={() => setActiveSection('ingredients')}
                 style={{ flex:1, padding:'10px 8px', border:'none', background:activeSection === 'ingredients' ? 'var(--bg-card)' : 'transparent', color:activeSection === 'ingredients' ? 'var(--text-primary)' : 'var(--text-muted)', fontSize:13, fontWeight:700, fontFamily:'var(--font)', cursor:'pointer', transition:'background 0.25s, color 0.25s', boxShadow:activeSection === 'ingredients' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none', WebkitTapHighlightColor:'transparent' }}
               >
-                🥗 Υλικά ({cleanIngredients.length})
+                <IconSalad size={14} stroke={2} style={{ verticalAlign:'middle', marginRight:4 }}/>Υλικά ({cleanIngredients.length})
               </button>
               <button
                 onClick={() => setActiveSection('instructions')}
@@ -5005,23 +5022,8 @@ export default function App() {
     items.filter(i => i.store && i.store !== 'Άγνωστο').map(i => i.store)
   )].length;
 
-  const mealplanJustBlocked = useRef(false);
-
   useEffect(() => {
-    if (activeTab === 'mealplan' && mealPlanLocked) {
-      mealplanJustBlocked.current = true;
-      setActiveTab('list');
-      setShowPremiumModal(true);
-    }
-  }, [activeTab, mealPlanLocked]);
-
-  useEffect(() => {
-    if (mealplanJustBlocked.current) {
-      mealplanJustBlocked.current = false;
-      closeOverlaySurfaces('premium');
-    } else {
-      closeOverlaySurfaces();
-    }
+    closeOverlaySurfaces();
   }, [activeTab, closeOverlaySurfaces]);
 
   // ── Body scroll lock — prevent background scroll when any modal is open ─────
@@ -5166,7 +5168,7 @@ export default function App() {
               <IconQrcode size={18} stroke={2} />
               <span>Barcode</span>
             </button>
-            <button className={`tools-topbar-btn${activeTab === 'mealplan' ? ' active' : ''}`} onClick={() => navigateToTab('mealplan')}>
+            <button className={`tools-topbar-btn${activeTab === 'mealplan' ? ' active' : ''}`} onClick={() => { if (mealPlanLocked) { haptic.light(); setShowPremiumModal(true); } else { navigateToTab('mealplan'); } }}>
               <IconBrain size={16} stroke={1.8} />
               <span>AI Πλάνο</span>
             </button>
@@ -5189,7 +5191,7 @@ export default function App() {
             <div className="header-actions">
               {!isOnline && (
                 <div style={{ display:'flex', alignItems:'center', gap:4, background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:700, color:'#ef4444' }}>
-                  📡 Offline
+                  <IconBroadcast size={11} stroke={2} style={{ verticalAlign:'middle', marginRight:3 }}/>Offline
                 </div>
               )}
 
@@ -5201,7 +5203,7 @@ export default function App() {
                   title="Αναβάθμιση σε Premium"
                   style={{ background:'transparent', border:'1px solid rgba(124,58,237,0.2)', opacity: 0.75 }}
                 >
-                  <span style={{ fontSize:15, opacity: 0.8 }}>⭐</span>
+                  <IconStar size={16} stroke={1.8} style={{ opacity: 0.8 }}/>
                 </div>
               )}
               {user?.isOnTrial && (() => {
@@ -5224,7 +5226,7 @@ export default function App() {
                       cursor:'pointer', opacity: 0.9,
                     }}
                   >
-                    {urgent ? '⚠️' : '🎁'} {user.trialDaysLeft}μ
+                    {urgent ? <IconAlertTriangle size={12} stroke={2}/> : <IconGift size={12} stroke={2}/>} {user.trialDaysLeft}μ
                   </div>
                 );
               })()}
@@ -5237,7 +5239,7 @@ export default function App() {
                   fontSize:10, fontWeight:700,
                   color:'rgba(167,139,250,0.8)', opacity:0.8,
                 }}>
-                  ⭐
+                  <IconStar size={14} stroke={1.8}/>
                 </div>
               )}
 
@@ -5247,9 +5249,8 @@ export default function App() {
                   className="action-btn-new scanner-btn-header psm-header-btn"
                   onClick={openPlateScannerModal}
                   title="Meal Macros — Σκάναρε το πιάτο σου"
-                  style={{ fontSize: 18 }}
                 >
-                  🍽️
+                  <IconToolsKitchen2 size={20} stroke={1.8}/>
                 </div>
               )}
 
@@ -5370,7 +5371,7 @@ export default function App() {
                   cursor:'pointer', transition:'all 0.2s',
                 }}
               >
-                <span style={{ fontSize:22 }}>⚠️</span>
+                <IconAlertTriangle size={22} stroke={1.8} style={{ flexShrink:0 }}/>
                 <div style={{ flex:1 }}>
                   <div style={{ fontWeight:800, fontSize:13, color:'#ef4444' }}>
                     Το trial σου λήγει σε {user.trialDaysLeft} {user.trialDaysLeft === 1 ? 'μέρα' : 'μέρες'}!
@@ -5426,7 +5427,7 @@ export default function App() {
                         <div className="budget-progress-bar">
                           <div className="budget-progress-fill" style={{ width:`${(budgetPct * 100).toFixed(1)}%`, background:`linear-gradient(90deg, #10b981, ${budgetColor})` }} />
                         </div>
-                        {budgetPct >= 1 && <div style={{ fontSize:11, color:'#ef4444', fontWeight:700, marginTop:4 }}>⚠️ Υπέρβαση budget κατά {(totalCost - shoppingBudget).toFixed(2)}€</div>}
+                        {budgetPct >= 1 && <div style={{ fontSize:11, color:'#ef4444', fontWeight:700, marginTop:4, display:'flex', alignItems:'center', gap:4 }}><IconAlertTriangle size={11} stroke={2}/> Υπέρβαση budget κατά {(totalCost - shoppingBudget).toFixed(2)}€</div>}
                       </div>
                     )}
                     {/* Set budget prompt */}
@@ -5463,13 +5464,13 @@ export default function App() {
                         <button
                           onClick={() => setShowBudgetInput(true)}
                           style={{ marginTop:8, padding:'4px 10px', borderRadius:8, border:'1px dashed var(--border)', background:'transparent', color:'var(--text-secondary)', fontSize:11, cursor:'pointer', fontWeight:600 }}
-                        >💰 Βάλε budget</button>
+                        ><IconCoin size={12} stroke={2} style={{ verticalAlign:'middle', marginRight:3 }}/>Βάλε budget</button>
                       )
                     )}
                   </div>
                   <div style={{ display:'flex', gap:'8px', marginLeft:12, alignItems:'center' }}>
-                    <button onClick={handleMassClear} style={{ background:'rgba(239,68,68,0.1)', color:'var(--brand-danger)', border:'none', padding:'10px', borderRadius:'10px', cursor:'pointer', fontSize:18 }} title="Αδείασμα">🗑️</button>
-                    {user && <button onClick={saveCurrentList} style={{ background:'linear-gradient(135deg,#059669,#10b981)', color:'white', border:'none', padding:'10px 16px', borderRadius:'10px', cursor:'pointer', fontWeight:'bold', fontSize:13 }} title="Αποθήκευση">💾 Αποθήκευση</button>}
+                    <button onClick={handleMassClear} style={{ background:'rgba(239,68,68,0.1)', color:'var(--brand-danger)', border:'none', padding:'10px', borderRadius:'10px', cursor:'pointer' }} title="Αδείασμα"><IconTrash size={18} stroke={1.8}/></button>
+                    {user && <button onClick={saveCurrentList} style={{ background:'linear-gradient(135deg,#059669,#10b981)', color:'white', border:'none', padding:'10px 16px', borderRadius:'10px', cursor:'pointer', fontWeight:'bold', fontSize:13 }} title="Αποθήκευση"><IconBookmark size={16} stroke={2} style={{ verticalAlign:'middle', marginRight:4 }}/>Αποθήκευση</button>}
                   </div>
                 </div>
               </div>
@@ -5809,7 +5810,7 @@ export default function App() {
 
             {items.length === 0 ? (
               <div className="empty-cart-state list-empty-v4">
-                <span className="empty-state-icon empty-cart-icon list-empty-illustration" style={{ fontSize: '4rem', display: 'block', marginBottom: 16 }}>🛒</span>
+                <span className="empty-state-icon empty-cart-icon list-empty-illustration" style={{ display: 'flex', justifyContent:'center', marginBottom: 16 }}><IconShoppingCart size={64} stroke={1} style={{ opacity:0.2 }}/></span>
                 <h2 className="empty-cart-heading list-empty-title">Η λίστα είναι άδεια</h2>
                 <p className="list-empty-desc" style={{ marginBottom: 18 }}>
                   {user
@@ -5872,7 +5873,7 @@ export default function App() {
             <>
                 {!isOnline && (
                   <div className="offline-banner">
-                    <span>📡</span>
+                    <IconBroadcast size={14} stroke={2}/>
                     <span><strong>Offline</strong> — εμφανίζονται οι τελευταίες αποθηκευμένες συνταγές.</span>
                   </div>
                 )}
@@ -5894,7 +5895,7 @@ export default function App() {
                     style={{ flexShrink: 0 }}
                     onClick={() => { setShowFavoritesOnly(v => !v); setRecipeCategory(''); setRecipePage(1); }}
                   >
-                    ❤️ {favoriteRecipes.length > 0 && <span className="fav-count">{favoriteRecipes.length}</span>}
+                    <IconHeart size={15} stroke={2}/> {favoriteRecipes.length > 0 && <span className="fav-count">{favoriteRecipes.length}</span>}
                   </button>
                 </div>
 
@@ -5912,12 +5913,12 @@ export default function App() {
                         <img src={toAbsoluteMediaUrl(daily.image || daily.thumbnail)} alt={daily.title} className="daily-recipe-img" loading="lazy" />
                       )}
                       <div className="daily-recipe-body">
-                        <div className="daily-recipe-badge">⭐ Συνταγή της Ημέρας</div>
+                        <div className="daily-recipe-badge" style={{ display:'inline-flex', alignItems:'center', gap:4 }}><IconStar size={12} stroke={2}/> Συνταγή της Ημέρας</div>
                         <div className="daily-recipe-title">{daily.title}</div>
                         <div className="daily-recipe-meta">
-                          {daily.kcal && <span>🔥 {daily.kcal} kcal</span>}
-                          {daily.cookTime && <span>⏱ {daily.cookTime} λεπτ.</span>}
-                          {daily.cuisine && <span>🌍 {daily.cuisine}</span>}
+                          {daily.kcal && <span style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconFlame size={12} stroke={2}/> {daily.kcal} kcal</span>}
+                          {daily.cookTime && <span style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconClock size={12} stroke={2}/> {daily.cookTime} λεπτ.</span>}
+                          {daily.cuisine && <span style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconWorld size={12} stroke={2}/> {daily.cuisine}</span>}
                         </div>
                       </div>
                     </div>
@@ -5946,21 +5947,21 @@ export default function App() {
                 {/* ── Category Pills ── */}
                 <div className="recipe-category-scroll">
                   {[
-                    { id: '', label: '🍽️ Όλες' },
-                    { id: 'Κυρίως', label: '🥘 Κυρίως' },
-                    { id: 'Σαλάτες', label: '🥗 Σαλάτες' },
-                    { id: 'Σούπες', label: '🍲 Σούπες' },
-                    { id: 'Πρωινό', label: '🍳 Πρωινό' },
-                    { id: 'Σνακ', label: '🍏 Σνακ' },
-                    { id: 'Επιδόρπια', label: '🍰 Γλυκά' },
-                    { id: 'Συνοδευτικά', label: '🫙 Συνοδευτικά' },
+                    { id: '', Icon: IconToolsKitchen2, label: 'Όλες' },
+                    { id: 'Κυρίως', Icon: IconChefHat, label: 'Κυρίως' },
+                    { id: 'Σαλάτες', Icon: IconSalad, label: 'Σαλάτες' },
+                    { id: 'Σούπες', Icon: IconSoup, label: 'Σούπες' },
+                    { id: 'Πρωινό', Icon: IconEgg, label: 'Πρωινό' },
+                    { id: 'Σνακ', Icon: IconApple, label: 'Σνακ' },
+                    { id: 'Επιδόρπια', Icon: IconBowl, label: 'Γλυκά' },
+                    { id: 'Συνοδευτικά', Icon: IconBowl, label: 'Συνοδευτικά' },
                   ].map(cat => (
                     <button
                       key={cat.id}
                       className={`recipe-cat-pill ${recipeCategory === cat.id && !showFavoritesOnly ? 'active' : ''}`}
                       onClick={() => { setRecipeCategory(cat.id); setShowFavoritesOnly(false); setRecipePage(1); }}
                     >
-                      {cat.label}
+                      <cat.Icon size={13} stroke={2} style={{ flexShrink:0, verticalAlign:'middle' }}/>{' '}{cat.label}
                     </button>
                   ))}
                 </div>
@@ -5968,19 +5969,19 @@ export default function App() {
                 {/* ── Filter Chips ── */}
                 <div className="recipe-filters">
                   {[
-                    { id:'all',     label:'Όλες' },
-                    { id:'protein', label:'💪 Πρωτεΐνη' },
-                    { id:'fast',    label:'⚡ Γρήγορες' },
-                    { id:'vegan',   label:'🌱 Vegan' },
-                    { id:'nosugar', label:'🚫 Χ. Ζάχαρη' },
-                    { id:'budget',  label:'💰 Λίγα Υλικά' },
+                    { id:'all',     Icon: null,           label:'Όλες' },
+                    { id:'protein', Icon: IconBarbell,    label:'Πρωτεΐνη' },
+                    { id:'fast',    Icon: IconBolt,       label:'Γρήγορες' },
+                    { id:'vegan',   Icon: IconLeaf,       label:'Vegan' },
+                    { id:'nosugar', Icon: IconCircleOff,  label:'Χ. Ζάχαρη' },
+                    { id:'budget',  Icon: IconCoin,       label:'Λίγα Υλικά' },
                   ].map(f => (
                     <button
                       key={f.id}
                       className={`filter-btn ${recipeFilter === f.id ? 'active' : ''}`}
                       onClick={() => setRecipeFilter(f.id)}
                     >
-                      {f.label}
+                      {f.Icon && <f.Icon size={12} stroke={2} style={{ flexShrink:0, verticalAlign:'middle', marginRight:3 }}/>}{f.label}
                     </button>
                   ))}
                 </div>
@@ -6012,7 +6013,7 @@ export default function App() {
                 {/* ── Empty / error state ── */}
                 {!recipesLoading && filteredRecipes.length === 0 && (
                   <div style={{ textAlign:'center', padding:'48px 20px', background:'var(--bg-surface)', border:'2px dashed var(--border-light)', borderRadius:20 }}>
-                    <div style={{ fontSize:52, marginBottom:16 }}>{showFavoritesOnly ? '❤️' : '🍽️'}</div>
+                    <div style={{ marginBottom:16, display:'flex', justifyContent:'center' }}>{showFavoritesOnly ? <IconHeartFilled size={52} style={{ opacity:0.35 }}/> : <IconToolsKitchen2 size={52} stroke={1} style={{ opacity:0.25 }}/>}</div>
                     {showFavoritesOnly ? (
                       <>
                         <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Δεν έχεις αγαπημένες συνταγές</h3>
@@ -6068,16 +6069,16 @@ export default function App() {
                                 className="recipe-card-img"
                                 style={!(recipe.image || recipe.thumbnail) ? { height:135, background:'linear-gradient(135deg, var(--bg-subtle), var(--bg-card))', display:'flex', alignItems:'center', justifyContent:'center' } : {}}
                               >
-                                {!(recipe.image || recipe.thumbnail) && <span style={{ fontSize:36, opacity:0.3 }}>🍽️</span>}
+                                {!(recipe.image || recipe.thumbnail) && <IconToolsKitchen2 size={36} stroke={1.2} style={{ opacity:0.25 }}/>}
                               </LazyImage>
-                              <div className="recipe-card-time-badge">⏱️ {recipe.time || 30}'</div>
+                              <div className="recipe-card-time-badge" style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconClock size={11} stroke={2}/> {recipe.time || 30}'</div>
                               <div style={{ position:'absolute', top:10, left:10, width:8, height:8, borderRadius:'50%', zIndex:2, background: recipe.difficulty === 'Εύκολη' ? '#10b981' : recipe.difficulty === 'Δύσκολη' ? '#ef4444' : '#f59e0b' }} />
                               <button
                                 className={`recipe-fav-btn ${favoriteIds.includes(recipe._id) ? 'is-fav' : ''}`}
                                 onClick={(e) => { e.stopPropagation(); toggleFavorite(recipe._id); }}
                                 aria-label={favoriteIds.includes(recipe._id) ? 'Αφαίρεση από αγαπημένα' : 'Προσθήκη στα αγαπημένα'}
                               >
-                                {favoriteIds.includes(recipe._id) ? '❤️' : '🤍'}
+                                {favoriteIds.includes(recipe._id) ? <IconHeartFilled size={17}/> : <IconHeart size={17} stroke={1.8}/>}
                               </button>
                             </div>
 
@@ -6093,9 +6094,9 @@ export default function App() {
                                 )}
                               </div>
                               <div className="recipe-card-macros">
-                                {recipe.calories && <span className="macro-pill macro-kcal">🔥 {recipe.calories}</span>}
-                                {recipe.protein && <span className="macro-pill macro-protein">💪 {recipe.protein}g</span>}
-                                {recipe.carbs && <span className="macro-pill macro-carbs">⚡ {recipe.carbs}g</span>}
+                                {recipe.calories && <span className="macro-pill macro-kcal" style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconFlame size={11} stroke={2}/> {recipe.calories}</span>}
+                                {recipe.protein && <span className="macro-pill macro-protein" style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconBarbell size={11} stroke={2}/> {recipe.protein}g</span>}
+                                {recipe.carbs && <span className="macro-pill macro-carbs" style={{ display:'inline-flex', alignItems:'center', gap:3 }}><IconBolt size={11} stroke={2}/> {recipe.carbs}g</span>}
                               </div>
                             </div>
                           </div>
@@ -6141,7 +6142,7 @@ export default function App() {
                       <div className="mealdb-header">
                         <div className="mealdb-header-left">
                           <div className="mealdb-title">
-                            <span className="mealdb-globe">🌍</span>
+                            <IconWorld size={18} stroke={1.8} className="mealdb-globe"/>
                             Διεθνείς Συνταγές
                           </div>
                           <div className="mealdb-subtitle">
@@ -6219,7 +6220,7 @@ export default function App() {
                                       onClick={(e) => { e.stopPropagation(); toggleMealdbFavorite(meal); }}
                                       aria-label={mealDbFavIds.includes(String(meal._id)) ? 'Αφαίρεση από αγαπημένα' : 'Προσθήκη στα αγαπημένα'}
                                     >
-                                      {mealDbFavIds.includes(String(meal._id)) ? '❤️' : '🤍'}
+                                      {mealDbFavIds.includes(String(meal._id)) ? <IconHeartFilled size={17}/> : <IconHeart size={17} stroke={1.8}/>}
                                     </button>
                                   </div>
                                 )}
@@ -6378,7 +6379,7 @@ export default function App() {
                   {quizSlide === 0 && (
                     <div className="quiz-slide-body" style={{ alignItems:'center', gap:22 }}>
                       <div style={{ textAlign:'center' }}>
-                        <div style={{ fontSize:46, marginBottom:10 }}>⚕️</div>
+                        <div style={{ marginBottom:10, display:'flex', justifyContent:'center' }}><IconShield size={46} stroke={1.2} style={{ opacity:0.6 }}/></div>
                         <div style={{ fontWeight:900, fontSize:22, color:'var(--text-primary)', letterSpacing:-0.5 }}>Ποιο είναι το φύλο σου;</div>
                         <div style={{ fontSize:13, color:'var(--text-muted)', marginTop:8, lineHeight:1.5 }}>Χρειάζεται για τον υπολογισμό του μεταβολισμού σου</div>
                       </div>
@@ -6408,10 +6409,10 @@ export default function App() {
                         <div style={{ fontSize:13, color:'var(--text-muted)', marginTop:6 }}>Η ηλικία επηρεάζει τον βασικό μεταβολισμό σου</div>
                       </div>
                       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-                        {[['15-18','🧑'],['18-22','🎓'],['22-28','💼'],['28-35','👨'],['35-45','🧔'],['45-55','👨‍💼'],['55-65','🧓'],['65+','👴']].map(([val,emoji]) => (
+                        {['15-18','18-22','22-28','28-35','35-45','45-55','55-65','65+'].map(val => (
                           <button key={val} onClick={() => setTdeeAge(val)}
                             style={{ padding:'12px 10px', borderRadius:14, border:`2px solid ${tdeeAge===val?'#6366f1':'var(--border)'}`, background:tdeeAge===val?'rgba(99,102,241,0.1)':'var(--bg-card)', cursor:'pointer', transition:'all 0.18s', display:'flex', alignItems:'center', gap:8 }}>
-                            <span style={{ fontSize:20 }}>{emoji}</span>
+                            <IconUser size={18} stroke={1.8} style={{ opacity:0.6, flexShrink:0 }}/>
                             <span style={{ fontWeight:800, fontSize:14, color:tdeeAge===val?'#6366f1':'var(--text-primary)' }}>{val}</span>
                             <span style={{ fontSize:11, color:'var(--text-muted)', marginLeft:'auto' }}>ετών</span>
                           </button>
@@ -6616,7 +6617,7 @@ export default function App() {
                         {targetKcal && (
                           <div style={{ background:'linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.06))', border:'1.5px solid rgba(99,102,241,0.2)', borderRadius:16, padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                             <div>
-                              <div style={{ fontSize:11, fontWeight:700, color:'#6366f1', textTransform:'uppercase', letterSpacing:0.5, marginBottom:2 }}>⚡ Στόχος θερμίδων</div>
+                              <div style={{ fontSize:11, fontWeight:700, color:'#6366f1', textTransform:'uppercase', letterSpacing:0.5, marginBottom:2, display:'flex', alignItems:'center', gap:4 }}><IconFlame size={12} stroke={2}/> Στόχος θερμίδων</div>
                               <div style={{ fontWeight:900, fontSize:30, color:'var(--text-primary)', letterSpacing:-1 }}>{targetKcal} <span style={{ fontSize:14, fontWeight:600, color:'var(--text-muted)' }}>kcal/μέρα</span></div>
                             </div>
                             <div style={{ textAlign:'right', fontSize:12, color:'var(--text-muted)' }}>
@@ -6639,7 +6640,7 @@ export default function App() {
                           </div>
                         </div>
                         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, padding:'14px 18px' }}>
-                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:10 }}>📅 ΔΙΑΡΚΕΙΑ ΠΛΑΝΟΥ</div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:10, display:'flex', alignItems:'center', gap:5 }}><IconCalendar size={13} stroke={2}/> ΔΙΑΡΚΕΙΑ ΠΛΑΝΟΥ</div>
                           <div style={{ display:'flex', gap:8 }}>
                             {[3,5,7].map(d => (
                               <button key={d} onClick={() => setMealPlanPrefs(p => ({...p, days:d}))}
@@ -6651,7 +6652,7 @@ export default function App() {
                         </div>
                         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, padding:'14px 18px' }}>
                           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-                            <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)' }}>💰 ΕΒΔΟΜΑΔΙΑΙΟ BUDGET</div>
+                            <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:5 }}><IconCoin size={13} stroke={2}/> ΕΒΔΟΜΑΔΙΑΙΟ BUDGET</div>
                             <div style={{ fontWeight:900, fontSize:22, color:'#10b981' }}>{mealPlanPrefs.budget}€</div>
                           </div>
                           <input type="range" min={20} max={300} step={5} value={mealPlanPrefs.budget} onChange={e => setMealPlanPrefs(p => ({...p, budget:+e.target.value}))} style={{ width:'100%', accentColor:'#6366f1' }}/>
@@ -6660,9 +6661,9 @@ export default function App() {
                           </div>
                         </div>
                         <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:16, padding:'14px 18px' }}>
-                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:10 }}>🚫 ΠΕΡΙΟΡΙΣΜΟΙ <span style={{ fontWeight:500, color:'var(--text-muted)' }}>(προαιρετικό)</span></div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', marginBottom:10, display:'flex', alignItems:'center', gap:5 }}><IconCircleOff size={13} stroke={2}/> ΠΕΡΙΟΡΙΣΜΟΙ <span style={{ fontWeight:500, color:'var(--text-muted)' }}>(προαιρετικό)</span></div>
                           <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                            {[['vegan','🌱 Vegan'],['vegetarian','🥗 Vegetarian'],['gluten-free','🌾 Χωρίς Γλουτένη'],['lactose-free','🥛 Χωρίς Λακτόζη'],['nut-free','🥜 Χωρίς Ξηρούς Καρπούς']].map(([r,label]) => {
+                            {[['vegan',<><IconLeaf size={12} stroke={2}/> Vegan</>],['vegetarian',<><IconSalad size={12} stroke={2}/> Vegetarian</>],['gluten-free',<><IconGrain size={12} stroke={2}/> Χωρίς Γλουτένη</>],['lactose-free',<><IconDroplet size={12} stroke={2}/> Χωρίς Λακτόζη</>],['nut-free',<><IconCircleOff size={12} stroke={2}/> Χωρίς Ξηρούς Καρπούς</>]].map(([r,label]) => {
                               const active = mealPlanPrefs.restrictions.includes(r);
                               return (
                                 <button key={r} onClick={() => setMealPlanPrefs(p => ({...p, restrictions:active?p.restrictions.filter(x=>x!==r):[...p.restrictions,r]}))}
@@ -6720,7 +6721,7 @@ export default function App() {
                           <div style={{ fontSize:10, fontWeight:800, color:isThisChosen?(isAlt?'#8b5cf6':'#6366f1'):isAlt?'var(--text-muted)':'#6366f1', background:isThisChosen?'rgba(99,102,241,0.18)':isAlt?'var(--bg-subtle)':'rgba(99,102,241,0.1)', borderRadius:6, padding:'2px 7px', letterSpacing:0.3 }}>
                             {isThisChosen ? '✓ ' : ''}{isAlt?'ΕΠΙΛΟΓΗ Β':'ΕΠΙΛΟΓΗ Α'}
                           </div>
-                          {meal.time && <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)' }}>⏱ {meal.time}′</div>}
+                          {meal.time && <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', display:'flex', alignItems:'center', gap:3 }}><IconClock size={10} stroke={2}/> {meal.time}′</div>}
                         </div>
                         <div style={{ fontWeight:900, fontSize:16, color:'var(--text-primary)', lineHeight:1.3 }}>{meal.name}</div>
                       </div>
@@ -6741,7 +6742,7 @@ export default function App() {
                     )}
                     {meal.ingredients?.length>0 && (
                       <div style={{ marginBottom:meal.prepTip?10:0 }}>
-                        <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.3, marginBottom:6 }}>🛒 Υλικά</div>
+                        <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.3, marginBottom:6, display:'flex', alignItems:'center', gap:4 }}><IconShoppingCart size={11} stroke={2}/> Υλικά</div>
                         <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
                           {meal.ingredients.map((ing,j) => {
                             const ingName = typeof ing==='string'?ing:ing.name;
@@ -6758,7 +6759,7 @@ export default function App() {
                     )}
                     {meal.prepTip && (
                       <div style={{ background:'rgba(99,102,241,0.06)', borderLeft:'3px solid #6366f1', borderRadius:'0 10px 10px 0', padding:'8px 12px', marginTop:10, fontSize:11, color:'var(--text-secondary)', fontStyle:'italic', lineHeight:1.5 }}>
-                        💡 {meal.prepTip}
+                        <IconBulb size={12} stroke={2} style={{ verticalAlign:'middle', marginRight:4 }}/>{meal.prepTip}
                       </div>
                     )}
                   </div>
@@ -6839,7 +6840,7 @@ export default function App() {
 
                     {day.snacks?.morning && (
                       <div style={{ display:'flex', gap:10, padding:'10px 14px', background:'rgba(16,185,129,0.05)', border:'1px solid rgba(16,185,129,0.15)', borderRadius:12 }}>
-                        <span style={{ fontSize:18, flexShrink:0 }}>🍎</span>
+                        <IconApple size={18} stroke={1.8} style={{ flexShrink:0 }}/>
                         <div>
                           <div style={{ fontSize:10, fontWeight:700, color:'#10b981', textTransform:'uppercase', marginBottom:2 }}>Πρωινό Σνακ</div>
                           <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5 }}>{day.snacks.morning}</div>
@@ -6850,7 +6851,7 @@ export default function App() {
                     {(day.meals?.lunch||day.meals?.lunch_alt) && (
                       <div>
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>
-                          <span style={{ fontSize:22 }}>☀️</span>
+                          <IconSun size={22} stroke={1.8}/>
                           <div>
                             <div style={{ fontWeight:900, fontSize:15, color:'var(--text-primary)' }}>Μεσημεριανό</div>
                             <div style={{ fontSize:11, color:'var(--text-muted)' }}>Διάλεξε μία από τις 2 επιλογές</div>
@@ -6865,7 +6866,7 @@ export default function App() {
 
                     {day.snacks?.afternoon && (
                       <div style={{ display:'flex', gap:10, padding:'10px 14px', background:'rgba(16,185,129,0.05)', border:'1px solid rgba(16,185,129,0.15)', borderRadius:12 }}>
-                        <span style={{ fontSize:18, flexShrink:0 }}>🥜</span>
+                        <IconLeaf size={18} stroke={1.8} style={{ flexShrink:0 }}/>
                         <div>
                           <div style={{ fontSize:10, fontWeight:700, color:'#10b981', textTransform:'uppercase', marginBottom:2 }}>Απογευματινό Σνακ</div>
                           <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5 }}>{day.snacks.afternoon}</div>
@@ -6876,7 +6877,7 @@ export default function App() {
                     {(day.meals?.dinner||day.meals?.dinner_alt) && (
                       <div>
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>
-                          <span style={{ fontSize:22 }}>🌙</span>
+                          <IconMoon size={22} stroke={1.8}/>
                           <div>
                             <div style={{ fontWeight:900, fontSize:15, color:'var(--text-primary)' }}>Βραδινό</div>
                             <div style={{ fontSize:11, color:'var(--text-muted)' }}>Διάλεξε μία από τις 2 επιλογές</div>
@@ -6891,9 +6892,9 @@ export default function App() {
 
                     {day.dayMacros && (
                       <div style={{ background:'linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.04))', border:'1.5px solid rgba(99,102,241,0.15)', borderRadius:14, padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                        <span style={{ fontSize:12, fontWeight:800, color:'#6366f1' }}>📊 Σύνολο Ημέρας</span>
+                        <span style={{ fontSize:12, fontWeight:800, color:'#6366f1', display:'flex', alignItems:'center', gap:5 }}><IconChartBar size={13} stroke={2}/> Σύνολο Ημέρας</span>
                         <div style={{ display:'flex', gap:12 }}>
-                          {[['kcal','🔥','kcal'],['protein','💪','P'],['carbs','⚡','C'],['fat','🥑','F']].map(([k,e,l]) =>
+                          {[['kcal',<IconFlame size={10} stroke={2}/>,'kcal'],['protein',<IconBarbell size={10} stroke={2}/>,'P'],['carbs',<IconBolt size={10} stroke={2}/>,'C'],['fat',<IconDroplet size={10} stroke={2}/>,'F']].map(([k,e,l]) =>
                             day.dayMacros[k]!=null && (
                               <span key={k} style={{ fontSize:12, fontWeight:800, color:'var(--text-primary)', display:'flex', alignItems:'center', gap:2 }}>
                                 <span style={{ fontSize:10 }}>{e}</span>{day.dayMacros[k]}<span style={{ fontSize:9, opacity:0.6 }}>{l}</span>
@@ -6906,7 +6907,7 @@ export default function App() {
 
                     {day.waterGlasses && (
                       <div style={{ display:'flex', gap:8, padding:'10px 14px', background:'rgba(59,130,246,0.05)', border:'1px solid rgba(59,130,246,0.15)', borderRadius:12 }}>
-                        <span>💧</span>
+                        <IconDroplet size={16} stroke={1.8}/>
                         <span style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)' }}>Στόχος: {day.waterGlasses} ποτήρια νερό</span>
                       </div>
                     )}
@@ -7085,9 +7086,9 @@ export default function App() {
                   <div className="profile-popup-email">{user.email || ''}</div>
                   <div className="profile-popup-share">
                     Κωδικός: <strong>{user.shareKey || 'N/A'}</strong>
-                    <button className="profile-popup-copy" onClick={handleCopyShareKey}>📋</button>
+                    <button className="profile-popup-copy" onClick={handleCopyShareKey}><IconClipboard size={14} stroke={2}/></button>
                   </div>
-                  {user.isPremium && <div className="profile-popup-premium-badge">⭐ Premium</div>}
+                  {user.isPremium && <div className="profile-popup-premium-badge" style={{ display:'inline-flex', alignItems:'center', gap:4 }}><IconStar size={13} stroke={2}/> Premium</div>}
                 </div>
                 <div className="profile-popup-actions">
                   <button className="profile-popup-action" onClick={() => { setIsDarkMode(v => !v); setShowProfileMenu(false); }}>
@@ -7108,7 +7109,7 @@ export default function App() {
               </>
             ) : (
               <div style={{ textAlign:'center', padding:'32px 20px' }}>
-                <div style={{ fontSize:48, marginBottom:16 }}>👤</div>
+                <div style={{ marginBottom:16, display:'flex', justifyContent:'center' }}><IconUser size={48} stroke={1} style={{ opacity:0.3 }}/></div>
                 <h3 style={{ margin:'0 0 8px', fontWeight:800 }}>Σύνδεση</h3>
                 <p style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:20 }}>Συνδέσου για να αποθηκεύσεις λίστες, συνταγές και προτιμήσεις</p>
                 <button className="submit-btn" onClick={() => { setShowProfileMenu(false); openAuthWall('login'); }}>Σύνδεση / Εγγραφή</button>

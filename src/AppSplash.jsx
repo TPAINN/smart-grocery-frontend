@@ -1,51 +1,29 @@
 import { useEffect, useState, useRef } from 'react';
 
-// Particle count — tweak to taste without touching anything else
-const N = 18;
-
-// Stable random values per particle — lives in a ref so they
-// don't change on re-render (would cause a visible stutter).
-function mkParticle(id) {
-  return {
-    id,
-    x:    30 + Math.random() * 40,   // horizontal % — keep near center
-    size: 2  + Math.random() * 3,    // px
-    dur:  2.2 + Math.random() * 2.4, // float duration (s)
-    del:  Math.random() * 1.6,       // start delay (s)
-    op:   0.15 + Math.random() * 0.25,
-  };
-}
-
-// Launch screen — phases driven by a setTimeout chain from mount:
-//   80ms   → bloom    (logo + glow spring in)
+// Launch screen phases:
+//   80ms   → bloom    (logo springs in with ambient rings)
 //   900ms  → wordmark (app name slides up)
-//   1400ms → tagline  (subtitle + dots fade in)
+//   1400ms → tagline  (divider + subtitle fade in)
 //   2400ms → exit     (whole screen fades out)
 //   2950ms → onDone() fires
 export default function AppSplash({ onDone }) {
   const [phase, setPhase] = useState('idle');
-  const [particles] = useState(() => Array.from({ length: N }, (_, i) => mkParticle(i)));
-  // Keep onDone in a ref so we can call the latest version without it
-  // being a useEffect dependency — otherwise an inline () => {} prop
-  // creates a new reference every render and re-triggers the whole chain.
   const onDoneRef = useRef(onDone);
   useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
 
   useEffect(() => {
-    // Empty deps — fire once on mount, clean up on unmount.
     const ts = [
-      setTimeout(() => setPhase('bloom'),              80),
-      setTimeout(() => setPhase('wordmark'),           900),
-      setTimeout(() => setPhase('tagline'),           1400),
-      setTimeout(() => setPhase('exit'),              2400),
-      setTimeout(() => onDoneRef.current?.(),         2950),
+      setTimeout(() => setPhase('bloom'),     80),
+      setTimeout(() => setPhase('wordmark'),  900),
+      setTimeout(() => setPhase('tagline'),  1400),
+      setTimeout(() => setPhase('exit'),     2400),
+      setTimeout(() => onDoneRef.current?.(), 2950),
     ];
     return () => ts.forEach(clearTimeout);
   }, []);
 
-  // Helper: is the animation at or past this phase?
-  const ORDER  = ['idle', 'bloom', 'wordmark', 'tagline', 'exit'];
-  const past   = (p) => ORDER.indexOf(phase) >= ORDER.indexOf(p);
+  const ORDER   = ['idle', 'bloom', 'wordmark', 'tagline', 'exit'];
+  const past    = (p) => ORDER.indexOf(phase) >= ORDER.indexOf(p);
   const exiting = phase === 'exit';
 
   return (
@@ -59,130 +37,123 @@ export default function AppSplash({ onDone }) {
         flexDirection:  'column',
         alignItems:     'center',
         justifyContent: 'center',
-        // Deep navy radial — matches the brand palette
-        background:     'radial-gradient(ellipse 120% 100% at 50% 60%, #111132 0%, #0a0a1e 55%, #060610 100%)',
+        background:     '#07091a',
         paddingTop:     'env(safe-area-inset-top)',
         paddingBottom:  'env(safe-area-inset-bottom)',
-        // Whole-screen fade-out on exit
         opacity:         exiting ? 0 : 1,
         transition:      exiting ? 'opacity 0.55s cubic-bezier(0.4,0,0.6,1)' : 'none',
         userSelect:     'none',
+        overflow:       'hidden',
       }}
     >
-      {/* ── Floating particles ──────────────────────────────────────────── */}
-      {particles.map(p => (
-        <div
-          key={p.id}
-          style={{
-            position:     'absolute',
-            bottom:       '-8px',
-            left:         `${p.x}%`,
-            width:         p.size,
-            height:        p.size,
-            borderRadius: '50%',
-            background:   '#8b5cf6',
-            opacity:       past('bloom') ? p.op : 0,
-            transition:   `opacity 0.8s ease ${p.del}s`,
-            animation:     past('bloom')
-              ? `splashFloat ${p.dur}s ease-in ${p.del}s infinite`
-              : 'none',
-          }}
-        />
-      ))}
+      {/* Subtle dot-grid background */}
+      <div style={{
+        position:         'absolute',
+        inset:             0,
+        backgroundImage:  'radial-gradient(rgba(79,87,208,0.18) 1px, transparent 1px)',
+        backgroundSize:   '28px 28px',
+        opacity:           past('bloom') ? 0.6 : 0,
+        transition:       'opacity 1.4s ease 0.2s',
+        maskImage:        'radial-gradient(ellipse 60% 60% at 50% 50%, black 0%, transparent 100%)',
+        WebkitMaskImage:  'radial-gradient(ellipse 60% 60% at 50% 50%, black 0%, transparent 100%)',
+      }}/>
 
-      {/* ── Outer ambient ring (breathes once visible) ───────────────────── */}
+      {/* Top radial glow */}
       <div style={{
         position:     'absolute',
-        width:  240,  height: 240,
-        borderRadius: '50%',
-        border:       '1px solid rgba(99,102,241,0.12)',
+        top:          -160,
+        left:         '50%',
+        transform:    'translateX(-50%)',
+        width:         500,
+        height:        380,
+        background:   'radial-gradient(ellipse, rgba(79,87,208,0.14) 0%, transparent 65%)',
+        filter:       'blur(48px)',
         opacity:       past('bloom') ? 1 : 0,
-        transform:     past('bloom') ? 'scale(1)' : 'scale(0.4)',
-        transition:   'all 1.4s cubic-bezier(0.22,1,0.36,1) 0.1s',
-        animation:     past('wordmark') ? 'splashRingBreath 4s ease-in-out infinite' : 'none',
-      }} />
+        transition:   'opacity 1.1s ease',
+        pointerEvents:'none',
+      }}/>
 
-      {/* ── Inner ring ───────────────────────────────────────────────────── */}
+      {/* Outer ambient ring */}
       <div style={{
         position:     'absolute',
-        width:  180,  height: 180,
+        width:  268,  height: 268,
         borderRadius: '50%',
-        border:       '1px solid rgba(139,92,246,0.18)',
+        border:       '1px solid rgba(79,87,208,0.12)',
+        opacity:       past('bloom') ? 1 : 0,
+        transform:     past('bloom') ? 'scale(1)' : 'scale(0.35)',
+        transition:   'all 1.5s cubic-bezier(0.22,1,0.36,1) 0.1s',
+        animation:     past('wordmark') ? 'splashRingBreath 5s ease-in-out infinite' : 'none',
+      }}/>
+
+      {/* Inner ring */}
+      <div style={{
+        position:     'absolute',
+        width:  196,  height: 196,
+        borderRadius: '50%',
+        border:       '1px solid rgba(99,102,241,0.18)',
         opacity:       past('bloom') ? 1 : 0,
         transform:     past('bloom') ? 'scale(1)' : 'scale(0.2)',
         transition:   'all 1.2s cubic-bezier(0.22,1,0.36,1) 0.2s',
-      }} />
+      }}/>
 
-      {/* ── Purple glow bloom behind the logo ───────────────────────────── */}
-      <div style={{
-        position:     'absolute',
-        width:  300,  height: 300,
-        borderRadius: '50%',
-        background:   'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)',
-        opacity:       past('bloom') ? 1 : 0,
-        transform:     past('bloom') ? 'scale(1)' : 'scale(0)',
-        transition:   'all 1.1s cubic-bezier(0.22,1,0.36,1)',
-        filter:       'blur(24px)',
-      }} />
-
-      {/* ── Logo — spring scale-in ───────────────────────────────────────── */}
+      {/* Logo */}
       <div style={{
         position:   'relative',
         zIndex:      1,
-        transform:   past('bloom') ? 'scale(1) translateY(0)' : 'scale(0.35) translateY(16px)',
+        transform:   past('bloom') ? 'scale(1) translateY(0)' : 'scale(0.4) translateY(20px)',
         opacity:     past('bloom') ? 1 : 0,
-        transition: 'all 0.85s cubic-bezier(0.34,1.56,0.64,1) 0.05s',
+        transition: 'all 0.9s cubic-bezier(0.34,1.56,0.64,1) 0.05s',
       }}>
-        {/* Soft glow halo so the logo floats */}
+        {/* Soft glow halo */}
         <div style={{
           position:     'absolute',
-          inset:       '-12px',
-          borderRadius: 46,
-          background:  'radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)',
-          filter:      'blur(18px)',
+          inset:       '-18px',
+          borderRadius: 52,
+          background:  'radial-gradient(circle, rgba(79,87,208,0.32) 0%, transparent 70%)',
+          filter:      'blur(22px)',
           opacity:      past('bloom') ? 1 : 0,
-          transition:  'opacity 0.6s ease 0.3s',
-        }} />
+          transition:  'opacity 0.9s ease 0.2s',
+        }}/>
         <img
           src="/pwa-192x192.png"
           alt="Smart Grocery"
-          width={110}
-          height={110}
+          width={92}
+          height={92}
           style={{
-            borderRadius: 34,
+            borderRadius: 26,
             display:      'block',
             position:     'relative',
             zIndex:        1,
             boxShadow:     past('bloom')
-              ? '0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(99,102,241,0.3)'
+              ? '0 0 0 1px rgba(255,255,255,0.06), 0 28px 72px rgba(0,0,0,0.72), 0 0 52px rgba(79,87,208,0.28)'
               : 'none',
-            transition:   'box-shadow 0.8s ease 0.2s',
+            transition:   'box-shadow 0.85s ease 0.18s',
           }}
         />
       </div>
 
-      {/* ── App name + tagline ───────────────────────────────────────────── */}
+      {/* Wordmark */}
       <div style={{
-        marginTop:  24,
+        marginTop:  22,
         textAlign:  'center',
         position:   'relative',
         zIndex:      1,
-        transform:   past('wordmark') ? 'translateY(0)' : 'translateY(22px)',
+        transform:   past('wordmark') ? 'translateY(0)' : 'translateY(20px)',
         opacity:     past('wordmark') ? 1 : 0,
         transition: 'all 0.65s cubic-bezier(0.22,1,0.36,1)',
       }}>
         <p style={{
           margin:        0,
-          fontSize:      34,
-          fontWeight:    900,
-          letterSpacing: '-1px',
-          lineHeight:    1.1,
-          color:         '#fff',
-          fontFamily:    '-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif',
+          fontSize:      27,
+          fontWeight:    800,
+          letterSpacing: '-0.4px',
+          lineHeight:    1.15,
+          color:         '#eef0ff',
+          fontFamily:    "'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif",
         }}>
           Smart{' '}
           <span style={{
-            background:           'linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c4b5fd 100%)',
+            background:           'linear-gradient(135deg, #818cf8 0%, #a5b4fc 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor:  'transparent',
             backgroundClip:       'text',
@@ -190,75 +161,86 @@ export default function AppSplash({ onDone }) {
             Grocery
           </span>
         </p>
+      </div>
 
+      {/* Divider + tagline */}
+      <div style={{
+        marginTop:     11,
+        textAlign:     'center',
+        position:      'relative',
+        zIndex:         1,
+        opacity:        past('tagline') ? 1 : 0,
+        transform:      past('tagline') ? 'translateY(0)' : 'translateY(8px)',
+        transition:    'all 0.5s ease 0.05s',
+        display:       'flex',
+        flexDirection: 'column',
+        alignItems:    'center',
+        gap:            7,
+      }}>
+        <div style={{
+          width:      past('tagline') ? 44 : 0,
+          height:      1,
+          background: 'linear-gradient(90deg, transparent, rgba(129,140,248,0.45), transparent)',
+          transition: 'width 0.65s ease 0.08s',
+        }}/>
         <p style={{
-          margin:        '8px 0 0',
-          fontSize:      12,
+          margin:        0,
+          fontSize:      10.5,
           fontWeight:    500,
-          letterSpacing: '3px',
+          letterSpacing: '3.5px',
           textTransform: 'uppercase',
-          color:         'rgba(255,255,255,0.35)',
-          transform:      past('tagline') ? 'translateY(0)' : 'translateY(8px)',
-          opacity:        past('tagline') ? 1 : 0,
-          transition:    'all 0.55s ease 0.05s',
+          color:         'rgba(165,180,252,0.38)',
+          fontFamily:    "'Plus Jakarta Sans', 'Inter', sans-serif",
         }}>
-          {'\u0395\u03be\u03c5\u03c0\u03bd\u03b5\u03c2 \u0391\u03b3\u03bf\u03c1\u03ad\u03c2'}
+          Εξυπνες Αγορές
         </p>
       </div>
 
-      {/* ── Loading dots ─────────────────────────────────────────────────── */}
+      {/* Loading bar — thin elegant scan line */}
       <div style={{
-        position:   'absolute',
-        bottom:     'calc(52px + env(safe-area-inset-bottom))',
-        display:    'flex',
-        gap:         6,
-        opacity:     past('tagline') ? 1 : 0,
-        transition: 'opacity 0.5s ease 0.2s',
+        position:     'absolute',
+        bottom:       'calc(38px + env(safe-area-inset-bottom))',
+        width:         108,
+        height:         2,
+        borderRadius:   2,
+        background:    'rgba(99,102,241,0.12)',
+        overflow:      'hidden',
+        opacity:        past('tagline') ? 1 : 0,
+        transition:    'opacity 0.5s ease 0.35s',
       }}>
-        {[0, 1, 2].map(i => (
-          <div
-            key={i}
-            style={{
-              width:        5,
-              height:       5,
-              borderRadius: '50%',
-              background:   'rgba(139,92,246,0.7)',
-              animation:    past('tagline')
-                ? `splashDot 1.1s ease-in-out ${i * 0.18}s infinite`
-                : 'none',
-            }}
-          />
-        ))}
+        <div style={{
+          height:       '100%',
+          width:         '38%',
+          borderRadius:   2,
+          background:    'linear-gradient(90deg, transparent, rgba(129,140,248,0.85), transparent)',
+          animation:      past('tagline') ? 'splashScan 1.3s cubic-bezier(0.4,0,0.6,1) infinite' : 'none',
+        }}/>
       </div>
 
-      {/* Version badge — barely visible, looks polished */}
+      {/* Version badge */}
       <p style={{
         position:      'absolute',
-        bottom:        'calc(20px + env(safe-area-inset-bottom))',
+        bottom:        'calc(16px + env(safe-area-inset-bottom))',
         margin:         0,
-        fontSize:       10,
-        color:         'rgba(255,255,255,0.12)',
-        letterSpacing: '1px',
+        fontSize:       9,
+        color:         'rgba(255,255,255,0.1)',
+        letterSpacing: '1.5px',
+        fontFamily:    "'Plus Jakarta Sans', 'Inter', sans-serif",
+        textTransform: 'uppercase',
         opacity:        past('tagline') ? 1 : 0,
-        transition:    'opacity 0.6s ease 0.4s',
+        transition:    'opacity 0.6s ease 0.5s',
       }}>
         v2.3.0
       </p>
 
-      {/* ── Keyframes ────────────────────────────────────────────────────── */}
       <style>{`
-        @keyframes splashFloat {
-          0%   { transform: translateY(0) scale(1);       opacity: 0.2; }
-          60%  { transform: translateY(-38vh) scale(0.7); opacity: 0;   }
-          100% { transform: translateY(-38vh) scale(0.7); opacity: 0;   }
+        @keyframes splashScan {
+          0%   { transform: translateX(-110%); }
+          100% { transform: translateX(370%); }
         }
         @keyframes splashRingBreath {
-          0%, 100% { transform: scale(1);    opacity: 0.6; }
-          50%       { transform: scale(1.06); opacity: 0.3; }
-        }
-        @keyframes splashDot {
-          0%, 80%, 100% { transform: scale(0.5); opacity: 0.25; }
-          40%            { transform: scale(1);   opacity: 1;    }
+          0%, 100% { transform: scale(1);    opacity: 0.7; }
+          50%       { transform: scale(1.05); opacity: 0.3; }
         }
       `}</style>
     </div>
