@@ -5,7 +5,7 @@ import './PlateScannerModal.css';
 /* ─────────────────────────────────────────────
    Image compression helper
 ───────────────────────────────────────────── */
-async function compressImage(file, maxDim = 800, quality = 0.75) {
+async function compressImage(file, maxDim = 1024, quality = 0.82) {
   return new Promise(resolve => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -221,6 +221,8 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
     setStep('scanning');
     setErrorMsg('');
 
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 30000);
     try {
       const base = (apiBase || '').replace(/\/+$/, '');
       const token = localStorage.getItem('smart_grocery_token');
@@ -235,7 +237,9 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
           mediaType: imageData.mediaType,
           learningContext: buildLearningContext(learningProfile),
         }),
+        signal: ctrl.signal,
       });
+      clearTimeout(timeout);
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -251,7 +255,12 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
       });
       setStep('results');
     } catch (err) {
-      setErrorMsg(err.message || 'Κάτι πήγε στραβά. Δοκίμασε ξανά.');
+      clearTimeout(timeout);
+      setErrorMsg(
+        err.name === 'AbortError'
+          ? 'Η ανάλυση διήρκεσε πολύ. Δοκίμασε με μικρότερη εικόνα.'
+          : err.message || 'Κάτι πήγε στραβά. Δοκίμασε ξανά.'
+      );
       setStep('error');
     }
   }, [imageData, apiBase, learningProfile]);
@@ -498,7 +507,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
                 <h3 className="psm-section-title">Ανιχνεύτηκαν τρόφιμα</h3>
                 <div className="psm-foods-list">
                   {results.foods.map((food, idx) => (
-                    <div key={idx} className="psm-food-card">
+                    <div key={idx} className="psm-food-card" style={{ animationDelay: `${0.12 + idx * 0.06}s` }}>
                       <div className="psm-food-top">
                         <span className="psm-food-emoji" aria-hidden="true">{food.emoji || '🍴'}</span>
                         <div className="psm-food-names">
@@ -547,20 +556,20 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
                 <p className="psm-tip-content">{results.tip}</p>
               </div>
             )}
+          </div>
 
-            {/* Action buttons */}
-            <div className="psm-results-actions">
-              <button className="psm-btn psm-btn--outline" onClick={handleReset}>
-                🔄 Σκανάρισε πάλι
-              </button>
-              <button
-                className={`psm-btn psm-btn--primary ${addedMsg ? 'psm-btn--success' : ''}`}
-                onClick={handleAddToList}
-                disabled={addedMsg}
-              >
-                {addedMsg ? '✓ Προστέθηκε!' : '➕ Προσθήκη στη λίστα'}
-              </button>
-            </div>
+          {/* Action buttons — sticky footer outside scroll */}
+          <div className="psm-results-actions">
+            <button className="psm-btn psm-btn--outline" onClick={handleReset}>
+              🔄 Σκανάρισε πάλι
+            </button>
+            <button
+              className={`psm-btn psm-btn--primary ${addedMsg ? 'psm-btn--success' : ''}`}
+              onClick={handleAddToList}
+              disabled={addedMsg}
+            >
+              {addedMsg ? '✓ Προστέθηκε!' : '➕ Στη λίστα'}
+            </button>
           </div>
         </div>
       )}

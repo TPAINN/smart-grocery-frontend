@@ -2068,19 +2068,83 @@ body.dark-mode .item-avatar { border-color: rgba(255,255,255,.08); box-shadow: 0
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .scanner-btn-outline:hover {
-  background: rgba(239,68,68,0.06);
-  color: #ef4444;
-  border-color: rgba(239,68,68,0.3);
+  background: rgba(37,99,235,0.06);
+  color: var(--accent);
+  border-color: rgba(37,99,235,0.3);
   transform: translateY(-1px);
+}
+
+/* ── Scanner Actions Footer ── */
+.scanner-actions-footer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  flex-shrink: 0;
+  animation: footerReveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.22s;
+}
+.scanner-actions-footer .scanner-btn,
+.scanner-actions-footer .scanner-btn-outline {
+  flex: 1;
+  padding: 13px 10px;
+  margin: 0;
+  width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 13px;
+}
+@keyframes footerReveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Product Result ── */
 .scanner-result {
-  animation: resultReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  /* Let scannerBodyIn handle the container slide; sections do their own cascade */
 }
 @keyframes resultReveal {
   from { opacity: 0; transform: translateY(16px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Staggered section reveals inside product result ── */
+@keyframes revealUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.scanner-result .scanner-found-flash {
+  animation: revealUp 0.4s var(--decel) both;
+  animation-delay: 0s;
+}
+.scanner-result .product-header {
+  animation: revealUp 0.45s var(--decel) both;
+  animation-delay: 0.06s;
+}
+.scanner-result .nutrition-grid {
+  animation: revealUp 0.5s var(--decel) both;
+  animation-delay: 0.12s;
+}
+.scanner-result .product-warnings {
+  animation: revealUp 0.45s var(--decel) both;
+  animation-delay: 0.2s;
+}
+.scanner-result .product-labels-row {
+  animation: revealUp 0.4s var(--decel) both;
+  animation-delay: 0.26s;
+}
+.scanner-result .product-additives {
+  animation: revealUp 0.4s var(--decel) both;
+  animation-delay: 0.3s;
+}
+.scanner-result .ingredients-details {
+  animation: revealUp 0.4s var(--decel) both;
+  animation-delay: 0.34s;
 }
 
 /* ── Allergen Alert Banner ── */

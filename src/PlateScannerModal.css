@@ -472,11 +472,14 @@
 .psm-results-scroll {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding: 16px 16px 32px;
+  padding: 16px 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.12) transparent;
 }
 
 /* Results card */
@@ -499,6 +502,11 @@
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* Staggered section reveal */
+.psm-results .psm-results-card  { animation-delay: 0s; }
+.psm-results .psm-foods-section { animation: psmSlideUpIn 0.45s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.08s; }
+.psm-results .psm-tip-box       { animation: psmSlideUpIn 0.4s cubic-bezier(0.16,1,0.3,1) both; animation-delay: 0.16s; }
 
 /* Badges row */
 .psm-badges-row {
@@ -602,9 +610,6 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: calc(100vh - 460px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Individual food card */
@@ -616,6 +621,7 @@
   flex-direction: column;
   gap: 8px;
   border: 1px solid rgba(0,0,0,0.04);
+  animation: psmSlideUpIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
 }
 
 .psm-food-top {
@@ -731,11 +737,22 @@
   line-height: 1.55;
 }
 
-/* ── Results action buttons ── */
+/* ── Results action buttons — sticky footer ── */
 .psm-results-actions {
   display: flex;
   gap: 10px;
-  padding-top: 4px;
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(0,0,0,0.07);
+  background: #fff;
+  flex-shrink: 0;
+  animation: psmSlideUpIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  animation-delay: 0.2s;
+}
+
+.psm-results-actions .psm-btn {
+  flex: 1;
+  font-size: 14px;
+  padding: 13px 16px;
 }
 
 .psm-results-actions .psm-btn--primary {
@@ -852,6 +869,11 @@ body.dark-mode .psm-scan-card {
   box-shadow: 0 4px 24px rgba(0,0,0,0.30);
 }
 
+body.dark-mode .psm-results-actions {
+  background: var(--bg-card, rgba(14,21,40,0.98));
+  border-top-color: rgba(255,255,255,0.06);
+}
+
 body.dark-mode .psm-food-card {
   background: var(--bg-subtle, rgba(12,18,34,0.92));
   border-color: rgba(255,255,255,0.04);
@@ -921,11 +943,7 @@ body.dark-mode .psm-section-title { color: var(--text-secondary, #7a96bb); }
   }
 
   .psm-results-scroll {
-    padding: 16px 20px 32px;
-  }
-
-  .psm-foods-list {
-    max-height: 260px;
+    padding: 16px 20px 20px;
   }
 }
 

@@ -2381,7 +2381,7 @@ function ScannerOnboardingModal({ onComplete }) {
 }
 
 // ─── Barcode Scanner Modal ───────────────────────────────────────────────────
-function BarcodeScannerModal({ isOpen, onClose }) {
+function BarcodeScannerModal({ isOpen, onClose, onAddToList }) {
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('sg_scanner_onboarded'));
   const [activeView, setActiveView] = useState('scan');
   const [product, setProduct] = useState(null);
@@ -2717,10 +2717,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         <div className="scanner-header">
           <div className="scanner-header-left">
             <div className="scanner-header-icon-wrap">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-                <rect x="7" y="7" width="10" height="10" rx="1"/>
-              </svg>
+              <IconQrcode size={20} stroke={2} />
             </div>
             <div>
               <div className="scanner-header-title">Έξυπνος Σαρωτής</div>
@@ -2882,7 +2879,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 
             {/* NutriScore + Labels Row */}
             {(product.nutriScore || product.isVegan || product.isVegetarian || product.novaGroup) && (
-              <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:14, alignItems:'center' }}>
+              <div className="product-labels-row" style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:14, alignItems:'center' }}>
                 {product.nutriScore && (
                   <div style={{
                     display:'flex', alignItems:'center', gap:5,
@@ -2913,7 +2910,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 
             {/* Additives tappable list */}
             {product.additives && product.additives.length > 0 && (
-              <div style={{ marginBottom:14 }}>
+              <div className="product-additives" style={{ marginBottom:14 }}>
                 <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:0.8, marginBottom:8 }}>
                   🧪 Πρόσθετα ({product.additives.length})
                   <span style={{ fontSize:10, fontWeight:500, textTransform:'none', marginLeft:6, color:'var(--text-muted)' }}>Πάτα για πληροφορίες</span>
@@ -2953,7 +2950,18 @@ function BarcodeScannerModal({ isOpen, onClose }) {
                 <p>{product.ingredients}</p>
               </details>
             )}
-            <button className="scanner-btn" onClick={handleScanAgain} style={{ marginTop:8 }}><IconCamera size={15} stroke={2}/> Σάρωσε ξανά</button>
+          </div>
+        )}
+
+        {/* ── Sticky Actions Footer ── */}
+        {activeView === 'scan' && product && (
+          <div className="scanner-actions-footer">
+            <button className="scanner-btn-outline" onClick={handleScanAgain}>
+              <IconCamera size={15} stroke={2}/> Σάρωσε ξανά
+            </button>
+            <button className="scanner-btn" onClick={() => { onAddToList?.(product.name); handleClose(); }}>
+              <IconShoppingCart size={15} stroke={2}/> Στη λίστα
+            </button>
           </div>
         )}
 
@@ -5113,7 +5121,11 @@ export default function App() {
         </div>
       )}
       <RecipeAddModal isOpen={recipeAddModal.open} recipeName={recipeAddModal.recipeName} progress={recipeAddModal.progress} total={recipeAddModal.total} onClose={closeRecipeAddModal} />
-      <BarcodeScannerModal isOpen={showScanner} onClose={() => setShowScanner(false)} />
+      <BarcodeScannerModal isOpen={showScanner} onClose={() => setShowScanner(false)} onAddToList={(name) => {
+        setItems(prev => [...prev, { id: Date.now() + Math.random(), text: name, category: getCategory(name), price: 0, store: '—', quantity: 1 }]);
+        haptic.success();
+        setNotification({ show: true, message: `✅ "${name}" προστέθηκε στη λίστα!` });
+      }} />
       <PlateScannerModal
         isOpen={showPlateScanner}
         onClose={() => setShowPlateScanner(false)}
