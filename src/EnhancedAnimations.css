@@ -226,16 +226,16 @@
 .animate-scale-in   { animation: scaleIn   var(--dur-slow)   var(--smooth) both; }
 .animate-spring-in  { animation: springIn  var(--dur-slower) var(--spring) both; }
 .animate-slide-up   { animation: slideUp   var(--dur-slow)   var(--smooth) both; }
-.animate-float      { animation: floatIcon 4s ease-in-out infinite; }
-.animate-pulse      { animation: pulse     2s ease-in-out infinite; }
-.animate-pulse-slow { animation: pulseSlow 3s ease-in-out infinite; }
+.animate-float      { animation: floatIcon 4s var(--ease) infinite; }
+.animate-pulse      { animation: pulse     2s var(--ease) infinite; }
+.animate-pulse-slow { animation: pulseSlow 3s var(--ease) infinite; }
 .animate-spin       { animation: spin      1s linear infinite; }
 .animate-spin-slow  { animation: spinSlow  3s linear infinite; }
-.animate-bounce     { animation: bounce    1.2s ease-in-out infinite; }
+.animate-bounce     { animation: bounce    1.2s var(--spring) infinite; }
 .animate-shimmer    {
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
   background-size: 200% 100%;
-  animation: shimmer 2s ease-in-out infinite;
+  animation: shimmer 2s var(--ease) infinite;
 }
 
 /* Stagger delays */
@@ -256,7 +256,7 @@
     var(--bg-subtle) 75%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
+  animation: shimmer 1.5s var(--ease) infinite;
 }
 
 /* ══ Smooth transition defaults ════════════════════════════ */
@@ -291,16 +291,16 @@
   border-radius: 6px;
   background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--bg-chip) 50%, var(--bg-subtle) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.8s ease-in-out infinite;
+  animation: shimmer 1.8s var(--ease) infinite;
 }
 
 /* ══ Floating action elements ══════════════════════════════ */
 .float-element {
-  animation: floatIcon 3.5s ease-in-out infinite;
+  animation: floatIcon 3.5s var(--ease) infinite;
 }
 
 /* ══ Success/Error pulses ══════════════════════════════════ */
-.pulse-success { animation: glowPulse 2s ease-in-out infinite; }
+.pulse-success { animation: glowPulse 2s var(--ease) infinite; }
 
 /* ══ Reduced motion ════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

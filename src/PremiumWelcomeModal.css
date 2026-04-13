@@ -14,7 +14,7 @@
   background: rgba(5, 5, 15, 0.82);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  animation: pwmFadeIn 0.35s ease;
+  animation: pwmFadeIn 0.35s var(--ease);
 }
 
 @keyframes pwmFadeIn {
@@ -82,7 +82,7 @@
   height: 280px;
   background: radial-gradient(circle, rgba(251,191,36,.18) 0%, transparent 70%);
   pointer-events: none;
-  animation: pwmGlowPulse 3s ease-in-out infinite;
+  animation: pwmGlowPulse 3s var(--ease) infinite;
 }
 
 @keyframes pwmGlowPulse {
@@ -107,7 +107,7 @@
   border-radius: 50%;
   background: linear-gradient(135deg, #fbbf24, #f59e0b);
   opacity: 0.18;
-  animation: pwmRingPulse 2.4s ease-in-out infinite;
+  animation: pwmRingPulse 2.4s var(--ease) infinite;
 }
 
 @keyframes pwmRingPulse {
@@ -137,7 +137,7 @@
   color: #fbbf24;
   margin: 0 0 10px;
   opacity: 0;
-  animation: pwmFadeUp 0.4s ease 0.25s forwards;
+  animation: pwmFadeUp 0.4s var(--ease) 0.25s forwards;
 }
 
 .pwm-title {
@@ -148,7 +148,7 @@
   margin: 0 0 14px;
   letter-spacing: -0.5px;
   opacity: 0;
-  animation: pwmFadeUp 0.4s ease 0.32s forwards;
+  animation: pwmFadeUp 0.4s var(--ease) 0.32s forwards;
 }
 
 .pwm-title-highlight {
@@ -171,7 +171,7 @@
   line-height: 1.6;
   margin: 0 0 24px;
   opacity: 0;
-  animation: pwmFadeUp 0.4s ease 0.38s forwards;
+  animation: pwmFadeUp 0.4s var(--ease) 0.38s forwards;
 }
 
 .pwm-subtitle strong {
@@ -244,10 +244,10 @@
   cursor: pointer;
   letter-spacing: -0.2px;
   box-shadow: 0 4px 24px rgba(251,191,36,.4), 0 1px 4px rgba(0,0,0,.2);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease), filter 0.15s var(--ease);
   margin-bottom: 14px;
   opacity: 0;
-  animation: pwmFadeUp 0.4s ease 0.9s forwards;
+  animation: pwmFadeUp 0.4s var(--ease) 0.9s forwards;
 }
 
 .pwm-cta:hover  { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(251,191,36,.55); filter: brightness(1.06); }
@@ -255,7 +255,7 @@
 
 .pwm-cta-arrow {
   font-size: 20px;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s var(--ease);
 }
 .pwm-cta:hover .pwm-cta-arrow { transform: translateX(4px); }
 
@@ -265,7 +265,7 @@
   color: var(--text-muted, #6b7280);
   margin: 0;
   opacity: 0;
-  animation: pwmFadeUp 0.4s ease 1s forwards;
+  animation: pwmFadeUp 0.4s var(--ease) 1s forwards;
 }
 
 /* ── Shared fade-up keyframe ─────────────────────────── */

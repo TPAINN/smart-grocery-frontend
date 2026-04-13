@@ -32,7 +32,7 @@ import {
   IconClipboard, IconCheck, IconX, IconChevronRight,
   IconArrowRight, IconSparkles, IconBrain, IconShield,
   IconLock, IconFingerprint, IconRefresh, IconHistory,
-  IconEdit, IconBell, IconHome, IconBookmark, IconTag,
+  IconEdit, IconBell, IconHome, IconBookmark, IconBook, IconTag,
   IconCoin, IconTrendingDown, IconAlertTriangle,
   IconMap, IconMicrophone,
   // icon-consistency pass
@@ -1044,11 +1044,15 @@ function SwipeableItem({ item, onDelete, onSend, onToggleCheck, onChangeQty, use
           <span className="item-text" style={{ textDecoration: item.isChecked ? 'line-through' : 'none' }}>{item.text}</span>
           {item.recipeSource && (
             <span style={{
-              display:'inline-block', fontSize:10, fontWeight:700,
+              display:'block', fontSize:10, fontWeight:700,
               color:'#a78bfa', background:'rgba(167,139,250,0.1)',
               border:'1px solid rgba(167,139,250,0.2)',
-              borderRadius:99, padding:'2px 8px', marginTop:2,
-            }}>📖 {item.recipeSource}</span>
+              borderRadius:6, padding:'2px 7px', marginTop:3,
+              maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+            }}>
+              <IconBook size={9} stroke={2.5} style={{ verticalAlign:'middle', marginRight:3, marginBottom:1 }}/>
+              {item.recipeSource}
+            </span>
           )}
           {user && (
           <div className="item-meta-row">
@@ -2394,6 +2398,8 @@ function BarcodeScannerModal({ isOpen, onClose }) {
   });
   const scannerRef = useRef(null);
   const handleBarcodeScanRef = useRef(null);
+  const isProcessingRef = useRef(false);
+  const confirmScanRef = useRef({ code: null, count: 0, ts: 0 });
   const scannerDivId = 'barcode-scanner-area';
 
   // Persist
@@ -2409,6 +2415,17 @@ function BarcodeScannerModal({ isOpen, onClose }) {
     if (isOpen) { document.body.style.overflow = 'hidden'; }
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
+
+  // ── Loading safety timeout: kill infinite spinner after 12s ───────────────
+  useEffect(() => {
+    if (!loading) return;
+    const tid = setTimeout(() => {
+      setLoading(false);
+      setError('Το αίτημα διήρκεσε πολύ. Δοκίμασε ξανά.');
+      isProcessingRef.current = false;
+    }, 12000);
+    return () => clearTimeout(tid);
+  }, [loading]);
 
   // Start camera
   useEffect(() => {
@@ -2429,10 +2446,10 @@ function BarcodeScannerModal({ isOpen, onClose }) {
         await html5Qr.start(
           { facingMode: 'environment' },
           {
-            fps: 15,
-            qrbox: { width: 270, height: 130 },
+            fps: 20,
+            qrbox: { width: 270, height: 150 },
             aspectRatio: 1.5,
-            disableFlip: false,
+            disableFlip: true,
             formatsToSupport: [
               Fmts.EAN_13,
               Fmts.EAN_8,
@@ -2444,9 +2461,23 @@ function BarcodeScannerModal({ isOpen, onClose }) {
               Fmts.DATA_MATRIX,
               Fmts.ITF,
             ],
-            experimentalFeatures: { useBarCodeDetectorIfSupported: true },
           },
           (text) => {
+            // Guard: ignore if already processing a scan
+            if (isProcessingRef.current) return;
+            // Require same barcode confirmed twice within 2s (prevents false reads)
+            const now = Date.now();
+            const c = confirmScanRef.current;
+            if (c.code === text && now - c.ts < 2000) {
+              c.count++;
+              if (c.count < 2) return;
+            } else {
+              confirmScanRef.current = { code: text, count: 1, ts: now };
+              return;
+            }
+            // Confirmed — lock and process
+            isProcessingRef.current = true;
+            confirmScanRef.current = { code: null, count: 0, ts: 0 };
             if (html5Qr.isScanning) html5Qr.stop().catch(() => {});
             handleBarcodeScanRef.current?.(text);
           },
@@ -2506,17 +2537,23 @@ function BarcodeScannerModal({ isOpen, onClose }) {
       const OFB_FIELDS = 'product_name,product_name_el,product_name_en,generic_name,generic_name_el,brands,image_front_small_url,image_front_url,image_url,nova_group,nutriscore_grade,nutriments,allergens_tags,traces_tags,additives_tags,additives_original_tags,ingredients_text,ingredients_text_el,ingredients_analysis_tags,quantity,packaging,categories,labels,manufacturing_places,origins,stores,countries';
       // Try world DB first, then Greek DB as fallback for local products
       let data = null;
+      const ctrl1 = new AbortController();
+      const t1 = setTimeout(() => ctrl1.abort(), 8000);
       try {
-        const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${OFB_FIELDS}`);
+        const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${OFB_FIELDS}`, { signal: ctrl1.signal });
+        clearTimeout(t1);
         const d = await r.json();
         if (d.status === 1 && d.product) data = d;
-      } catch { /* try Greek fallback */ }
+      } catch { clearTimeout(t1); /* try Greek fallback */ }
       if (!data) {
+        const ctrl2 = new AbortController();
+        const t2 = setTimeout(() => ctrl2.abort(), 8000);
         try {
-          const r2 = await fetch(`https://gr.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${OFB_FIELDS}`);
+          const r2 = await fetch(`https://gr.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${OFB_FIELDS}`, { signal: ctrl2.signal });
+          clearTimeout(t2);
           const d2 = await r2.json();
           if (d2.status === 1 && d2.product) data = d2;
-        } catch { /* no result */ }
+        } catch { clearTimeout(t2); /* no result */ }
       }
 
       if (data && data.status === 1 && data.product) {
@@ -2572,8 +2609,11 @@ function BarcodeScannerModal({ isOpen, onClose }) {
       } else {
         // ── Edamam fallback — fires when OFF has no record for this barcode ──
         setLoading(true); // keep spinner going
+        const ctrl3 = new AbortController();
+        const t3 = setTimeout(() => ctrl3.abort(), 8000);
         try {
-          const edamamRes = await fetch(`${API_BASE}/api/barcode/${barcode}`, { headers: authHeader() });
+          const edamamRes = await fetch(`${API_BASE}/api/barcode/${barcode}`, { headers: authHeader(), signal: ctrl3.signal });
+          clearTimeout(t3);
           const edamamData = await edamamRes.json();
           if (edamamData.found && edamamData.product) {
             const ep = edamamData.product;
@@ -2586,6 +2626,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
             setError(`Δεν βρέθηκε στη βάση (Barcode: ${barcode})`);
           }
         } catch {
+          clearTimeout(t3);
           setError(`Δεν βρέθηκε στη βάση (Barcode: ${barcode})`);
         }
       }
@@ -2593,6 +2634,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
       setError('Σφάλμα σύνδεσης. Δοκίμασε ξανά.');
     }
     setLoading(false);
+    isProcessingRef.current = false;
   }
   useEffect(() => {
     handleBarcodeScanRef.current = handleBarcodeScan;
@@ -2600,6 +2642,8 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 
   const handleClose = () => {
     stopScanner();
+    isProcessingRef.current = false;
+    confirmScanRef.current = { code: null, count: 0, ts: 0 };
     setIsClosing(true);
     setTimeout(() => {
       setIsClosing(false);
@@ -2614,6 +2658,8 @@ function BarcodeScannerModal({ isOpen, onClose }) {
 
   const handleScanAgain = () => {
     stopScanner();
+    isProcessingRef.current = false;
+    confirmScanRef.current = { code: null, count: 0, ts: 0 };
     setProduct(null);
     setError('');
     setLoading(false);
@@ -2706,7 +2752,7 @@ function BarcodeScannerModal({ isOpen, onClose }) {
           ].map(t => (
             <button key={t.id} className={`scanner-tab ${activeView === t.id ? 'active' : ''}`}
               onClick={() => {
-                if (activeView === 'scan') stopScanner();
+                if (activeView === 'scan') { stopScanner(); isProcessingRef.current = false; confirmScanRef.current = { code: null, count: 0, ts: 0 }; }
                 setActiveView(t.id);
                 if (t.id === 'scan' && !product) setScanKey(k => k + 1);
               }}
@@ -3617,7 +3663,7 @@ export default function App() {
 
     setFriends(prev => [...prev, normalizedFriend]);
     setShowAddFriendModal(false);
-    setNotification({ show:true, message:`✅ ${normalizedFriend.username} προστέθηκε στο κοινό καλάθι!` });
+    setNotification({ show:true, message:`${normalizedFriend.username} προστέθηκε στο κοινό καλάθι!` });
 
     // 3. Join their socket room immediately (for real-time items/chat)
     if (socketRef.current) {
@@ -4347,7 +4393,7 @@ export default function App() {
         body: JSON.stringify({ title: nameModalValue.trim(), items }),
       });
       if (r.ok) {
-        setNotification({ show:true, message:'✅ Αποθηκεύτηκε!' });
+        setNotification({ show:true, message:'Αποθηκεύτηκε!' });
         fetchSavedLists();
       } else {
         const e = await r.json().catch(() => ({}));
@@ -4667,7 +4713,7 @@ export default function App() {
 
   const closeRecipeAddModal = () => {
     setRecipeAddModal({ open:false, recipeName:'', progress:0, total:0 });
-    setNotification({ show:true, message:'✅ Υλικά προστέθηκαν στη λίστα!' });
+    setNotification({ show:true, message:'Υλικά προστέθηκαν στη λίστα!' });
   };
 
   // ── Meal Plan functions ────────────────────────────────────────────────────
@@ -7045,7 +7091,7 @@ export default function App() {
           onClick={openSmartRouteModal}
           aria-label="Χάρτης"
         >
-          <div className="bottom-nav-icon"><IconMap size={20} stroke={1.8} /></div>
+          <div className="bottom-nav-icon"><IconMap size={18} stroke={1.6} /></div>
           <span className="bottom-nav-label">Χάρτης</span>
         </button>
         <button
@@ -7054,7 +7100,7 @@ export default function App() {
           aria-label="Αρχική"
         >
           <div className="nav-fab-inner">
-            <IconHome size={22} stroke={1.8} />
+            <IconHome size={20} stroke={1.6} />
           </div>
           <span className="bottom-nav-label">Αρχική</span>
         </button>
@@ -7066,7 +7112,7 @@ export default function App() {
           }}
           aria-label="Προφίλ"
         >
-          <div className="bottom-nav-icon"><IconUser size={20} stroke={1.8} /></div>
+          <div className="bottom-nav-icon"><IconUser size={18} stroke={1.6} /></div>
           <span className="bottom-nav-label">Προφίλ</span>
         </button>
       </nav>

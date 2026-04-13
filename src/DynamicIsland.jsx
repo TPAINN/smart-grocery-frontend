@@ -57,24 +57,26 @@ export default function DynamicIsland({ show, message, type, onClose }) {
   }, [show, message, resolvedType, onClose]);
 
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          className="di-wrapper"
-          initial={{ y: -72, opacity: 0, scale: 0.72 }}
-          animate={{ y: 0, opacity: 1, scale: 1 }}
-          exit={{ y: -72, opacity: 0, scale: 0.72 }}
-          transition={{ type: 'spring', stiffness: 420, damping: 26, mass: 0.75 }}
-          onClick={onClose}
-          role="alert"
-          aria-live="polite"
-        >
-          <div className={`di-pill di-pill--${resolvedType}`}>
-            <span className="di-icon">{ICONS[resolvedType]}</span>
-            <span className="di-message">{message}</span>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div className="di-outer">
+      <AnimatePresence>
+        {show && (
+          <motion.div
+            className="di-wrapper"
+            initial={{ y: -72, opacity: 0, scale: 0.72 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: -72, opacity: 0, scale: 0.72 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 26, mass: 0.75 }}
+            onClick={onClose}
+            role="alert"
+            aria-live="polite"
+          >
+            <div className={`di-pill di-pill--${resolvedType}`}>
+              <span className="di-icon">{ICONS[resolvedType]}</span>
+              <span className="di-message">{message}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

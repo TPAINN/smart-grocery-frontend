@@ -383,7 +383,7 @@
 .psm-float-emoji {
   position: absolute;
   font-size: 32px;
-  animation: psmFloat 3s ease-in-out infinite;
+  animation: psmFloat 3s var(--ease) infinite;
   opacity: 0.85;
 }
 
@@ -412,7 +412,7 @@
   gap: 16px;
   max-width: 280px;
   width: calc(100% - 48px);
-  animation: psmFadeIn 0.45s ease both;
+  animation: psmFadeIn 0.45s var(--ease) both;
 }
 
 @keyframes psmFadeIn {
@@ -1004,7 +1004,7 @@ body.dark-mode .psm-badge--memory {
   border: 1.5px solid transparent;
   cursor: pointer;
   font-family: inherit;
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s var(--ease);
 }
 
 .psm-source-btn--camera {

@@ -12,7 +12,7 @@
     var(--bg-subtle, #f0f0f0) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.6s ease-in-out infinite;
+  animation: shimmer 1.6s var(--ease) infinite;
   position: relative;
   overflow: hidden;
 }
@@ -30,7 +30,7 @@
     rgba(255, 255, 255, 0.3) 50%,
     transparent 100%
   );
-  animation: shimmer-sheen 2s ease-in-out infinite;
+  animation: shimmer-sheen 2s var(--ease) infinite;
 }
 
 @keyframes shimmer {
@@ -70,7 +70,7 @@ body.dark-mode .skeleton::after {
   border-radius: 16px;
   padding: 16px;
   opacity: 0;
-  animation: skeletonFadeIn 0.5s ease forwards, shimmer 1.8s ease-in-out infinite;
+  animation: skeletonFadeIn 0.5s var(--ease) forwards, shimmer 1.8s var(--ease) infinite;
   animation-delay: var(--delay, 0s), 0s;
 }
 
@@ -108,7 +108,7 @@ body.dark-mode .skeleton::after {
   border-radius: 20px;
   overflow: hidden;
   opacity: 0;
-  animation: skeletonFadeIn 0.5s ease forwards, shimmer 1.8s ease-in-out infinite;
+  animation: skeletonFadeIn 0.5s var(--ease) forwards, shimmer 1.8s var(--ease) infinite;
 }
 
 .skeleton-recipe-content {
@@ -129,7 +129,7 @@ body.dark-mode .skeleton::after {
   padding: 12px 0;
   border-bottom: 1px solid var(--border-light, #f0f0f0);
   opacity: 0;
-  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+  animation: skeletonFadeIn 0.4s var(--ease) forwards, shimmer 1.8s var(--ease) infinite;
 }
 
 .skeleton-list-item:last-child {
@@ -143,7 +143,7 @@ body.dark-mode .skeleton::after {
   padding: 20px 22px;
   border-radius: 20px;
   opacity: 0;
-  animation: skeletonFadeIn 0.5s ease forwards;
+  animation: skeletonFadeIn 0.5s var(--ease) forwards;
 }
 
 .skeleton-budget .skeleton {
@@ -154,7 +154,7 @@ body.dark-mode .skeleton::after {
     rgba(255, 255, 255, 0.08) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.8s ease-in-out infinite;
+  animation: shimmer 1.8s var(--ease) infinite;
 }
 
 .skeleton-budget-header {
@@ -185,12 +185,12 @@ body.dark-mode .skeleton::after {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  animation: shimmer 1.8s ease-in-out infinite;
+  animation: shimmer 1.8s var(--ease) infinite;
 }
 
 .skeleton-scanner-icon {
   color: rgba(255, 255, 255, 0.15);
-  animation: pulse 2s ease-in-out infinite;
+  animation: pulse 2s var(--ease) infinite;
 }
 
 @keyframes pulse {
@@ -199,7 +199,7 @@ body.dark-mode .skeleton::after {
 }
 
 .skeleton-scanner-hint {
-  animation: shimmer 1.8s ease-in-out infinite 0.2s;
+  animation: shimmer 1.8s var(--ease) infinite 0.2s;
 }
 
 /* ── Chat Message Skeleton ──────────────────────────────────────────────── */
@@ -208,7 +208,7 @@ body.dark-mode .skeleton::after {
   gap: 12px;
   margin-bottom: 16px;
   opacity: 0;
-  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+  animation: skeletonFadeIn 0.4s var(--ease) forwards, shimmer 1.8s var(--ease) infinite;
 }
 
 .skeleton-chat-message.user {
@@ -230,7 +230,7 @@ body.dark-mode .skeleton::after {
   padding: 12px 16px;
   border-radius: 16px;
   background: var(--bg-subtle, #f5f5f5);
-  animation: shimmer 1.8s ease-in-out infinite;
+  animation: shimmer 1.8s var(--ease) infinite;
 }
 
 /* ── Nutrition Grid Skeleton ────────────────────────────────────────────── */
@@ -249,7 +249,7 @@ body.dark-mode .skeleton::after {
   align-items: center;
   gap: 8px;
   opacity: 0;
-  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+  animation: skeletonFadeIn 0.4s var(--ease) forwards, shimmer 1.8s var(--ease) infinite;
 }
 
 /* ── Category Pills Skeleton ────────────────────────────────────────────── */
@@ -268,7 +268,7 @@ body.dark-mode .skeleton::after {
 
 .skeleton-category-pills .skeleton {
   flex-shrink: 0;
-  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+  animation: skeletonFadeIn 0.4s var(--ease) forwards, shimmer 1.8s var(--ease) infinite;
 }
 
 /* ── Friend Card Skeleton ────────────────────────────────────────────────── */
@@ -282,7 +282,7 @@ body.dark-mode .skeleton::after {
   border-radius: 16px;
   margin-bottom: 10px;
   opacity: 0;
-  animation: skeletonFadeIn 0.4s ease forwards, shimmer 1.8s ease-in-out infinite;
+  animation: skeletonFadeIn 0.4s var(--ease) forwards, shimmer 1.8s var(--ease) infinite;
 }
 
 .skeleton-friend-info {
@@ -301,7 +301,7 @@ body.dark-mode .skeleton::after {
 
 .skeleton-pulse-logo {
   color: var(--accent, #6366f1);
-  animation: logoPulse 2s ease-in-out infinite;
+  animation: logoPulse 2s var(--ease) infinite;
 }
 
 @keyframes logoPulse {
@@ -322,7 +322,7 @@ body.dark-mode .skeleton::after {
   font-weight: 600;
   color: var(--text-secondary, #666);
   margin: 0;
-  animation: textPulse 1.5s ease-in-out infinite;
+  animation: textPulse 1.5s var(--ease) infinite;
 }
 
 @keyframes textPulse {
@@ -340,7 +340,7 @@ body.dark-mode .skeleton::after {
   height: 8px;
   border-radius: 50%;
   background: var(--accent, #6366f1);
-  animation: dotBounce 1.2s ease-in-out infinite;
+  animation: dotBounce 1.2s var(--ease) infinite;
 }
 
 .skeleton-dots span:nth-child(1) { animation-delay: 0s; }
@@ -379,7 +379,7 @@ body.dark-mode .skeleton::after {
 
 /* ── Smooth Loading Transition ──────────────────────────────────────────── */
 .skeleton-loading-transition {
-  animation: skeletonLoadingPulse 1.5s ease-in-out infinite;
+  animation: skeletonLoadingPulse 1.5s var(--ease) infinite;
 }
 
 @keyframes skeletonLoadingPulse {

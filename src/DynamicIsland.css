@@ -1,13 +1,20 @@
-.di-wrapper {
+/* Outer: fixed full-width flex row — handles centering without CSS transform */
+.di-outer {
   position: fixed;
   top: 18px;
-  left: 50%;
-  /* framer-motion owns translateX via x prop — use margin trick instead */
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
   z-index: 10000;
+  pointer-events: none;
+}
+
+/* Inner motion.div — Framer Motion applies y/scale here with no transform conflict */
+.di-wrapper {
+  pointer-events: auto;
   cursor: pointer;
   will-change: transform, opacity;
-  /* Framer motion applies scale/y on top of translate; keep origin center */
   transform-origin: center top;
 }
 

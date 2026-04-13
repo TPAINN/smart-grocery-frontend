@@ -14,7 +14,7 @@
   justify-content: center;
   align-items: flex-end;
   z-index: 10000;
-  animation: overlayIn 0.28s ease both;
+  animation: overlayIn 0.28s var(--ease) both;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -103,8 +103,8 @@
   display: flex; align-items: center; justify-content: center;
   transition:
     transform 0.3s var(--spring),
-    background 0.2s ease,
-    color 0.2s ease;
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
   z-index: 1;
 }
 
@@ -163,8 +163,8 @@
   cursor: pointer;
   transition:
     background 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-    color 0.2s ease,
-    box-shadow 0.25s ease;
+    color 0.2s var(--ease),
+    box-shadow 0.25s var(--ease);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -194,9 +194,9 @@
   outline: none;
   width: 100%;
   transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
   -webkit-appearance: none;
 }
 
@@ -228,8 +228,8 @@
   box-shadow: 0 4px 20px rgba(37,99,235,.3), 0 8px 32px rgba(37,99,235,.15);
   transition:
     transform 0.25s var(--spring),
-    box-shadow 0.25s ease,
-    opacity 0.15s ease;
+    box-shadow 0.25s var(--ease),
+    opacity 0.15s var(--ease);
   position: relative;
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
@@ -241,7 +241,7 @@
   inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
   background-size: 200% 100%;
-  animation: shimmer 3s ease-in-out infinite;
+  animation: shimmer 3s var(--ease) infinite;
 }
 
 .submit-btn:hover {
@@ -263,7 +263,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  animation: shakeError 0.4s ease both;
+  animation: shakeError 0.4s var(--ease) both;
 }
 
 /* ── Toggle link ─────────────────────────────────────── */
@@ -283,7 +283,7 @@
   color: var(--accent);
   font-weight: 700;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: color 0.15s var(--ease);
 }
 .toggle-link-btn:hover { color: var(--accent-2); text-decoration: underline; }
 .toggle-link-btn:disabled { opacity: 0.45; cursor: not-allowed; }
