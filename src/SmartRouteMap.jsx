@@ -450,6 +450,33 @@ const SmartRouteMap = memo(function SmartRouteMap({ isOpen, onClose, items = [] 
         </div>
       </div>
 
+      {/* ── Nearest Store Quick-Card ─────────────────────────────────── */}
+      {stores.length > 0 && userLoc && (() => {
+        const s = stores[0];
+        const walkMin = s.distance ? Math.ceil(s.distance / 80) : null; // ~80m/min walking
+        return (
+          <div className="srm-nearest-bar">
+            <div className="srm-nearest-left">
+              <span className="srm-nearest-emoji">{s.chainEmoji}</span>
+              <div className="srm-nearest-info">
+                <span className="srm-nearest-name">{s.chainName || s.name}</span>
+                <span className="srm-nearest-meta">
+                  {fmtM(s.distance)}{walkMin ? ` · ${walkMin}′ πεζή` : ''}
+                </span>
+              </div>
+            </div>
+            <button
+              className="srm-nearest-nav-btn"
+              onClick={() => openNav(userLoc, [s], mode)}
+              title="Πλοήγηση στο κοντινότερο"
+            >
+              <IconNavigation size={13} stroke={2.5}/>
+              <span>Πλοήγηση</span>
+            </button>
+          </div>
+        );
+      })()}
+
       <div className="smart-route-map-container">
         <div ref={containerRef} className="smart-route-map"/>
         {status==='loading'&&<div className="smart-route-loading"><div className="smart-route-spinner"/><div style={{fontWeight:600}}>Φόρτωση χάρτη...</div></div>}

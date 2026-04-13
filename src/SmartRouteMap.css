@@ -639,6 +639,84 @@
   gap: 8px;
 }
 
+/* ── Nearest Store Quick-Bar ── */
+.srm-nearest-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: linear-gradient(90deg, rgba(99,102,241,0.12) 0%, rgba(139,92,246,0.08) 100%);
+  border-bottom: 1px solid rgba(99,102,241,0.15);
+  animation: srmNearestIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  gap: 10px;
+}
+
+@keyframes srmNearestIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.srm-nearest-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.srm-nearest-emoji {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.srm-nearest-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.srm-nearest-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.srm-nearest-meta {
+  font-size: 10px;
+  color: var(--text-secondary, rgba(255,255,255,0.5));
+  font-weight: 600;
+}
+
+.srm-nearest-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(99,102,241,0.3);
+  background: rgba(99,102,241,0.15);
+  color: #818cf8;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+
+.srm-nearest-nav-btn:hover {
+  background: rgba(99,102,241,0.25);
+  border-color: rgba(99,102,241,0.5);
+  color: #a5b4fc;
+}
+
+.srm-nearest-nav-btn:active {
+  transform: scale(0.94);
+}
+
 .smart-route-icon-btn {
   width: 36px;
   height: 36px;

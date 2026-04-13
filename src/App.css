@@ -73,16 +73,9 @@ body.dark-mode .datetime-display {
   box-shadow: none;
 }
 
-/* Subtle dot-grid background on dark mode clock card */
+/* Dot-grid removed — clock card is fully transparent */
 body.dark-mode .datetime-display::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle, rgba(165,180,252,0.12) 1px, transparent 1px);
-  background-size: 28px 28px;
-  pointer-events: none;
-  z-index: 0;
+  content: none !important;
 }
 
 .datetime-display > * {
@@ -170,17 +163,10 @@ body.dark-mode .datetime-display::before {
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.6px;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 body.dark-mode .app-header h1 {
-  background: linear-gradient(135deg, #eef2ff 0%, #7a96bb 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #eef2ff;
 }
 
 .hero-shell {
@@ -5960,13 +5946,9 @@ html, body {
   transform:   scale(0.985);
 }
 
-/* ── Premium gradient text utility ─────────────────────────────
-   .text-gradient — reuse the brand purple gradient on any text.  */
+/* .text-gradient — solid accent colour (gradient text removed: design context ban) */
 .text-gradient {
-  background:           linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip:      text;
+  color: var(--accent);
 }
 
 /* ── Card entrance (used by ScrollReveal wrapper) ───────────────
@@ -7240,28 +7222,7 @@ body.dark-mode .app-header {
     inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
-/* Subtle aurora shimmer on the header background */
-.app-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    120deg,
-    transparent 20%,
-    rgba(99, 102, 241, 0.04) 40%,
-    rgba(168, 85, 247, 0.04) 60%,
-    transparent 80%
-  );
-  background-size: 200% 100%;
-  animation: auroraSlide 8s var(--ease) infinite;
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-@keyframes auroraSlide {
-  0%, 100% { background-position: 0% 50%; }
-  50%       { background-position: 100% 50%; }
-}
+/* App header — no aurora shimmer (removed: continuous loop, violates design context) */
 
 @keyframes headerReveal {
   from { opacity: 0; transform: translateY(-10px) scale(0.98); }
@@ -10497,10 +10458,7 @@ button, [role="button"] {
 
 /* ── Gradient Text ───────────────────────────────────────────────── */
 .text-gradient {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--accent);
 }
 
 .text-gradient-warm {
@@ -10863,14 +10821,7 @@ body.dark-mode .sug-logo {
   width: auto;
 }
 
-/* ── 2. Premium Hero Header Glow ─────────────────────── */
-@keyframes headerGlowPulse {
-  0%, 100% { box-shadow: 0 4px 32px rgba(99,102,241,0.10), 0 1px 4px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.04); }
-  50%       { box-shadow: 0 8px 40px rgba(99,102,241,0.18), 0 2px 8px rgba(139,92,246,0.10), inset 0 1px 0 rgba(255,255,255,0.04); }
-}
-body.dark-mode .app-header {
-  animation: headerGlowPulse 5s var(--ease) infinite;
-}
+/* headerGlowPulse removed — continuous loop violated design context */
 
 /* ── 3. Clock Container Full Width ───────────────────── */
 .header-clock-center {
@@ -10952,75 +10903,17 @@ body:not(.dark-mode) .bottom-nav-btn.active .bottom-nav-icon {
   isolation: isolate;
 }
 
-/* Aurora orbs — pseudo-elements on body in dark mode */
+/* Aurora orbs removed — violated design context (vivid loops, not muted) */
 body.dark-mode::before,
 body.dark-mode::after {
-  content: '';
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-  will-change: transform;
+  content: none;
 }
 
-body.dark-mode::before {
-  width: 520px;
-  height: 520px;
-  background: radial-gradient(circle at center, rgba(79, 70, 229, 0.28) 0%, transparent 70%);
-  filter: blur(72px);
-  top: -140px;
-  left: -120px;
-  animation: auroraFloat1 12s var(--ease) infinite alternate;
-}
-
-body.dark-mode::after {
-  width: 420px;
-  height: 420px;
-  background: radial-gradient(circle at center, rgba(8, 145, 178, 0.22) 0%, transparent 70%);
-  filter: blur(60px);
-  bottom: 80px;
-  right: -80px;
-  animation: auroraFloat2 9s var(--ease) infinite alternate;
-}
-
-/* Third orb via a shared class on app-wrapper */
 body.dark-mode .app-wrapper::before {
-  content: '';
-  position: fixed;
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle at center, rgba(5, 150, 105, 0.18) 0%, transparent 70%);
-  filter: blur(56px);
-  top: 40%;
-  left: 30%;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-  animation: auroraFloat3 15s var(--ease) infinite alternate;
-  will-change: transform;
+  content: none;
 }
 
-@keyframes auroraFloat1 {
-  0%   { transform: translate(0px, 0px) scale(1); }
-  33%  { transform: translate(30px, -20px) scale(1.05); }
-  66%  { transform: translate(-15px, 25px) scale(0.97); }
-  100% { transform: translate(20px, -30px) scale(1.08); }
-}
-
-@keyframes auroraFloat2 {
-  0%   { transform: translate(0px, 0px) scale(1); }
-  50%  { transform: translate(-25px, -35px) scale(1.06); }
-  100% { transform: translate(18px, 20px) scale(0.95); }
-}
-
-@keyframes auroraFloat3 {
-  0%   { transform: translate(0px, 0px) scale(1); }
-  40%  { transform: translate(40px, 30px) scale(1.1); }
-  80%  { transform: translate(-20px, -25px) scale(0.92); }
-  100% { transform: translate(15px, 10px) scale(1.04); }
-}
-
-/* Ensure main content stays above aurora */
+/* Ensure main content stays above background */
 .container {
   position: relative;
   z-index: 1;
@@ -11800,27 +11693,10 @@ button, .btn, [role="button"] {
   animation: modalIn 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) both !important;
 }
 
-/* ── Aurora background (body dark mode) ── */
+/* Dark mode base — clean, no aurora */
 body.dark-mode {
   position: relative;
-}
-
-body.dark-mode::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 60% 50% at 15% 20%, rgba(88, 28, 235, 0.22) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 60% at 85% 80%, rgba(219, 39, 119, 0.15) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 40% at 50% 50%, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
-  animation: auroraShift 12s var(--ease) infinite alternate;
-}
-
-@keyframes auroraShift {
-  from { opacity: 0.7; transform: scale(1); }
-  to   { opacity: 1;   transform: scale(1.05) translateY(-10px); }
+  background: var(--bg-app);
 }
 
 /* ── Bento grid layout for home tab ── */
@@ -12605,27 +12481,7 @@ body.dark-mode .sug-avatar-fallback {
   border: 1px solid rgba(126, 145, 255, 0.14);
 }
 
-.app-header::before {
-  content: "";
-  position: absolute;
-  inset: -20% auto auto -12%;
-  width: 220px;
-  height: 220px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(124, 77, 255, 0.18), transparent 66%);
-  pointer-events: none;
-}
-
-.app-header::after {
-  content: "";
-  position: absolute;
-  inset: auto -12% -30% auto;
-  width: 220px;
-  height: 220px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(24, 197, 183, 0.14), transparent 66%);
-  pointer-events: none;
-}
+/* Header pseudo-element blobs removed — vivid gradients violated design context */
 
 .hero-brand {
   position: relative;
@@ -12684,11 +12540,8 @@ body.dark-mode .hero-version {
   padding: 0.08em 0.42em 0.14em;
   border-radius: 999px;
   color: #fff;
-  background:
-    linear-gradient(120deg, var(--revamp-accent-a), var(--revamp-accent-b), var(--revamp-accent-c));
-  background-size: 220% 220%;
-  box-shadow: 0 16px 36px rgba(92, 103, 245, 0.18);
-  animation: gradientFlow 7s var(--ease) infinite;
+  background: var(--accent);
+  box-shadow: 0 8px 24px rgba(79, 87, 208, 0.22);
 }
 
 .hero-title-gradient--revamp::before {
@@ -12806,8 +12659,8 @@ body.dark-mode .nav-float-actions.quick-surface-strip .nav-float-btn {
 }
 
 .bottom-nav-revamp {
-  padding: 6px 8px;
-  gap: 2px;
+  padding: 3px 6px;
+  gap: 1px;
   width: min(96vw, 520px);
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.72);
@@ -12835,8 +12688,8 @@ body.dark-mode .bottom-nav-revamp {
 
 .bottom-nav-revamp .bottom-nav-btn {
   min-width: 0;
-  gap: 4px;
-  padding: 8px 2px 7px;
+  gap: 3px;
+  padding: 5px 2px 4px;
   border-radius: 20px;
   color: rgba(60, 60, 80, 0.5);
   transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -12898,18 +12751,18 @@ body.dark-mode .bottom-nav-revamp .bottom-nav-btn:not(.active):hover {
 }
 
 .bottom-nav-revamp .bottom-nav-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
 }
 
 .bottom-nav-revamp .nav-tab-fab .nav-fab-inner {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(145deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.08));
   border: 1.5px solid rgba(99, 102, 241, 0.15);
-  border-radius: 16px;
+  border-radius: 14px;
   transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -13256,25 +13109,25 @@ body.dark-mode .friends-popup-share-code {
    ═══════════════════════════════════════════════════════════════ */
 
 .bottom-nav-minimal {
-  width: min(88vw, 360px) !important;
-  padding: 8px 12px !important;
-  gap: 8px !important;
+  width: min(88vw, 340px) !important;
+  padding: 3px 8px !important;
+  gap: 2px !important;
 }
 
 .bottom-nav-minimal .bottom-nav-btn {
   flex: 1;
-  padding: 10px 8px 8px;
+  padding: 5px 6px 4px !important;
 }
 
 .bottom-nav-minimal .bottom-nav-label {
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 0.2px;
 }
 
 .bottom-nav-minimal .nav-tab-fab .nav-fab-inner {
-  width: 48px;
-  height: 48px;
-  border-radius: 18px;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 12px !important;
 }
 
 /* Remove all nav animations */
@@ -14977,15 +14830,10 @@ textarea:focus::placeholder {
    SHAPE-MORPH POLISH PASS — Apple-inspired refinements
    ════════════════════════════════════════════════════════ */
 
-/* ── Clock ambient glow pulse ─────────────────────────── */
-@keyframes clockAmbientGlow {
-  0%, 100% { filter: drop-shadow(0 0 16px rgba(165,180,252,0.25)); }
-  50%       { filter: drop-shadow(0 0 32px rgba(165,180,252,0.50)); }
-}
-
+/* Clock glow pulse removed — continuous loop violated design context */
 body.dark-mode .current-clock.hero-time,
 body.dark-mode .current-clock {
-  animation: clockAmbientGlow 4s var(--ease) infinite;
+  /* No ambient glow — clean text rendering */
 }
 
 /* ── Datetime card: hover lift ────────────────────────── */

@@ -3434,6 +3434,9 @@ export default function App() {
   const [isOnline, setIsOnline]           = useState(() => navigator.onLine);
   const [wasOffline, setWasOffline]       = useState(false);
 
+  // ── Weather state (Open-Meteo, free, no API key) ──────────────────────────
+  const [weatherData, setWeatherData] = useState(null);
+
   // ── Meal Planner state ─────────────────────────────────────────────────────
   const [mealPlan,           setMealPlan]           = useState(null);
   const [mealPlanLoading,    setMealPlanLoading]     = useState(false);
@@ -4055,6 +4058,39 @@ export default function App() {
     }
   }, [recipePage, recipeTotalPages, recipesLoading, fetchRecipes]);
 
+
+  // ── Open-Meteo: fetch current weather once on load ────────────────────────
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const r = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${coords.latitude.toFixed(4)}&longitude=${coords.longitude.toFixed(4)}&current=temperature_2m,weathercode,relative_humidity_2m&timezone=auto`,
+            { signal: AbortSignal.timeout(8000) }
+          );
+          if (!r.ok) return;
+          const d = await r.json();
+          const code = d.current?.weathercode ?? 0;
+          const temp = d.current?.temperature_2m ?? null;
+          const label = code === 0 ? 'clear'
+            : code <= 3 ? 'partly_cloudy'
+            : code <= 48 ? 'foggy'
+            : code <= 67 ? 'rainy'
+            : code <= 77 ? 'snowy'
+            : code <= 82 ? 'showers'
+            : 'stormy';
+          setWeatherData({
+            temp: temp !== null ? Math.round(temp) : null,
+            code, label,
+            humidity: d.current?.relative_humidity_2m ?? null,
+          });
+        } catch { /* non-critical */ }
+      },
+      () => {},
+      { timeout: 5000, maximumAge: 3_600_000 }
+    );
+  }, []);
 
   // ── TheMealDB: fetch Greek or Mediterranean recipes ──────────────────────
   const MEALDB_BASE = 'https://www.themealdb.com/api/json/v1/1';
@@ -4757,6 +4793,7 @@ export default function App() {
           height: tdeeHeight,
           activityLevel: tdeeActivity,
           macroRatios,
+          weather: weatherData,
         }),
       });
       const data = await res.json();

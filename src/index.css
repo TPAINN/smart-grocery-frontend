@@ -174,7 +174,7 @@ body {
   --accel:      cubic-bezier(0.4, 0.0, 1, 1);
 
   /* ── Nav Heights ─────────────────────────────────────────────── */
-  --nav-height:        72px;
+  --nav-height:        60px;
   --nav-bottom-offset: calc(var(--nav-height) + 20px + env(safe-area-inset-bottom, 0px));
 
   /* ── Brand primary for legacy usage ─────────────────────── */
