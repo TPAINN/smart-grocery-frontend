@@ -15203,3 +15203,72 @@ body.dark-mode .header-clock-center::after {
     animation: none !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   MINIMAL CLEAN PASS — v3  (2026-04-14)
+   Reduces visual noise: premium badge, blob orbs, search btn
+   ════════════════════════════════════════════════════════════ */
+
+/* 1. Remove spinning conic-gradient border on premium pill */
+.hero-status-pill:has(.hero-status-dot--premium)::after {
+  content: none !important;
+  animation: none !important;
+}
+
+/* 2. Premium dot — keep small amber dot, kill the glow */
+.hero-status-dot--premium {
+  background: rgba(251, 191, 36, 0.75) !important;
+  box-shadow: none !important;
+}
+
+/* 3. Premium pill — minimal amber outline, no glass blur flash */
+body.dark-mode .hero-status-pill:has(.hero-status-dot--premium) {
+  background: rgba(251, 191, 36, 0.05) !important;
+  border-color: rgba(251, 191, 36, 0.22) !important;
+  color: rgba(251, 191, 36, 0.82) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 4. Kill pill shimmer sweep animation (only fired on hover — remove entirely) */
+.hero-status-pill::before {
+  content: none !important;
+}
+
+/* 5. Header blob orbs — remove animated gradient blobs for clean minimal header */
+body.dark-mode .header-clock-center::before,
+body.dark-mode .header-clock-center::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* 6. Search submit button — flat, no gradient, no heavy glow */
+.search-submit-btn {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border: 1px solid rgba(99, 102, 241, 0.3) !important;
+  color: rgba(165, 180, 252, 0.9) !important;
+  box-shadow: none !important;
+}
+body:not(.dark-mode) .search-submit-btn {
+  background: rgba(92, 103, 245, 0.1) !important;
+  border-color: rgba(92, 103, 245, 0.25) !important;
+  color: #5C67F5 !important;
+}
+.search-submit-btn:hover {
+  background: rgba(99, 102, 241, 0.22) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* 7. Hero version chip — even more minimal */
+.hero-version {
+  font-size: 9px !important;
+  padding: 1px 6px !important;
+  opacity: 0.55;
+}
+
+/* 8. Reduce header card visual weight — transparent bg */
+body.dark-mode .app-header {
+  background: transparent !important;
+  box-shadow: none !important;
+}
