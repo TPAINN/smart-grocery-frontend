@@ -3041,19 +3041,151 @@ function cleanRecipeText(raw) {
     .trim();
 }
 
+function normalizeRecipeToken(raw = '') {
+  return cleanRecipeText(raw)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function isRecipeSectionHeading(raw = '') {
+  const line = normalizeRecipeToken(raw).replace(/[:.]+$/g, '').trim();
+  if (!line) return false;
+  return /^(για\s+(τη|την|το|τον)\b)/.test(line) || /^(υλικα|συστατικα|εκτελεση|οδηγιες|παρασκευη|σερβιρισμα)\b/.test(line);
+}
+
+function isRecipeNoiseLine(raw = '') {
+  const line = normalizeRecipeToken(raw);
+  if (!line) return true;
+  const letters = cleanRecipeText(raw).replace(/[^A-Za-zΑ-Ωα-ω]/g, '');
+  const isAllCaps = letters.length >= 6 && letters === letters.toUpperCase();
+  return (
+    line.includes('gymbeam') ||
+    line.includes('μπορει να σας ενδιαφερουν') ||
+    line.includes('δειτε επισης') ||
+    line.includes('related products') ||
+    line.includes('προιοντα') ||
+    /^(bio\s+|απο\s+\d+)/.test(line) ||
+    /€|\$\d/.test(raw) ||
+    isAllCaps
+  );
+}
+
+function dedupeRecipeLines(lines = []) {
+  const seen = new Set();
+  const result = [];
+  for (const line of lines) {
+    const key = normalizeRecipeToken(line);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(line);
+  }
+  return result;
+}
+
+function sanitizeRecipeDescription(raw = '') {
+  return cleanRecipeText(raw)
+    .replace(/\s*(Μπορεί να σας ενδιαφέρουν|Μπορει να σας ενδιαφερουν|Δείτε επίσης|Δειτε επισης|Related products)[\s\S]*$/i, '')
+    .trim();
+}
+
+function sanitizeRecipeIngredients(ingredients) {
+  const source = Array.isArray(ingredients)
+    ? ingredients
+    : String(ingredients || '').split(/\r?\n+/);
+
+  return dedupeRecipeLines(
+    source
+      .flatMap(item => cleanRecipeText(item).split(/\r?\n+/))
+      .map(line => line
+        .replace(/^[•·▪●]\s*/, '')
+        .replace(/^[-–—]\s*/, '')
+        .replace(/^\d+[.)]\s*/, '')
+        .trim()
+      )
+      .filter(line => line.length > 1 && line.length < 140)
+      .filter(line => !isRecipeNoiseLine(line) && !isRecipeSectionHeading(line))
+  );
+}
+
+function sanitizeRecipeInstructions(instructions) {
+  const source = Array.isArray(instructions)
+    ? instructions
+    : String(instructions || '').split(/\r?\n+/);
+
+  const cleaned = dedupeRecipeLines(
+    source
+      .flatMap(item => cleanRecipeText(item).split(/\r?\n+/))
+      .map(line => line
+        .replace(/^[•·▪●]\s*/, '')
+        .replace(/^[-–—]\s*/, '')
+        .replace(/^\d+[.)]\s*/, '')
+        .replace(/^step\s+\d+[.):\s-]*/i, '')
+        .trim()
+      )
+      .filter(line => line.length > 8)
+      .filter(line => !isRecipeNoiseLine(line) && !isRecipeSectionHeading(line))
+  );
+
+  if (cleaned.length <= 12) return cleaned;
+
+  const merged = [];
+  let buffer = '';
+  for (const line of cleaned) {
+    buffer = buffer ? `${buffer} ${line}` : line;
+    const shouldFlush = buffer.length >= 150 || (/[.!?]$/.test(line) && buffer.length >= 110);
+    if (shouldFlush) {
+      merged.push(buffer.trim());
+      buffer = '';
+    }
+  }
+  if (buffer.trim()) merged.push(buffer.trim());
+  return merged.length ? merged : cleaned;
+}
+
+function inferRecipeCategory(recipe = {}) {
+  const existing = cleanRecipeText(recipe.category || '');
+  const haystack = normalizeRecipeToken([
+    recipe.title,
+    recipe.category,
+    recipe.description,
+    ...(Array.isArray(recipe.ingredients) ? recipe.ingredients : []),
+  ].filter(Boolean).join(' '));
+
+  if (/τουρτ|ταρτ|dessert|γλυκ|επιδορπ|brownie|cake|cheesecake|μπισκοτ/.test(haystack)) return 'Επιδόρπια';
+  if (/πρωιν|breakfast|pancake|granola|porridge|omelette/.test(haystack)) return 'Πρωινό';
+  if (/σαλατ|salad/.test(haystack)) return 'Σαλάτες';
+  if (/σουπ|soup/.test(haystack)) return 'Σούπες';
+  return existing || recipe.category || '';
+}
+
+function normalizeRecipeRecord(recipe) {
+  if (!recipe || typeof recipe !== 'object') return recipe;
+  const ingredients = sanitizeRecipeIngredients(recipe.ingredients || []);
+  const instructions = sanitizeRecipeInstructions(recipe.instructions || []);
+  return {
+    ...recipe,
+    description: sanitizeRecipeDescription(recipe.description || ''),
+    ingredients,
+    instructions,
+    category: inferRecipeCategory({ ...recipe, ingredients }),
+  };
+}
+
 function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorite }) {
   const [showDetails, setShowDetails] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [activeSection, setActiveSection] = useState('ingredients');
   const [isAdding, setIsAdding] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
+  const displayRecipe = normalizeRecipeRecord(recipe);
+  const recipeDescription = cleanRecipeText(displayRecipe.description || '');
 
   // Pre-clean ingredients and instructions once on mount
-  const cleanIngredients = (recipe.ingredients || [])
-    .map(cleanRecipeText)
-    .filter(s => s.length > 1);
+  const cleanIngredients = displayRecipe.ingredients || [];
 
-  const cleanInstructions = (recipe.instructions || [])
+  const cleanInstructions = (displayRecipe.instructions || [])
     .map(s => cleanRecipeText(s)
       .replace(/^[0-9]\uFE0F\u20E3\s*/u, '')  // strip keycap emoji: 1️⃣ 2️⃣ 3️⃣…
       .replace(/^\d+[.)]\s*/, '')              // strip leading "1. "
@@ -3102,8 +3234,8 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
                 {recipe.cuisine && recipe.cuisine !== 'Διεθνής' && (
                   <span className="recipe-popup-tag">{recipe.cuisine}</span>
                 )}
-                {recipe.category && (
-                  <span className="recipe-popup-tag">{recipe.category}</span>
+                {displayRecipe.category && (
+                  <span className="recipe-popup-tag">{displayRecipe.category}</span>
                 )}
               </div>
               <h2 className="recipe-popup-title">{cleanRecipeTitle(recipe.title)}</h2>
@@ -3128,12 +3260,12 @@ function RecipePopup({ recipe, onClose, onAddToList, isFavorite, onToggleFavorit
         )}
 
         <div className="recipe-popup-body">
-          {recipe.description && (() => {
+          {recipeDescription && (() => {
             const LIMIT = 160;
-            const isLong = recipe.description.length > LIMIT;
+            const isLong = recipeDescription.length > LIMIT;
             const shown = isLong && !descExpanded
-              ? recipe.description.slice(0, LIMIT).trimEnd() + '…'
-              : recipe.description;
+              ? recipeDescription.slice(0, LIMIT).trimEnd() + '…'
+              : recipeDescription;
             return (
               <div style={{ margin:'0 0 16px', paddingBottom:16, borderBottom:'1px solid var(--border-light)' }}>
                 <p style={{ fontSize:13, lineHeight:1.65, color:'var(--text-secondary)', margin:0 }}>{shown}</p>
@@ -3967,7 +4099,7 @@ export default function App() {
         const cachedData  = Array.isArray(cached) ? cached : (cached.recipes || []);
         const cachedPages = Array.isArray(cached) ? 1 : (cached.pages || 1);
         if (cachedData.length > 0) {
-          setRecipes(cachedData);
+          setRecipes(cachedData.map(normalizeRecipeRecord));
           setRecipeTotalPages(cachedPages);
           setRecipePage(1);
           setRecipesLoading(false);
@@ -3991,14 +4123,15 @@ export default function App() {
         const d = await r.json();
         const actualRecipes = d.recipes || d;
         if (Array.isArray(actualRecipes)) {
+          const normalizedRecipes = actualRecipes.map(normalizeRecipeRecord);
           // Only cache non-empty results
-          if (actualRecipes.length > 0 && page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
-            cacheSet('recipes', { recipes: actualRecipes, pages: d.pages || 1 });
+          if (normalizedRecipes.length > 0 && page === 1 && !recipeCategory && !recipeCuisine && !recipeSearchDebounced) {
+            cacheSet('recipes', { recipes: normalizedRecipes, pages: d.pages || 1 });
           }
           if (append) {
-            setRecipes(prev => [...prev, ...actualRecipes]);
+            setRecipes(prev => [...prev, ...normalizedRecipes]);
           } else {
-            setRecipes(actualRecipes);
+            setRecipes(normalizedRecipes);
           }
           setRecipeTotalPages(d.pages || 1);
           setRecipePage(d.page || page);
@@ -4026,7 +4159,7 @@ export default function App() {
       const ck = cacheGet('recipes');
       if (ck) {
         const cachedData = Array.isArray(ck.data) ? ck.data : (ck.data.recipes || []);
-        setRecipes(prev => (prev.length > 0 ? prev : cachedData));
+        setRecipes(prev => (prev.length > 0 ? prev : cachedData.map(normalizeRecipeRecord)));
       }
     }
     setRecipesLoading(false);
@@ -4106,7 +4239,7 @@ export default function App() {
       const r = await fetch(`${API_BASE}/api/meals/${endpoint}`, { signal: AbortSignal.timeout(8000) });
       if (r.ok) {
         const data = await r.json();
-        const meals = data.meals || [];
+        const meals = (data.meals || []).map(normalizeRecipeRecord);
         if (meals.length > 0) {
           setMealDbRecipes(meals);
           setMealDbLoading(false);
@@ -4154,7 +4287,7 @@ export default function App() {
               fat: null,
             };
           });
-        setMealDbRecipes(meals);
+        setMealDbRecipes(meals.map(normalizeRecipeRecord));
       }
     } catch { /* fully offline — section stays empty */ }
     setMealDbLoading(false);
@@ -4701,9 +4834,7 @@ export default function App() {
 
   const addRecipeToList = async (recipe) => {
     // Clean ingredients before adding to list (strip HTML tags / entities)
-    const ingredients = (Array.isArray(recipe.ingredients) ? recipe.ingredients : [])
-      .map(cleanRecipeText)
-      .filter(s => s.length > 1);
+    const ingredients = sanitizeRecipeIngredients(Array.isArray(recipe.ingredients) ? recipe.ingredients : []);
     if (!ingredients.length) {
       setNotification({ show:true, message:'Δεν βρέθηκαν υλικά για αυτή τη συνταγή.' });
       return;
@@ -6372,13 +6503,13 @@ export default function App() {
                 {selectedMealDbRecipe && (() => {
                   const meal = selectedMealDbRecipe;
                   // Adapt mealdb structure to RecipePopup format
-                  const adapted = {
+                  const adapted = normalizeRecipeRecord({
                     ...meal,
                     cuisine: meal.area || '',
                     instructions: typeof meal.instructions === 'string'
                       ? meal.instructions.split(/\r?\n/).filter(s => s.trim().length > 0)
                       : (meal.instructions || []),
-                  };
+                  });
                   return (
                     <RecipePopup
                       recipe={adapted}

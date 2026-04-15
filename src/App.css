@@ -15272,3 +15272,138 @@ body.dark-mode .app-header {
   background: transparent !important;
   box-shadow: none !important;
 }
+
+/* Minimal Navigation Pass — 2026-04-15 */
+.tools-topbar {
+  gap: 10px !important;
+  padding: 4px 0 2px !important;
+}
+
+.tools-topbar-btn,
+.tools-topbar-btn--featured {
+  min-height: 56px !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(148, 163, 184, 0.12) !important;
+  background: rgba(15, 23, 42, 0.36) !important;
+  box-shadow: none !important;
+  animation: none !important;
+  background-size: auto !important;
+  color: #dbe7ff !important;
+  transform: none !important;
+}
+
+.tools-topbar-btn:hover,
+.tools-topbar-btn--featured:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 14px 24px rgba(2, 6, 23, 0.14) !important;
+}
+
+.tools-topbar-btn.active {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(148, 163, 184, 0.18) !important;
+  color: #ffffff !important;
+}
+
+.tools-topbar-btn.active::after,
+.bottom-nav-revamp .bottom-nav-btn.active::after {
+  content: none !important;
+}
+
+.tools-topbar-btn--featured {
+  border-color: rgba(129, 140, 248, 0.18) !important;
+  background: rgba(79, 70, 229, 0.12) !important;
+  color: #eef2ff !important;
+}
+
+body:not(.dark-mode) .tools-topbar-btn,
+body:not(.dark-mode) .tools-topbar-btn--featured {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  color: #1f2937 !important;
+}
+
+body:not(.dark-mode) .tools-topbar-btn.active {
+  background: rgba(79, 70, 229, 0.08) !important;
+  border-color: rgba(99, 102, 241, 0.18) !important;
+  color: #312e81 !important;
+}
+
+body:not(.dark-mode) .tools-topbar-btn--featured {
+  background: rgba(79, 70, 229, 0.08) !important;
+  border-color: rgba(99, 102, 241, 0.18) !important;
+  color: #3730a3 !important;
+}
+
+.bottom-nav.bottom-nav-revamp.bottom-nav-minimal {
+  left: 50% !important;
+  right: auto !important;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important;
+  width: min(420px, calc(100% - 28px)) !important;
+  padding: 10px 12px !important;
+  border-radius: 24px !important;
+  background: rgba(10, 15, 30, 0.9) !important;
+  border: 1px solid rgba(148, 163, 184, 0.12) !important;
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.28) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  transform: translateX(-50%) translateZ(0) !important;
+}
+
+body:not(.dark-mode) .bottom-nav.bottom-nav-revamp.bottom-nav-minimal {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12) !important;
+}
+
+.bottom-nav.bottom-nav-revamp.bottom-nav-minimal .bottom-nav-btn {
+  min-height: 56px !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: rgba(226, 232, 240, 0.7) !important;
+}
+
+.bottom-nav.bottom-nav-revamp.bottom-nav-minimal .bottom-nav-btn.active {
+  background: rgba(99, 102, 241, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+body:not(.dark-mode) .bottom-nav.bottom-nav-revamp.bottom-nav-minimal .bottom-nav-btn {
+  color: rgba(15, 23, 42, 0.68) !important;
+}
+
+body:not(.dark-mode) .bottom-nav.bottom-nav-revamp.bottom-nav-minimal .bottom-nav-btn.active {
+  background: rgba(79, 70, 229, 0.08) !important;
+  color: #312e81 !important;
+}
+
+.bottom-nav.bottom-nav-revamp.bottom-nav-minimal .bottom-nav-icon {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.bottom-nav.bottom-nav-revamp.bottom-nav-minimal .nav-tab-fab .nav-fab-inner {
+  width: 46px !important;
+  height: 46px !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(148, 163, 184, 0.12) !important;
+  box-shadow: none !important;
+}
+
+.bottom-nav.bottom-nav-revamp.bottom-nav-minimal .nav-tab-fab.active .nav-fab-inner {
+  background: rgba(99, 102, 241, 0.16) !important;
+  border-color: rgba(129, 140, 248, 0.22) !important;
+  box-shadow: none !important;
+}
+
+body:not(.dark-mode) .bottom-nav.bottom-nav-revamp.bottom-nav-minimal .nav-tab-fab .nav-fab-inner {
+  background: rgba(15, 23, 42, 0.04) !important;
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+
+body:not(.dark-mode) .bottom-nav.bottom-nav-revamp.bottom-nav-minimal .nav-tab-fab.active .nav-fab-inner {
+  background: rgba(79, 70, 229, 0.1) !important;
+  border-color: rgba(99, 102, 241, 0.18) !important;
+}

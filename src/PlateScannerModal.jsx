@@ -26,6 +26,7 @@ async function compressImage(file, maxDim = 1024, quality = 0.82) {
 }
 
 const LEARNING_PROFILE_KEY = 'sg_plate_scanner_profile_v1';
+const MEAL_MACRO_HISTORY_KEY = 'sg_plate_macro_history_v1';
 
 function readLearningProfile() {
   try {
@@ -48,6 +49,32 @@ function persistLearningProfile(profile) {
   } catch {
     // Ignore storage write failures.
   }
+}
+
+function readMacroHistory() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(MEAL_MACRO_HISTORY_KEY) || '[]');
+    return Array.isArray(raw) ? raw.slice(0, 10) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistMacroHistory(history) {
+  try {
+    localStorage.setItem(MEAL_MACRO_HISTORY_KEY, JSON.stringify((history || []).slice(0, 10)));
+  } catch {
+    // Ignore storage write failures.
+  }
+}
+
+function createMacroHistoryEntry(results, preview) {
+  return {
+    id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    scannedAt: new Date().toISOString(),
+    preview: preview && preview.length < 350000 ? preview : null,
+    results,
+  };
 }
 
 function buildLearningContext(profile) {
@@ -173,7 +200,7 @@ function ConfidenceBadge({ confidence }) {
    Main component
 ───────────────────────────────────────────── */
 export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToList }) {
-  // step: 'capture' | 'scanning' | 'results' | 'error'
+  // step: 'capture' | 'history' | 'scanning' | 'results' | 'error'
   const [step, setStep]         = useState('capture');
   const [preview, setPreview]   = useState(null);   // data-url for preview
   const [imageData, setImageData] = useState(null); // { base64, mediaType }
@@ -181,6 +208,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
   const [errorMsg, setErrorMsg] = useState('');
   const [addedMsg, setAddedMsg] = useState(false);
   const [learningProfile, setLearningProfile] = useState(() => readLearningProfile());
+  const [history, setHistory] = useState(() => readMacroHistory());
 
   const fileInputRef    = useRef(null); // gallery pick
   const cameraInputRef  = useRef(null); // direct camera
@@ -248,6 +276,11 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
 
       const data = await res.json();
       setResults(data);
+      setHistory((prev) => {
+        const next = [createMacroHistoryEntry(data, preview), ...prev].slice(0, 10);
+        persistMacroHistory(next);
+        return next;
+      });
       setLearningProfile((prev) => {
         const next = updateLearningProfile(prev, data);
         persistLearningProfile(next);
@@ -263,7 +296,7 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
       );
       setStep('error');
     }
-  }, [imageData, apiBase, learningProfile]);
+  }, [imageData, apiBase, learningProfile, preview]);
 
   const handleReset = useCallback(() => {
     setStep('capture');
@@ -272,6 +305,21 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
     setResults(null);
     setErrorMsg('');
     setAddedMsg(false);
+  }, []);
+
+  const handleOpenHistoryEntry = useCallback((entry) => {
+    if (!entry?.results) return;
+    setPreview(entry.preview || null);
+    setImageData(null);
+    setResults(entry.results);
+    setErrorMsg('');
+    setAddedMsg(false);
+    setStep('results');
+  }, []);
+
+  const handleClearHistory = useCallback(() => {
+    setHistory([]);
+    persistMacroHistory([]);
   }, []);
 
   const handleAddToList = useCallback(() => {
@@ -295,6 +343,11 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
         <div className="psm-screen psm-capture">
           {/* Header */}
           <div className="psm-header">
+            <div className="psm-header-actions">
+              <button className="psm-header-utility" onClick={() => setStep('history')} aria-label="Ιστορικό">
+                Ιστορικό{history.length > 0 ? ` (${history.length})` : ''}
+              </button>
+            </div>
             <h2 className="psm-title">
               <span className="psm-title-icon">📊</span> Meal Macros
             </h2>
@@ -402,6 +455,76 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
       )}
 
       {/* ── STEP: SCANNING ────────────────────────────── */}
+      {step === 'history' && (
+        <div className="psm-screen psm-history-screen">
+          <div className="psm-header">
+            <button className="psm-header-utility" onClick={() => setStep('capture')} aria-label="Πίσω">
+              ← Πίσω
+            </button>
+            <h2 className="psm-title">
+              <span className="psm-title-icon">🕘</span> Ιστορικό
+            </h2>
+            <button className="psm-close-btn" onClick={onClose} aria-label="Κλείσιμο">✕</button>
+          </div>
+
+          <div className="psm-results-scroll">
+            {history.length === 0 ? (
+              <div className="psm-history-empty">
+                <div className="psm-history-empty-icon">📸</div>
+                <h3>Δεν υπάρχει ακόμη ιστορικό</h3>
+                <p>Μετά το πρώτο scan θα μπορείς να ξανανοίγεις παλιότερα Meal Macros αποτελέσματα.</p>
+              </div>
+            ) : (
+              <div className="psm-history-list">
+                {history.map((entry) => {
+                  const totals = entry.results?.totals || {};
+                  const foods = (entry.results?.foods || []).map(food => food.name).filter(Boolean);
+                  return (
+                    <button
+                      key={entry.id}
+                      className="psm-history-card"
+                      onClick={() => handleOpenHistoryEntry(entry)}
+                    >
+                      {entry.preview ? (
+                        <img src={entry.preview} alt="" className="psm-history-thumb" />
+                      ) : (
+                        <div className="psm-history-thumb psm-history-thumb--placeholder">🍽️</div>
+                      )}
+                      <div className="psm-history-copy">
+                        <div className="psm-history-top">
+                          <strong>{entry.results?.mealType || 'Meal Macros'}</strong>
+                          <span>{new Date(entry.scannedAt).toLocaleString('el-GR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div className="psm-history-foods">
+                          {foods.length ? foods.join(' • ') : 'Χωρίς καταγεγραμμένα τρόφιμα'}
+                        </div>
+                        <div className="psm-history-macros">
+                          <span>{totals.calories ?? 0} kcal</span>
+                          <span>{totals.protein ?? 0}g πρωτ.</span>
+                          <span>{totals.carbs ?? 0}g υδ/κες</span>
+                          <span>{totals.fat ?? 0}g λίπος</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="psm-results-actions">
+            <button className="psm-btn psm-btn--outline" onClick={() => setStep('capture')}>
+              Νέα σάρωση
+            </button>
+            {!!history.length && (
+              <button className="psm-btn psm-btn--ghost" onClick={handleClearHistory}>
+                Καθαρισμός
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {step === 'scanning' && (
         <div className="psm-screen psm-scanning">
           {preview && (
