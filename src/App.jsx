@@ -4500,9 +4500,7 @@ export default function App() {
     if (!isOnline) return;
     const checkStatus = async () => {
       try {
-        const startT  = Date.now();
-        const r       = await fetch(`${API_BASE}/api/status`);
-        const elapsed = Date.now() - startT;
+        const r = await fetch(`${API_BASE}/api/status`);
         if (r.ok) {
           const j = await r.json();
           setIsScraping(j.isScraping || false);
@@ -4511,11 +4509,9 @@ export default function App() {
             clearTimeout(liveBannerTimerRef.current);
             liveBannerTimerRef.current = setTimeout(() => setShowLiveBanner(false), 8000);
           }
-          setIsServerWaking(elapsed > 3000);
-          if (elapsed > 3000) setTimeout(() => setIsServerWaking(false), 15000);
         }
       } catch {
-        setIsServerWaking(true);
+        // status poll failure — don't show server-waking banner (data already loaded)
       }
     };
     let iv = null;
