@@ -576,7 +576,7 @@ body.dark-mode .budget-banner {
 .budget-label {
   font-size: 10px;
   font-weight: 700;
-  color: #64748b;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1.2px;
   margin-bottom: 4px;
@@ -4731,7 +4731,7 @@ input:focus, textarea:focus, select:focus {
 .send-friend-btn {
   background: rgba(99, 102, 241, 0.08) !important;
   border-color: rgba(99, 102, 241, 0.2) !important;
-  color: #6366f1 !important;
+  color: var(--accent) !important;
 }
 .send-friend-btn:hover {
   background: rgba(99, 102, 241, 0.15) !important;
@@ -5503,7 +5503,7 @@ body.dark-mode .delete-btn {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 4px 10px; border-radius: 20px; margin-bottom: 8px;
   background: rgba(99,102,241,0.09); border: 1px solid rgba(99,102,241,0.18);
-  font-size: 11px; font-weight: 700; color: #6366f1;
+  font-size: 11px; font-weight: 700; color: var(--accent);
   animation: onboardFeatureIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
 }
 body.dark-mode .macro-skeleton-cell { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
@@ -6037,7 +6037,7 @@ html, body {
   height: 16px;
   border-radius: 50%;
   border: 2.5px solid var(--border);
-  border-top-color: #6366f1;
+  border-top-color: var(--accent);
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
 }
@@ -6056,8 +6056,8 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 .load-more-btn:hover {
-  border-color: #6366f1;
-  color: #6366f1;
+  border-color: var(--accent);
+  color: var(--accent);
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15);
 }
@@ -6267,7 +6267,7 @@ html, body {
 }
 .mealdb-chip-category {
   background: rgba(99, 102, 241, 0.12);
-  color: #6366f1;
+  color: var(--accent);
 }
 .mealdb-chip-area {
   background: var(--bg-subtle);
@@ -6403,15 +6403,15 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 .mealdb-load-more-btn:hover {
-  border-color: #6366f1;
-  color: #6366f1;
+  border-color: var(--accent);
+  color: var(--accent);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.18);
 }
 .mealdb-load-more-btn:active { transform: scale(0.95); transition-duration: 0.08s; }
 .mealdb-load-more-count {
   background: rgba(99,102,241,0.12);
-  color: #6366f1;
+  color: var(--accent);
   font-size: 11px;
   font-weight: 800;
   border-radius: 99px;
@@ -6556,7 +6556,7 @@ html, body {
   gap: 4px;
   font-size: 10px;
   font-weight: 800;
-  color: #6366f1;
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   background: rgba(99,102,241,0.1);
@@ -12431,7 +12431,7 @@ body.dark-mode .bottom-sheet {
   justify-content: center;
   background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1));
   border-radius: inherit;
-  color: #6366f1;
+  color: var(--accent);
   font-weight: 800;
   font-size: 24px;
 }
@@ -12852,7 +12852,7 @@ body.dark-mode .friends-popup-card {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6474ff;
+  color: var(--accent);
 }
 
 .friends-popup-title {
@@ -12904,7 +12904,7 @@ body.dark-mode .friends-popup-card {
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid rgba(124, 77, 255, 0.14);
-  color: #6d4dff;
+  color: var(--accent);
   font-size: 16px;
   font-weight: 900;
   letter-spacing: 0.18em;
@@ -14233,8 +14233,8 @@ textarea:focus-visible {
   position: relative;
 }
 .soc-tab--active {
-  color: #6366f1;
-  border-bottom-color: #6366f1;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 .soc-badge {
   min-width: 16px;
@@ -14252,7 +14252,7 @@ textarea:focus-visible {
 }
 .soc-badge--muted {
   background: rgba(99, 102, 241, 0.18);
-  color: #6366f1;
+  color: var(--accent);
 }
 
 /* Participants row */
@@ -14426,7 +14426,7 @@ textarea:focus-visible {
   outline: none;
   transition: border-color 0.18s var(--ease);
 }
-.soc-input:focus      { border-color: #6366f1; }
+.soc-input:focus      { border-color: var(--accent); }
 .soc-input--dm:focus  { border-color: #10b981; }
 .soc-input--dm        { border-color: rgba(16, 185, 129, 0.4); }
 .soc-send-btn {
@@ -14503,7 +14503,7 @@ textarea:focus-visible {
   border-radius: 10px;
   border: 1px solid var(--border-light);
   background: rgba(99, 102, 241, 0.08);
-  color: #6366f1;
+  color: var(--accent);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -14648,7 +14648,7 @@ body.dark-mode .soc-key-code {
   align-items: center;
   justify-content: center;
   margin: 0 auto 8px;
-  color: #6366f1;
+  color: var(--accent);
 }
 .soc-empty-title {
   font-size: 15px;
@@ -15417,4 +15417,42 @@ body:not(.dark-mode) .bottom-nav.bottom-nav-revamp.bottom-nav-minimal .nav-tab-f
 body:not(.dark-mode) .bottom-nav.bottom-nav-revamp.bottom-nav-minimal .nav-tab-fab.active .nav-fab-inner {
   background: rgba(79, 70, 229, 0.1) !important;
   border-color: rgba(99, 102, 241, 0.18) !important;
+}
+
+/* ════════════════════════════════════════════════════════
+   THEME READABILITY FIXES
+   ════════════════════════════════════════════════════════ */
+
+/* Dark mode: product/store/history image containers
+   — replace harsh white bg with frosted neutral */
+body.dark-mode .product-img,
+body.dark-mode .sug-logo,
+body.dark-mode .history-img,
+body.dark-mode .offer-logo {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Dark mode: toggle thumb (keep white but soften shadow) */
+body.dark-mode .toggle-track .toggle-thumb {
+  background: #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* Dark mode: recipe AI badge */
+body.dark-mode .recipe-ai-badge {
+  background: rgba(99, 102, 241, 0.14);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: var(--accent);
+}
+
+/* Dark mode: share code box */
+body.dark-mode .friends-popup-share-code {
+  color: var(--accent);
+}
+
+/* Light mode: ensure muted labels are readable */
+body:not(.dark-mode) .budget-label,
+body:not(.dark-mode) .soc-section-label {
+  color: var(--text-muted);
 }

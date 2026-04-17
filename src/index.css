@@ -186,33 +186,33 @@ body {
    ════════════════════════════════════════════════════════════════════ */
 body.dark-mode {
   /* Backgrounds */
-  --bg-app:          #0c0f1c;
-  --bg-card:         #131720;
-  --bg-surface:      #1a1f2e;
-  --bg-subtle:       rgba(17, 24, 39, 0.92);
-  --bg-input:        rgba(15, 20, 35, 0.95);
-  --bg-container:    rgba(13, 17, 23, 0.96);
+  --bg-app:          #0b0e1a;
+  --bg-card:         #151a28;
+  --bg-surface:      #1c2235;
+  --bg-subtle:       rgba(20, 28, 48, 0.94);
+  --bg-input:        rgba(18, 23, 40, 0.96);
+  --bg-container:    rgba(14, 18, 30, 0.97);
   --bg-overlay:      rgba(0, 0, 0, 0.72);
-  --bg-chip:         rgba(30, 41, 59, 0.85);
-  --bg-chip-hover:   rgba(51, 65, 85, 0.9);
-  --bg-surface-hover: rgba(30, 41, 59, 0.7);
+  --bg-chip:         rgba(32, 44, 68, 0.88);
+  --bg-chip-hover:   rgba(44, 58, 85, 0.92);
+  --bg-surface-hover: rgba(32, 44, 68, 0.72);
 
   /* Nav (Liquid Glass dark) */
   --bg-nav:          rgba(10, 13, 22, 0.88);
   --bg-nav-border:   rgba(255, 255, 255, 0.06);
 
   /* Text */
-  --text-primary:    #f0f4ff;
-  --text-secondary:  #c8d3e8;
-  --text-muted:      #7a8aaa;
-  --text-faint:      #4a5568;
+  --text-primary:    #f2f5ff;
+  --text-secondary:  #d0daf0;
+  --text-muted:      #8fa3c0;
+  --text-faint:      #526278;
   --text-inverse:    #0f172a;
 
   /* Borders */
-  --border:          rgba(255, 255, 255, 0.07);
-  --border-light:    rgba(255, 255, 255, 0.04);
-  --border-strong:   rgba(255, 255, 255, 0.12);
-  --border-brand:    rgba(59, 130, 246, 0.25);
+  --border:          rgba(255, 255, 255, 0.09);
+  --border-light:    rgba(255, 255, 255, 0.05);
+  --border-strong:   rgba(255, 255, 255, 0.15);
+  --border-brand:    rgba(79, 142, 247, 0.28);
 
   /* Shadows (richer in dark) */
   --shadow-xs:    0 1px 2px rgba(0,0,0,.3);
