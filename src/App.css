@@ -15470,9 +15470,17 @@ body:not(.dark-mode) .soc-section-label {
   min-height: 52px !important;
 }
 
-/* Fix 2: Regular tools-topbar buttons invisible in dark mode
-   Root cause: background rgba(15,23,42,0.36) blends into dark hero
-   background — only featured buttons (with colored gradient) were visible. */
+/* Fix 2: Regular tools-topbar buttons invisible (all modes)
+   Root cause: .tools-topbar-btn starts at opacity:0 (stagger entrance).
+   The April-15 navigation pass set animation:none !important, cancelling
+   the toolBtnIn animation that restores opacity:1 — leaving them stuck
+   invisible. Featured buttons get toolBtnIn 0s; locked gets opacity:0.5;
+   plain buttons had nothing restoring them. */
+.tools-topbar-btn:not(.tools-topbar-btn--featured) {
+  opacity: 1 !important;
+}
+
+/* Dark mode: give regular buttons a visible surface (not near-black) */
 body.dark-mode .tools-topbar-btn:not(.tools-topbar-btn--featured) {
   background: rgba(255, 255, 255, 0.06) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
