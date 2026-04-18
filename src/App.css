@@ -175,23 +175,24 @@ body.dark-mode .app-header h1 {
   margin: 12px 0 18px;
   padding: 20px 18px;
   border-radius: 24px;
-  border: 1px solid rgba(59, 130, 246, 0.12);
+  border: none;
   background:
     linear-gradient(135deg, rgba(255,255,255,0.92), rgba(244,247,255,0.92)),
     radial-gradient(circle at top right, rgba(124,58,237,0.12), transparent 38%);
   box-shadow:
-    0 20px 50px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255,255,255,0.65);
+    0 20px 50px rgba(15, 23, 42, 0.10),
+    0 4px 12px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 0.3s ease;
 }
 
 body.dark-mode .hero-shell {
-  border-color: rgba(79, 142, 247, 0.16);
+  border: none;
   background:
     linear-gradient(145deg, rgba(10, 18, 36, 0.96), rgba(13, 23, 45, 0.92)),
     radial-gradient(circle at top right, rgba(79,142,247,0.16), transparent 40%);
   box-shadow:
-    0 18px 48px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+    0 24px 56px rgba(0, 0, 0, 0.40),
+    0 4px 16px rgba(0, 0, 0, 0.20);
 }
 
 .hero-shell__orb {
@@ -7199,10 +7200,10 @@ body.dark-mode .ftb-btn:hover {
     linear-gradient(145deg, rgba(255,255,255,0.72) 0%, rgba(240,245,255,0.65) 100%),
     radial-gradient(ellipse at top left,  rgba(99,102,241,0.08) 0%, transparent 60%),
     radial-gradient(ellipse at bottom right, rgba(168,85,247,0.07) 0%, transparent 55%);
-  border: 1px solid rgba(99, 102, 241, 0.12);
+  border: none;
   box-shadow:
-    0 4px 24px rgba(99, 102, 241, 0.07),
-    0 1px 4px rgba(0,0,0,0.04);
+    0 8px 32px rgba(15, 23, 42, 0.10),
+    0 2px 8px rgba(15, 23, 42, 0.06);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   animation: headerReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -7215,11 +7216,10 @@ body.dark-mode .app-header {
     linear-gradient(145deg, rgba(17,18,30,0.9) 0%, rgba(13,16,28,0.85) 100%),
     radial-gradient(ellipse at top left,  rgba(99,102,241,0.1) 0%, transparent 60%),
     radial-gradient(ellipse at bottom right, rgba(168,85,247,0.09) 0%, transparent 55%);
-  border-color: rgba(99, 102, 241, 0.15);
+  border: none;
   box-shadow:
-    0 4px 24px rgba(0,0,0,0.35),
-    0 1px 4px rgba(0,0,0,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+    0 12px 40px rgba(0,0,0,0.40),
+    0 2px 8px rgba(0,0,0,0.20);
 }
 
 /* App header — no aurora shimmer (removed: continuous loop, violates design context) */
@@ -12489,7 +12489,7 @@ body.dark-mode .sug-avatar-fallback {
 .app-header {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(126, 145, 255, 0.14);
+  border: none;
 }
 
 /* Header pseudo-element blobs removed — vivid gradients violated design context */
@@ -15278,10 +15278,13 @@ body:not(.dark-mode) .search-submit-btn {
   opacity: 0.55;
 }
 
-/* 8. Reduce header card visual weight — transparent bg */
+/* 8. Reduce header card visual weight — transparent bg, simple shadow */
 body.dark-mode .app-header {
   background: transparent !important;
-  box-shadow: none !important;
+  border: none !important;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.38),
+    0 2px 8px rgba(0, 0, 0, 0.18) !important;
 }
 
 /* Minimal Navigation Pass — 2026-04-15 */
@@ -15496,4 +15499,67 @@ body.dark-mode .tools-topbar-btn.active:not(.tools-topbar-btn--featured) {
   background: rgba(99, 102, 241, 0.18) !important;
   border-color: rgba(139, 92, 246, 0.32) !important;
   color: #a78bfa !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL SMOOTH TRANSITIONS — no more snapping
+   ═══════════════════════════════════════════════════════════ */
+
+/* Cards and surfaces */
+.item-card-wrapper,
+.category-group,
+.recipe-card,
+.brochure-card,
+[class*="-card"],
+[class*="-panel"],
+[class*="-surface"] {
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    opacity 0.25s ease;
+}
+
+/* All buttons not already transitioned */
+button:not([class*="bottom-nav"]):not([class*="tools-topbar"]):not(.btn-primary) {
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.2s ease;
+}
+
+/* Theme / dark-mode toggle — prevent jarring colour flash */
+body,
+body.dark-mode {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* Nav, overlays, modals */
+.bottom-nav,
+.more-overlay,
+.modal-backdrop,
+.profile-popup-card,
+.suggestions-dropdown {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s cubic-bezier(0.34, 1.4, 0.64, 1),
+    background 0.25s ease;
+}
+
+/* Inputs */
+input, textarea, select {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+/* Images and thumbnails */
+img, [class*="-img"], [class*="-thumb"] {
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
