@@ -15456,3 +15456,36 @@ body:not(.dark-mode) .budget-label,
 body:not(.dark-mode) .soc-section-label {
   color: var(--text-muted);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   BUG FIXES — 2026-04-18
+   ═══════════════════════════════════════════════════════════ */
+
+/* Fix 1: Bottom nav side buttons (Χάρτης / Προφίλ) clipped
+   Root cause: overflow:hidden + border-radius:18px on .bottom-nav-btn
+   clips the label text and icon at the button corners. */
+.bottom-nav.bottom-nav-revamp.bottom-nav-minimal .bottom-nav-btn {
+  overflow: visible !important;
+  padding: 8px 6px 8px !important;
+  min-height: 52px !important;
+}
+
+/* Fix 2: Regular tools-topbar buttons invisible in dark mode
+   Root cause: background rgba(15,23,42,0.36) blends into dark hero
+   background — only featured buttons (with colored gradient) were visible. */
+body.dark-mode .tools-topbar-btn:not(.tools-topbar-btn--featured) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.80) !important;
+}
+
+body.dark-mode .tools-topbar-btn:not(.tools-topbar-btn--featured):hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .tools-topbar-btn.active:not(.tools-topbar-btn--featured) {
+  background: rgba(99, 102, 241, 0.18) !important;
+  border-color: rgba(139, 92, 246, 0.32) !important;
+  color: #a78bfa !important;
+}
