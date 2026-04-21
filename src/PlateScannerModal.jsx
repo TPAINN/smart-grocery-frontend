@@ -546,13 +546,13 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
                   className={`psm-mode-btn${scanMode === 'camera' ? ' psm-mode-btn--active' : ''}`}
                   onClick={() => setScanMode('camera')}
                 >
-                  📷 Κάμερα
+                  Camera
                 </button>
                 <button
                   className={`psm-mode-btn${scanMode === 'text' ? ' psm-mode-btn--active' : ''}`}
                   onClick={() => setScanMode('text')}
                 >
-                  ✍️ Κείμενο
+                  Κείμενο
                 </button>
               </div>
 
@@ -577,11 +577,6 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
                     <p className="psm-tip-text">
                       Τοποθέτησε ολόκληρο το πιάτο στο πλαίσιο για καλύτερα αποτελέσματα
                     </p>
-                    <div className="psm-learning-chip">
-                      {learningProfile.scanCount > 0
-                        ? `Βελτιώνομαι από ${learningProfile.scanCount} scans`
-                        : 'Μαθαίνω από κάθε νέο πιάτο'}
-                    </div>
                   </div>
 
                   <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
@@ -631,11 +626,6 @@ export default function PlateScannerModal({ isOpen, onClose, apiBase, onAddToLis
                       onChange={e => setTextInput(e.target.value)}
                       rows={5}
                     />
-                    <div className="psm-learning-chip">
-                      {learningProfile.scanCount > 0
-                        ? `Βελτιώνομαι από ${learningProfile.scanCount} scans`
-                        : 'Περίγραψε το γεύμα σου'}
-                    </div>
                   </div>
                   <div className="psm-capture-actions">
                     <button

@@ -1146,9 +1146,9 @@ body.dark-mode .item-avatar { border-color: rgba(255,255,255,.08); box-shadow: 0
   font-weight: 600;
   color: var(--text-primary);
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
   margin-bottom: 4px;
 }
 
